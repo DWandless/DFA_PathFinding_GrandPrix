@@ -17,6 +17,7 @@ GREEN_CAR = scale_image(pygame.image.load('assets/green-car.png'), 0.55)
 WIN = pygame.display.set_mode((TRACK.get_width(), TRACK.get_height()))
 pygame.display.set_caption("DFA Path Finding Grand Prix")
 
+PATH = [(191, 131), (138, 80), (70, 135), (70, 514), (317, 785), (397, 811), (450, 753), (457, 586), (559, 532), (663, 596), (669, 753), (741, 814), (824, 746), (821, 469), (757, 400), (502, 398), (446, 347), (514, 288), (763, 282), (822, 238), (820, 130), (749, 83), (363, 86), (316, 150), (310, 405), (255, 460), (198, 404), (193, 263)]
 FPS = 60
 
 class Car:
@@ -74,20 +75,38 @@ class Car:
 
 class PlayerCar(Car):
     IMG = RED_CAR
-    START_POS = (180, 200)
+    START_POS = (185, 200)
 
     def bounce(self):
         self.vel = -self.vel
         self.move()
 
+class ComputerCar(Car):
+    IMG = GREEN_CAR
+    START_POS = (165, 200)
 
+    def __init__(self, max_vel, rotation_vel, path=[]):
+        super().__init__(max_vel, rotation_vel)
+        self.path = path
+        self.current_point = 0
+        self.vel = max_vel
+    
+    def draw_points(self, win):
+        for point in self.path:
+            pygame.draw.circle(win, (255, 0, 0), point, 5)
 
-def draw(win, images, player_car):
+    def draw(self, win):
+        super().draw(win)
+        self.draw_points(win)
+ 
+def draw(win, images, player_car, computer_car):
     for img, pos in images:
         win.blit(img, pos)
     player_car.draw(win)
+    computer_car.draw(win)
     pygame.display.update()
 
+# control tied to button inputs
 def move_player(player_car):
     keys = pygame.key.get_pressed()
     moved = False
@@ -113,17 +132,25 @@ images = [ # dict of images and their positions
     (FINISH, (140, 250)),
     (TRACK_BORDER, (0, 0)),]
 
-player_car = PlayerCar(5,5)
+player_car = PlayerCar(4,4)
+computer_car = ComputerCar(4, 4, PATH)
 
 while run:
     clock.tick(FPS)
 
-    draw(WIN, images, player_car)
+    draw(WIN, images, player_car, computer_car)
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
             break
+        
+        """
+        # used for finding a set path of track for computer car to use
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            pos = pygame.mouse.get_pos()
+            computer_car.path.append(pos)
+        """
     
     move_player(player_car)
 
@@ -140,5 +167,5 @@ while run:
             player_car.reset()
             print("FINISH!")
 
-
+print(computer_car.path)
 pygame.quit()
