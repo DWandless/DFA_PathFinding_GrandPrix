@@ -9,3 +9,5 @@
 ## The students main choice should be their "engine" - which path finding algorithm they choose to use
 
 ## Ontop of this we might add some sort of other parts to swap out, this will be enforeced by some of point/economy system where the students only have so many points to upgrade their car
+
+## Algorithms we aim to implement support for include: Depth, breath, dijktra, A*, JPS (Jump Point Search)
