@@ -28,7 +28,8 @@ CHECKPOINTS = [(191, 131), (138, 80), (70, 135), (70, 514), (317, 785), (397, 81
 # -----------------------------
 # GRID FOR A*
 # -----------------------------
-GRID_SIZE = 30  # pixels per grid cell
+GRID_SIZE = 1  # pixels per grid cell
+CHECKPOINT_RADIUS = 8
 
 def build_grid(mask):
     width, height = mask.get_size()
@@ -239,6 +240,10 @@ class AStarCar(Car):
 def draw(win, images, player_car, computer_car):
     for img, pos in images:
         win.blit(img, pos)
+    # draw checkpoints (highlight AI's current target)
+    for idx, (cx, cy) in enumerate(CHECKPOINTS):
+        color = (0, 200, 0) if hasattr(computer_car, 'current_checkpoint') and idx == computer_car.current_checkpoint else (0, 0, 200)
+        pygame.draw.circle(win, color, (int(cx), int(cy)), CHECKPOINT_RADIUS)
     player_car.draw(win)
     computer_car.draw(win)
     pygame.display.update()
