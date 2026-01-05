@@ -3,6 +3,21 @@ import math
 import heapq
 from utils import scale_image, bilt_rotate_center
 
+"""
+DFA Path Finding Grand Prix
+
+This file implements a small top-down racing simulation using Pygame.
+
+- Loads track, border and car images and creates masks for collision.
+- Uses a simple A* on a grid made from the track-border mask for AI pathfinding.
+- Provides two car classes: a player-controlled car and an A*-driven car.
+- The AI computes a grid path to the next checkpoint and follows it while
+    avoiding collisions with the track borders and the finish line in the
+    wrong direction.
+
+To modify behavior, tune `GRID_SIZE`, car velocities, or the CHECKPOINTS list.
+"""
+
 # -----------------------------
 # LOAD IMAGES
 # -----------------------------
@@ -32,12 +47,21 @@ GRID_SIZE = 1  # pixels per grid cell
 CHECKPOINT_RADIUS = 8
 
 def build_grid(mask):
+    """Build a boolean grid from a Pygame mask.
+
+    Each cell corresponds to a GRID_SIZE x GRID_SIZE block of pixels.
+    A cell is True when the corresponding pixel in `mask` is not set
+    (i.e. considered road), and False when it overlaps the track border.
+
+    The returned grid is indexed as grid[row][col] where row corresponds
+    to the y axis and col to the x axis.
+    """
     width, height = mask.get_size()
     grid = []
     for y in range(0, height, GRID_SIZE):
         row = []
         for x in range(0, width, GRID_SIZE):
-            # ROAD = 1 in TRACK mask
+            # ROAD = 1 in TRACK mask (mask.get_at returns 0 for transparent)
             walkable = mask.get_at((x, y)) == 0
             row.append(walkable)
         grid.append(row)
@@ -50,9 +74,21 @@ GRID = build_grid(TRACK_BORDER_MASK)
 # A* PATHFINDING
 # -----------------------------
 def heuristic(a, b):
+    """Manhattan heuristic for grid A*.
+
+    `a` and `b` are (row, col) grid coordinates.
+    Using Manhattan distance keeps costs admissible for 4-connected grids.
+    """
     return abs(a[0] - b[0]) + abs(a[1] - b[1])
 
 def astar(grid, start, goal):
+    """A simple A* implementation on a 4-connected boolean grid.
+
+    - `grid` is a list-of-lists of booleans returned by `build_grid`.
+    - `start` and `goal` are `(row, col)` tuples.
+    Returns a list of grid coordinates from start (exclusive) to goal (inclusive),
+    or `None` if no path exists.
+    """
     rows, cols = len(grid), len(grid[0])
     open_set = []
     heapq.heappush(open_set, (0, start))
@@ -71,6 +107,7 @@ def astar(grid, start, goal):
             return path
 
         x, y = current
+        # 4-connected neighbors (up/down/left/right)
         neighbors = [(x+1,y), (x-1,y), (x,y+1), (x,y-1)]
 
         for nx, ny in neighbors:
@@ -88,6 +125,11 @@ def astar(grid, start, goal):
 # CAR CLASSES
 # -----------------------------
 class Car:
+    """Base car class.
+
+    Holds position, velocity, rotation and image. Subclasses define the
+    `IMG` and `START_POS` class attributes.
+    """
     def __init__(self, max_vel, rotation_vel):
         self.img = self.IMG
         self.max_vel = max_vel
@@ -139,6 +181,11 @@ class PlayerCar(Car):
     IMG = RED_CAR
     START_POS = (185, 200)
 
+    """Human-controlled car; simple bounce behaviour on collision.
+
+    The `bounce` method reverses current velocity and steps the car to avoid
+    getting stuck inside wall geometry.
+    """
     def bounce(self):
         self.vel = -self.vel
         self.move()
@@ -158,6 +205,20 @@ class AStarCar(Car):
         self.current_point = 0
         self.vel = max_vel
 
+        """A car driven by A* pathfinding.
+
+                Behavior summary:
+                - Uses `world_to_grid` / `grid_to_world` to convert between pixel
+                    coordinates and the boolean grid used by A*.
+                - `compute_path` runs A* from the car's current grid cell to the
+                    checkpoint's grid cell and stores the resulting path as world
+                    coordinates in `self.path`.
+                - `move` steers the car toward the next point on the path while
+                    predicting collisions; if the next move would hit a wall or the
+                    finish line in the wrong direction it will try to choose a nearby
+                    alternative grid cell and reroute.
+"""
+
     def bounce(self):
         # Reverse velocity and use base movement to avoid calling AStarCar.move()
         self.vel = -self.vel
@@ -174,11 +235,17 @@ class AStarCar(Car):
         return x, y
 
     def compute_path(self):
+        """Compute a new grid path from current position to the current checkpoint.
+
+        The A* result is converted to world coordinates centered in each
+        grid cell using `grid_to_world` and stored in `self.path`.
+        """
         start = self.world_to_grid(self.x, self.y)
         goal_world = self.checkpoints[self.current_checkpoint]
         goal = self.world_to_grid(*goal_world)
         grid_path = astar(GRID, start, goal)
         if grid_path:
+            # convert grid path (row,col) -> world pixel coordinates
             self.path = [self.grid_to_world(gx, gy) for gx, gy in grid_path]
             self.current_point = 0
 
@@ -240,15 +307,23 @@ class AStarCar(Car):
 def draw(win, images, player_car, computer_car):
     for img, pos in images:
         win.blit(img, pos)
-    # draw checkpoints (highlight AI's current target)
+    # Draw checkpoints as visible markers so we can debug AI routing.
+    # The AI's current checkpoint is highlighted in green.
     for idx, (cx, cy) in enumerate(CHECKPOINTS):
         color = (0, 200, 0) if hasattr(computer_car, 'current_checkpoint') and idx == computer_car.current_checkpoint else (0, 0, 200)
         pygame.draw.circle(win, color, (int(cx), int(cy)), CHECKPOINT_RADIUS)
+    # Draw cars
     player_car.draw(win)
     computer_car.draw(win)
     pygame.display.update()
 
 def move_player(player_car):
+    """Handle keyboard input for the player car.
+
+    - `A`/`D` rotate left/right
+    - `W`/`S` accelerate forward/backward
+    If no throttle keys are pressed the car will naturally slow down.
+    """
     keys = pygame.key.get_pressed()
     moved = False
     if keys[pygame.K_a]:
@@ -265,25 +340,35 @@ def move_player(player_car):
         player_car.reduce_speed()
 
 def handle_collision(player_car, computer_car):
+    """High-level collision handling called each frame.
+
+    - Player collision with track border -> bounce.
+    - Computer collision with track border -> bounce (AI movement code also
+      predicts and avoids collisions; this is an additional safety check).
+    - Finish-line collision: if hit in the wrong direction (mask overlap y==0)
+      the car bounces. If hit correctly and the car already has visited the
+      last checkpoint, the corresponding side wins and both cars reset.
+    """
+    # Player border collision
     if player_car.collide(TRACK_BORDER_MASK):
         player_car.bounce()
 
-    # AI should also bounce on track border collisions
+    # AI border collision fallback
     if computer_car.collide(TRACK_BORDER_MASK):
         computer_car.bounce()
 
-    # Check computer finish-line collision and enforce direction
+    # AI finish-line handling (safety check)
     comp_finish_hit = computer_car.collide(FINISH_MASK, 140, 250)
     if comp_finish_hit:
         if comp_finish_hit[1] == 0:
             computer_car.bounce()
         else:
-            # AI can only win after the last checkpoint
             if computer_car.current_checkpoint == len(CHECKPOINTS) - 1:
                 player_car.reset()
                 computer_car.reset()
                 print("COMPUTER WINS!")
 
+    # Player finish-line handling
     finish_hit = player_car.collide(FINISH_MASK, 140, 250)
     if finish_hit:
         if finish_hit[1] == 0:
