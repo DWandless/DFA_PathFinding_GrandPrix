@@ -1,25 +1,91 @@
 import pygame
-import time
-import random
 import math
+import heapq
 from utils import scale_image, bilt_rotate_center
 
-# loading images that are scaled to size
+# -----------------------------
+# LOAD IMAGES
+# -----------------------------
 GRASS = scale_image(pygame.image.load('assets/grass.jpg'), 2.5)
 TRACK = scale_image(pygame.image.load('assets/track.png'), 1)
 TRACK_BORDER = scale_image(pygame.image.load('assets/track-border.png'), 1)
-TRACK_BORDER_MASK = pygame.mask.from_surface(TRACK_BORDER) # mask created using track border
+TRACK_BORDER_MASK = pygame.mask.from_surface(TRACK_BORDER)
 FINISH = pygame.image.load('assets/finish.png')
-FINISH_MASK = pygame.mask.from_surface(FINISH) # create a mask based off finish
+FINISH_MASK = pygame.mask.from_surface(FINISH)
 RED_CAR = scale_image(pygame.image.load('assets/red-car.png'), 0.55)
 GREEN_CAR = scale_image(pygame.image.load('assets/green-car.png'), 0.55)
 
 WIN = pygame.display.set_mode((TRACK.get_width(), TRACK.get_height()))
 pygame.display.set_caption("DFA Path Finding Grand Prix")
 
-PATH = [(191, 131), (138, 80), (70, 135), (70, 514), (317, 785), (397, 811), (450, 753), (457, 586), (559, 532), (663, 596), (669, 753), (741, 814), (824, 746), (821, 469), (757, 400), (502, 398), (446, 347), (514, 288), (763, 282), (822, 238), (820, 130), (749, 83), (363, 86), (316, 150), (310, 405), (255, 460), (198, 404), (193, 263)]
 FPS = 60
 
+# -----------------------------
+# CHECKPOINTS AROUND TRACK
+# -----------------------------
+CHECKPOINTS = [(191, 131), (138, 80), (70, 135), (70, 514), (317, 785), (397, 811), (450, 753), (457, 586), (559, 532), (663, 596), (669, 753), (741, 814), (824, 746), (821, 469), (757, 400), (502, 398), (446, 347), (514, 288), (763, 282), (822, 238), (820, 130), (749, 83), (363, 86), (316, 150), (310, 405), (255, 460), (198, 404), (193, 263)]
+#CHECKPOINTS = [ (180, 180), (100, 300), (120, 500), (300, 700), (500, 750), (700, 650), (800, 500), (780, 300), (650, 200), (450, 150), (300, 180), (200, 250)] # near finish line 
+# -----------------------------
+# GRID FOR A*
+# -----------------------------
+GRID_SIZE = 30  # pixels per grid cell
+
+def build_grid(mask):
+    width, height = mask.get_size()
+    grid = []
+    for y in range(0, height, GRID_SIZE):
+        row = []
+        for x in range(0, width, GRID_SIZE):
+            # ROAD = 1 in TRACK mask
+            walkable = mask.get_at((x, y)) == 0
+            row.append(walkable)
+        grid.append(row)
+    return grid
+
+GRID = build_grid(TRACK_BORDER_MASK)
+
+
+# -----------------------------
+# A* PATHFINDING
+# -----------------------------
+def heuristic(a, b):
+    return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
+def astar(grid, start, goal):
+    rows, cols = len(grid), len(grid[0])
+    open_set = []
+    heapq.heappush(open_set, (0, start))
+    came_from = {}
+    g_score = {start: 0}
+
+    while open_set:
+        _, current = heapq.heappop(open_set)
+
+        if current == goal:
+            path = []
+            while current in came_from:
+                path.append(current)
+                current = came_from[current]
+            path.reverse()
+            return path
+
+        x, y = current
+        neighbors = [(x+1,y), (x-1,y), (x,y+1), (x,y-1)]
+
+        for nx, ny in neighbors:
+            if 0 <= nx < rows and 0 <= ny < cols and grid[nx][ny]:
+                tentative_g = g_score[current] + 1
+                if (nx, ny) not in g_score or tentative_g < g_score[(nx, ny)]:
+                    g_score[(nx, ny)] = tentative_g
+                    f_score = tentative_g + heuristic((nx, ny), goal)
+                    heapq.heappush(open_set, (f_score, (nx, ny)))
+                    came_from[(nx, ny)] = current
+
+    return None
+
+# -----------------------------
+# CAR CLASSES
+# -----------------------------
 class Car:
     def __init__(self, max_vel, rotation_vel):
         self.img = self.IMG
@@ -51,7 +117,6 @@ class Car:
         radians = math.radians(self.angle)
         vertical = math.cos(radians) * self.vel
         horizontal = math.sin(radians) * self.vel
-        
         self.y -= vertical
         self.x -= horizontal
     
@@ -62,16 +127,12 @@ class Car:
     def collide(self, mask, x=0, y=0):
         car_mask = pygame.mask.from_surface(self.img)
         offset = (int(self.x - x), int(self.y - y))
-        poi = mask.overlap(car_mask, offset)
-        return poi
+        return mask.overlap(car_mask, offset)
     
     def reset(self):
         self.x, self.y = self.START_POS
         self.angle = 0
         self.vel = 0
-
-
-
 
 class PlayerCar(Car):
     IMG = RED_CAR
@@ -81,72 +142,100 @@ class PlayerCar(Car):
         self.vel = -self.vel
         self.move()
 
-class ComputerCar(Car):
+# -----------------------------
+# A* AI CAR
+# -----------------------------
+class AStarCar(Car):
     IMG = GREEN_CAR
     START_POS = (165, 200)
 
-    def __init__(self, max_vel, rotation_vel, path=[]):
+    def __init__(self, max_vel, rotation_vel, checkpoints):
         super().__init__(max_vel, rotation_vel)
-        self.path = path
+        self.checkpoints = checkpoints
+        self.current_checkpoint = 0
+        self.path = []
         self.current_point = 0
         self.vel = max_vel
-    
-    def draw_points(self, win):
-        for point in self.path:
-            pygame.draw.circle(win, (255, 0, 0), point, 5)
 
-    def draw(self, win):
-        super().draw(win)
-        # self.draw_points(win)
-    
-    def calculate_angle(self):
-        target_x, target_y = self.path[self.current_point]
-        x_diff = target_x - self.x
-        y_diff = target_y - self.y
+    def bounce(self):
+        # Reverse velocity and use base movement to avoid calling AStarCar.move()
+        self.vel = -self.vel
+        super().move()
 
-        if y_diff == 0:
-            desired_radian_angle = math.pi / 2
-        else:
-            desired_radian_angle = math.atan(x_diff / y_diff)
-        if target_y > self.y:
-            desired_radian_angle += math.pi
-        
-        difference_in_angle = self.angle - math.degrees(desired_radian_angle)
-        if difference_in_angle >= 180:
-            difference_in_angle -= 360
+    def world_to_grid(self, x, y):
+        return int(y // GRID_SIZE), int(x // GRID_SIZE)
 
-        if difference_in_angle > 0:
-            self.angle -= min(self.rotation_vel, abs(difference_in_angle))
-        else:
-            self.angle += min(self.rotation_vel, abs(difference_in_angle))
-    
-    def update_path_point(self):
-        target = self.path[self.current_point]
-        rect = pygame.Rect(self.x, self.y, self.img.get_width(), self.img.get_height())
-        if rect.collidepoint(*target):
-            self.current_point += 1
+    def grid_to_world(self, gx, gy):
+        # Convert grid (row, col) to world (x, y) centered in the cell
+        row, col = gx, gy
+        x = col * GRID_SIZE + GRID_SIZE / 2
+        y = row * GRID_SIZE + GRID_SIZE / 2
+        return x, y
+
+    def compute_path(self):
+        start = self.world_to_grid(self.x, self.y)
+        goal_world = self.checkpoints[self.current_checkpoint]
+        goal = self.world_to_grid(*goal_world)
+        grid_path = astar(GRID, start, goal)
+        if grid_path:
+            self.path = [self.grid_to_world(gx, gy) for gx, gy in grid_path]
+            self.current_point = 0
 
     def move(self):
-        if self.current_point >= len(self.path):
+        if not self.path or self.current_point >= len(self.path):
+            self.compute_path()
             return
-        
-        self.calculate_angle()
-        self.update_path_point()
-        super().move()
-        
-        target_x, target_y = self.path[self.current_point]
-        car_vector = pygame.math.Vector2(self.x, self.y)
-        target_vector = pygame.math.Vector2(target_x, target_y)
-        distance = target_vector - car_vector
 
-        if distance.length() < self.vel:
+        target_x, target_y = self.path[self.current_point]
+        dx = target_x - self.x
+        dy = target_y - self.y
+        dist = math.hypot(dx, dy)
+
+        if dist < 10:
             self.current_point += 1
+            if self.current_point >= len(self.path):
+                # reached checkpoint
+                self.current_checkpoint = (self.current_checkpoint + 1) % len(self.checkpoints)
+                self.compute_path()
+            return
+
+        angle_to_target = math.degrees(math.atan2(dy, dx)) - 90
+        angle_diff = (angle_to_target - self.angle + 180) % 360 - 180
+
+        if angle_diff > 0:
+            self.angle += min(self.rotation_vel, angle_diff)
         else:
-            distance = distance.normalize()
-            distance = distance * self.vel
-            self.x += distance.x
-            self.y += distance.y
- 
+            self.angle -= min(self.rotation_vel, -angle_diff)
+
+        # Predict next position and avoid moving into track borders or wrong-direction finish
+        radians = math.radians(self.angle)
+        vertical = math.cos(radians) * self.vel
+        horizontal = math.sin(radians) * self.vel
+        predicted_y = self.y - vertical
+        predicted_x = self.x - horizontal
+
+        # Check collision with track border at predicted position
+        car_mask = pygame.mask.from_surface(self.img)
+        offset = (int(predicted_x), int(predicted_y))
+        # If overlap with TRACK_BORDER_MASK, recompute path instead of moving into wall
+        if TRACK_BORDER_MASK.overlap(car_mask, offset):
+            self.compute_path()
+            return
+
+        # Check finish line wrong-direction collision (treat as wall)
+        finish_overlap = FINISH_MASK.overlap(car_mask, (int(predicted_x - 140), int(predicted_y - 250)))
+        if finish_overlap:
+            # If hitting the finish line in the 'wrong' direction (y offset == 0), treat as obstacle
+            if finish_overlap[1] == 0:
+                self.compute_path()
+                return
+
+        # No blocking collision, perform movement
+        super().move()
+
+# -----------------------------
+# GAME LOOP FUNCTIONS
+# -----------------------------
 def draw(win, images, player_car, computer_car):
     for img, pos in images:
         win.blit(img, pos)
@@ -154,78 +243,78 @@ def draw(win, images, player_car, computer_car):
     computer_car.draw(win)
     pygame.display.update()
 
-# control tied to button inputs
 def move_player(player_car):
     keys = pygame.key.get_pressed()
     moved = False
-    if keys [pygame.K_a]:
+    if keys[pygame.K_a]:
         player_car.rotate(left=True)
-    if keys [pygame.K_d]:
+    if keys[pygame.K_d]:
         player_car.rotate(right=True)
-    if keys [pygame.K_w]:
+    if keys[pygame.K_w]:
         moved = True
         player_car.move_forward()
-    if keys [pygame.K_s]:
+    if keys[pygame.K_s]:
         moved = True
         player_car.move_backward()
     if not moved:
         player_car.reduce_speed()
 
 def handle_collision(player_car, computer_car):
-    
-    if player_car.collide(TRACK_BORDER_MASK) != None:
-        # print("collide") # test collision occuring
+    if player_car.collide(TRACK_BORDER_MASK):
         player_car.bounce()
 
-    computer_finish_poi_collide = computer_car.collide(FINISH_MASK, 140, 250)
-    if computer_finish_poi_collide != None:
-        player_car.reset()
-        computer_car.reset()
-        print("COMPUTER WINS!")
+    # AI should also bounce on track border collisions
+    if computer_car.collide(TRACK_BORDER_MASK):
+        computer_car.bounce()
 
-    player_finish_poi_collide = player_car.collide(FINISH_MASK, 140, 250)
-    if player_finish_poi_collide != None:
-        # print(finish_poi_collide) test collision occuring
-        if player_finish_poi_collide[1] == 0:
+    # Check computer finish-line collision and enforce direction
+    comp_finish_hit = computer_car.collide(FINISH_MASK, 140, 250)
+    if comp_finish_hit:
+        if comp_finish_hit[1] == 0:
+            computer_car.bounce()
+        else:
+            # AI can only win after the last checkpoint
+            if computer_car.current_checkpoint == len(CHECKPOINTS) - 1:
+                player_car.reset()
+                computer_car.reset()
+                print("COMPUTER WINS!")
+
+    finish_hit = player_car.collide(FINISH_MASK, 140, 250)
+    if finish_hit:
+        if finish_hit[1] == 0:
             player_car.bounce()
         else:
             player_car.reset()
             computer_car.reset()
             print("PLAYER WINS!")
 
+# -----------------------------
+# MAIN GAME LOOP
+# -----------------------------
 run = True
 clock = pygame.time.Clock()
 
-images = [ # dict of images and their positions
+images = [
     (GRASS, (0, 0)),
     (TRACK, (0, 0)),
     (FINISH, (140, 250)),
-    (TRACK_BORDER, (0, 0)),]
+    (TRACK_BORDER, (0, 0)),
+]
 
-player_car = PlayerCar(4,4)
-computer_car = ComputerCar(2, 4, PATH)
+player_car = PlayerCar(4, 4)
+computer_car = AStarCar(2, 4, CHECKPOINTS)
 
 while run:
     clock.tick(FPS)
-
     draw(WIN, images, player_car, computer_car)
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
             break
-        
-        """
-        # used for finding a set path of track for computer car to use
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            pos = pygame.mouse.get_pos()
-            computer_car.path.append(pos)
-        """
-    
+
     move_player(player_car)
     computer_car.move()
-
     handle_collision(player_car, computer_car)
 
-print(computer_car.path)
 pygame.quit()
