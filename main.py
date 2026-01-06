@@ -12,7 +12,15 @@ each function and class while keeping program logic unchanged.
 import pygame
 import time
 import math
+import csv
+import os
+from datetime import datetime
 from utils import scale_image, blit_rotate_center
+
+# Initialise pygame (required for fonts and other subsystems)
+import pygame as _pygame_init_guard
+_pygame_init_guard.init()
+_pygame_init_guard.font.init()
 
 # --- Images and masks ----------------------------------------------------
 # Background texture and track surface (scaled to fit window)
@@ -39,6 +47,13 @@ WIDTH, HEIGHT = TRACK.get_width(), TRACK.get_height()
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("DFA Pathfinding Grand Prix")
 FPS = 60
+
+# Results CSV (use existing file if present)
+RESULTS_CSV = "results.csv"
+if not os.path.exists(RESULTS_CSV):
+    with open(RESULTS_CSV, "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["timestamp", "winner", "time_seconds"])
 
 # --- Waypoints -----------------------------------------------------------
 # Points that approximate the centerline of the track used by the AI car
@@ -223,7 +238,69 @@ def draw(win, images, player_car, computer_car):
 
     player_car.draw(win)
     computer_car.draw(win)
+    # HUD: timer and leaderboard
+    draw_timer_and_leaderboard(win)
     pygame.display.update()
+
+
+def format_time(seconds):
+    return f"{seconds:.2f}s"
+
+
+def log_result(winner, elapsed):
+    """Append a race result to the CSV file."""
+    with open(RESULTS_CSV, "a", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow([datetime.now().isoformat(), winner, f"{elapsed:.3f}"])
+
+
+def load_leaderboard(limit=5):
+    """Load and return top results sorted by time (ascending)."""
+    rows = []
+    if not os.path.exists(RESULTS_CSV):
+        return rows
+    with open(RESULTS_CSV, "r", newline="") as f:
+        reader = csv.DictReader(f)
+        for r in reader:
+            try:
+                rows.append((r["timestamp"], r["winner"], float(r["time_seconds"])))
+            except Exception:
+                continue
+    rows.sort(key=lambda x: x[2])
+    return rows[:limit]
+
+
+def draw_timer_and_leaderboard(win):
+    """Draw the current race timer and leaderboard at bottom-left."""
+    global start_time, last_winner, last_time
+    font = pygame.font.SysFont(None, 24)
+
+    # Timer (top-left)
+    elapsed = time.time() - start_time
+    timer_surf = font.render(f"Time: {format_time(elapsed)}", True, (255, 255, 255))
+    win.blit(timer_surf, (10, 10))
+
+    # Last result (under timer)
+    if last_winner is not None:
+        last_surf = font.render(f"Last: {last_winner} {format_time(last_time)}", True, (255, 255, 0))
+        win.blit(last_surf, (10, 36))
+
+    # Leaderboard at bottom-left
+    lb = load_leaderboard(5)
+    padding = 10
+    x = 10
+    # start y above bottom padding
+    y = win.get_height() - padding
+    title = font.render("Leaderboard (best times)", True, (200, 200, 200))
+    y -= title.get_height()
+    win.blit(title, (x, y))
+    y -= 6
+    # draw fastest entries above the title
+    for i, row in enumerate(lb, start=1):
+        ts, winner, t = row
+        entry = font.render(f"{i}. {winner}: {format_time(t)}", True, (180, 180, 180))
+        y -= entry.get_height()
+        win.blit(entry, (x, y))
 
 
 def move_player(player_car):
@@ -257,18 +334,31 @@ def handle_collision(player_car, computer_car):
     if player_car.collide(TRACK_BORDER_MASK) != None:
         player_car.bounce()
 
+    global start_time, last_winner, last_time
+
     computer_finish_poi_collide = computer_car.collide(FINISH_MASK, *FINISH_POSITION)
     if computer_finish_poi_collide != None:
+        elapsed = time.time() - start_time
+        last_winner = "Computer"
+        last_time = elapsed
+        log_result("Computer", elapsed)
         player_car.reset()
         computer_car.reset()
+        # restart timer
+        start_time = time.time()
 
     player_finish_poi_collide = player_car.collide(FINISH_MASK, *FINISH_POSITION)
     if player_finish_poi_collide != None:
         if player_finish_poi_collide[1] == 0:
             player_car.bounce()
         else:
+            elapsed = time.time() - start_time
+            last_winner = "Player"
+            last_time = elapsed
+            log_result("Player", elapsed)
             player_car.reset()
             computer_car.reset()
+            start_time = time.time()
 
 
 # -----------------------------
@@ -279,6 +369,11 @@ clock = pygame.time.Clock()
 images = [(GRASS, (0, 0)), (TRACK, (0, 0)), (FINISH, FINISH_POSITION), (TRACK_BORDER, (0, 0))]
 player_car = PlayerCar(4, 4)
 computer_car = ComputerCar(2, 4, PATH)
+
+# Timer and last result tracking
+start_time = time.time()
+last_winner = None
+last_time = 0.0
 
 while run:
     clock.tick(FPS)
