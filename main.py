@@ -32,11 +32,12 @@ FINISH_POSITION = (135, 250)
 RED_CAR = scale_image(pygame.image.load("assets/red-car.png"), 0.55)
 GREEN_CAR = scale_image(pygame.image.load("assets/green-car.png"), 0.55)
 PURPLE_CAR = scale_image(pygame.image.load("assets/purple-car.png"), 0.55)
+TEMPLATE_CAR = scale_image(pygame.image.load("assets/car_template.png"), 0.55)
 
 # --- Window & frame rate ------------------------------------------------
 WIDTH, HEIGHT = TRACK.get_width(), TRACK.get_height()
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Racing Game!")
+pygame.display.set_caption("DFA Pathfinding Grand Prix")
 FPS = 60
 
 # --- Waypoints -----------------------------------------------------------
@@ -146,7 +147,7 @@ class ComputerCar(AbstractCar):
     The car rotates toward the current waypoint and moves forward.
     When a waypoint is reached it advances to the next point in `path`.
     """
-    IMG = PURPLE_CAR
+    IMG = TEMPLATE_CAR
     START_POS = (170, 200)
 
     def __init__(self, max_vel, rotation_vel, path=[]):
