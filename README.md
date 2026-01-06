@@ -11,3 +11,5 @@
 ## Ontop of this we might add some sort of other parts to swap out, this will be enforeced by some of point/economy system where the students only have so many points to upgrade their car
 
 ## Algorithms we aim to implement support for include: Depth, breath, dijktra, A*, JPS (Jump Point Search)
+
+## The users can design their own carshere: https://www.pixilart.com/draw and by downloading the template 
