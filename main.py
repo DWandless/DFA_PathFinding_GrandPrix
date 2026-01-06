@@ -1,6 +1,5 @@
-import pygame
-import math
-import heapq
+import pygame, math
+from car import *
 from utils import scale_image, bilt_rotate_center
 
 """
@@ -27,8 +26,7 @@ TRACK_BORDER = scale_image(pygame.image.load('assets/track-border.png'), 1)
 TRACK_BORDER_MASK = pygame.mask.from_surface(TRACK_BORDER)
 FINISH = pygame.image.load('assets/finish.png')
 FINISH_MASK = pygame.mask.from_surface(FINISH)
-RED_CAR = scale_image(pygame.image.load('assets/red-car.png'), 0.55)
-GREEN_CAR = scale_image(pygame.image.load('assets/green-car.png'), 0.55)
+
 
 WIN = pygame.display.set_mode((TRACK.get_width(), TRACK.get_height()))
 pygame.display.set_caption("DFA Path Finding Grand Prix")
@@ -70,236 +68,11 @@ def build_grid(mask):
 GRID = build_grid(TRACK_BORDER_MASK)
 
 
-# -----------------------------
-# A* PATHFINDING
-# -----------------------------
-def heuristic(a, b):
-    """Manhattan heuristic for grid A*.
 
-    `a` and `b` are (row, col) grid coordinates.
-    Using Manhattan distance keeps costs admissible for 4-connected grids.
-    """
-    return abs(a[0] - b[0]) + abs(a[1] - b[1])
 
-def astar(grid, start, goal):
-    """A simple A* implementation on a 4-connected boolean grid.
 
-    - `grid` is a list-of-lists of booleans returned by `build_grid`.
-    - `start` and `goal` are `(row, col)` tuples.
-    Returns a list of grid coordinates from start (exclusive) to goal (inclusive),
-    or `None` if no path exists.
-    """
-    rows, cols = len(grid), len(grid[0])
-    open_set = []
-    heapq.heappush(open_set, (0, start))
-    came_from = {}
-    g_score = {start: 0}
 
-    while open_set:
-        _, current = heapq.heappop(open_set)
 
-        if current == goal:
-            path = []
-            while current in came_from:
-                path.append(current)
-                current = came_from[current]
-            path.reverse()
-            return path
-
-        x, y = current
-        # 4-connected neighbors (up/down/left/right)
-        neighbors = [(x+1,y), (x-1,y), (x,y+1), (x,y-1)]
-
-        for nx, ny in neighbors:
-            if 0 <= nx < rows and 0 <= ny < cols and grid[nx][ny]:
-                tentative_g = g_score[current] + 1
-                if (nx, ny) not in g_score or tentative_g < g_score[(nx, ny)]:
-                    g_score[(nx, ny)] = tentative_g
-                    f_score = tentative_g + heuristic((nx, ny), goal)
-                    heapq.heappush(open_set, (f_score, (nx, ny)))
-                    came_from[(nx, ny)] = current
-
-    return None
-
-# -----------------------------
-# CAR CLASSES
-# -----------------------------
-class Car:
-    """Base car class.
-
-    Holds position, velocity, rotation and image. Subclasses define the
-    `IMG` and `START_POS` class attributes.
-    """
-    def __init__(self, max_vel, rotation_vel):
-        self.img = self.IMG
-        self.max_vel = max_vel
-        self.vel = 0
-        self.rotation_vel = rotation_vel
-        self.angle = 0
-        self.x, self.y = self.START_POS
-        self.acceleration = 0.5
-    
-    def rotate(self, left=False, right=False):
-        if left:
-            self.angle += self.rotation_vel
-        elif right:
-            self.angle -= self.rotation_vel
-    
-    def draw(self, win):
-        bilt_rotate_center(win, self.img, (self.x, self.y), self.angle)
-
-    def move_forward(self):
-        self.vel = min(self.vel + self.acceleration, self.max_vel)
-        self.move()
-    
-    def move_backward(self):
-        self.vel = max(self.vel - self.acceleration, -self.max_vel/2)
-        self.move()
-    
-    def move(self):
-        radians = math.radians(self.angle)
-        vertical = math.cos(radians) * self.vel
-        horizontal = math.sin(radians) * self.vel
-        self.y -= vertical
-        self.x -= horizontal
-    
-    def reduce_speed(self):
-        self.vel = max(self.vel - self.acceleration/2, 0)
-        self.move()
-    
-    def collide(self, mask, x=0, y=0):
-        car_mask = pygame.mask.from_surface(self.img)
-        offset = (int(self.x - x), int(self.y - y))
-        return mask.overlap(car_mask, offset)
-    
-    def reset(self):
-        self.x, self.y = self.START_POS
-        self.angle = 0
-        self.vel = 0
-
-class PlayerCar(Car):
-    IMG = RED_CAR
-    START_POS = (185, 200)
-
-    """Human-controlled car; simple bounce behaviour on collision.
-
-    The `bounce` method reverses current velocity and steps the car to avoid
-    getting stuck inside wall geometry.
-    """
-    def bounce(self):
-        self.vel = -self.vel
-        self.move()
-
-# -----------------------------
-# A* AI CAR
-# -----------------------------
-class AStarCar(Car):
-    IMG = GREEN_CAR
-    START_POS = (165, 200)
-
-    def __init__(self, max_vel, rotation_vel, checkpoints):
-        super().__init__(max_vel, rotation_vel)
-        self.checkpoints = checkpoints
-        self.current_checkpoint = 0
-        self.path = []
-        self.current_point = 0
-        self.vel = max_vel
-
-        """A car driven by A* pathfinding.
-
-                Behavior summary:
-                - Uses `world_to_grid` / `grid_to_world` to convert between pixel
-                    coordinates and the boolean grid used by A*.
-                - `compute_path` runs A* from the car's current grid cell to the
-                    checkpoint's grid cell and stores the resulting path as world
-                    coordinates in `self.path`.
-                - `move` steers the car toward the next point on the path while
-                    predicting collisions; if the next move would hit a wall or the
-                    finish line in the wrong direction it will try to choose a nearby
-                    alternative grid cell and reroute.
-"""
-
-    def bounce(self):
-        # Reverse velocity and use base movement to avoid calling AStarCar.move()
-        self.vel = -self.vel
-        super().move()
-
-    def world_to_grid(self, x, y):
-        return int(y // GRID_SIZE), int(x // GRID_SIZE)
-
-    def grid_to_world(self, gx, gy):
-        # Convert grid (row, col) to world (x, y) centered in the cell
-        row, col = gx, gy
-        x = col * GRID_SIZE + GRID_SIZE / 2
-        y = row * GRID_SIZE + GRID_SIZE / 2
-        return x, y
-
-    def compute_path(self):
-        """Compute a new grid path from current position to the current checkpoint.
-
-        The A* result is converted to world coordinates centered in each
-        grid cell using `grid_to_world` and stored in `self.path`.
-        """
-        start = self.world_to_grid(self.x, self.y)
-        goal_world = self.checkpoints[self.current_checkpoint]
-        goal = self.world_to_grid(*goal_world)
-        grid_path = astar(GRID, start, goal)
-        if grid_path:
-            # convert grid path (row,col) -> world pixel coordinates
-            self.path = [self.grid_to_world(gx, gy) for gx, gy in grid_path]
-            self.current_point = 0
-
-    def move(self):
-        if not self.path or self.current_point >= len(self.path):
-            self.compute_path()
-            return
-
-        target_x, target_y = self.path[self.current_point]
-        dx = target_x - self.x
-        dy = target_y - self.y
-        dist = math.hypot(dx, dy)
-
-        if dist < 10:
-            self.current_point += 1
-            if self.current_point >= len(self.path):
-                # reached checkpoint
-                self.current_checkpoint = (self.current_checkpoint + 1) % len(self.checkpoints)
-                self.compute_path()
-            return
-
-        angle_to_target = math.degrees(math.atan2(dy, dx)) - 90
-        angle_diff = (angle_to_target - self.angle + 180) % 360 - 180
-
-        if angle_diff > 0:
-            self.angle += min(self.rotation_vel, angle_diff)
-        else:
-            self.angle -= min(self.rotation_vel, -angle_diff)
-
-        # Predict next position and avoid moving into track borders or wrong-direction finish
-        radians = math.radians(self.angle)
-        vertical = math.cos(radians) * self.vel
-        horizontal = math.sin(radians) * self.vel
-        predicted_y = self.y - vertical
-        predicted_x = self.x - horizontal
-
-        # Check collision with track border at predicted position
-        car_mask = pygame.mask.from_surface(self.img)
-        offset = (int(predicted_x), int(predicted_y))
-        # If overlap with TRACK_BORDER_MASK, recompute path instead of moving into wall
-        if TRACK_BORDER_MASK.overlap(car_mask, offset):
-            self.compute_path()
-            return
-
-        # Check finish line wrong-direction collision (treat as wall)
-        finish_overlap = FINISH_MASK.overlap(car_mask, (int(predicted_x - 140), int(predicted_y - 250)))
-        if finish_overlap:
-            # If hitting the finish line in the 'wrong' direction (y offset == 0), treat as obstacle
-            if finish_overlap[1] == 0:
-                self.compute_path()
-                return
-
-        # No blocking collision, perform movement
-        super().move()
 
 # -----------------------------
 # GAME LOOP FUNCTIONS
@@ -315,7 +88,7 @@ def draw(win, images, player_car, computer_car):
     # Draw cars
     player_car.draw(win)
     computer_car.draw(win)
-    pygame.display.update()
+
 
 def move_player(player_car):
     """Handle keyboard input for the player car.
@@ -392,19 +165,27 @@ images = [
 ]
 
 player_car = PlayerCar(4, 4)
-computer_car = AStarCar(2, 4, CHECKPOINTS)
+astar_car = AStarCar(2, 4, CHECKPOINTS, GRID_SIZE, GRID)
+neat_car = NEATCar(2, 4, CHECKPOINTS, GRID_SIZE, GRID)
+
+mouse_pos = (0,0)
 
 while run:
     clock.tick(FPS)
-    draw(WIN, images, player_car, computer_car)
-
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
             break
+        if event.type == pygame.MOUSEMOTION:
+            mouse_pos = pygame.mouse.get_pos()
+    
 
     move_player(player_car)
-    computer_car.move()
-    handle_collision(player_car, computer_car)
+    astar_car.move()
+    handle_collision(player_car, astar_car)
+    draw(WIN, images, player_car, astar_car)
+    neat_car.draw(WIN)
+    pygame.display.update()
+
 
 pygame.quit()
