@@ -1,6 +1,18 @@
 import pygame, math
 from car import *
+from neatmanager import NEATManager
 from utils import scale_image, bilt_rotate_center
+
+import neat
+config = neat.Config(
+    neat.DefaultGenome,
+    neat.DefaultReproduction,
+    neat.DefaultSpeciesSet,
+    neat.DefaultStagnation,
+    'neat_config.ini'  # your config file
+)
+
+pygame.font.init()
 
 """
 DFA Path Finding Grand Prix
@@ -151,6 +163,25 @@ def handle_collision(player_car, computer_car):
             computer_car.reset()
             print("PLAYER WINS!")
 
+
+
+
+
+ #--- car creation helper
+def make_neat_car():
+    return NEATCar(max_vel=4.0, rotation_vel=3.0,
+                   checkpoints=CHECKPOINTS, grid_size=GRID_SIZE, grid=GRID,
+                   sensor_length=300)
+
+# --- manager ---
+manager = NEATManager(neat_config=config,
+                      car_factory=make_neat_car,
+                      track_mask=TRACK_BORDER_MASK,
+                      raycast_fn=raycast_mask,
+                      fps=60,
+                      time_limit_sec=20.0)
+
+
 # -----------------------------
 # MAIN GAME LOOP
 # -----------------------------
@@ -179,12 +210,19 @@ while run:
         if event.type == pygame.MOUSEMOTION:
             mouse_pos = pygame.mouse.get_pos()
     
+    gen, idx, total = manager.update(1.0/FPS)
 
     move_player(player_car)
     astar_car.move()
     handle_collision(player_car, astar_car)
     draw(WIN, images, player_car, astar_car)
-    neat_car.draw(WIN)
+    manager.draw(WIN)
+    
+    font = pygame.font.Font(None, 22)
+    hud = font.render(f"Gen {gen} | Genome {idx}/{total}", True, (255,255,255))
+    WIN.blit(hud, (10, 10))
+
+    #neat_car.draw(WIN)
     pygame.display.update()
 
 

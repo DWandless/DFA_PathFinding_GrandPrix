@@ -28,9 +28,6 @@ class Car:
         self.rotation_vel = rotation_vel
         self.angle = 0
         self.x, self.y = self.START_POS
-        w, h = self.img.get_size()
-        self.centre_x = self.x + w / 2.0
-        self.centre_y = self.y + h / 2.0
         self.acceleration = 0.5
     
     def rotate(self, left=False, right=False):
@@ -70,6 +67,10 @@ class Car:
         self.x, self.y = self.START_POS
         self.angle = 0
         self.vel = 0
+
+    def get_centre(self):
+        w, h = self.img.get_size()
+        return(self.x + w / 2.0,self.y + h / 2.0)
 
         
 
@@ -261,6 +262,7 @@ def raycast_mask(mask, origin, angle, max_distance=800, step=3):
 
 
 
+
 class NEATCar(Car):
     IMG = GREEN_CAR
     START_POS = (165, 200)
@@ -273,22 +275,22 @@ class NEATCar(Car):
         self.next_checkpoint = 0
         self.fitness = 0.0
 
+        # NEAT I/O
         self.sensor_length = sensor_length
-        self.inputs = []
-        self.outputs = [0.0, 0.0]
+        self.inputs = []             # 5 sensor distances + speed
+        self.outputs = [0.0, 0.0]    # [steer, throttle]
         self.net = None
-        self._sensor_cache = None
+        self._sensor_cache = None    # list of (origin, end) for drawing
 
         # Fixed relative angles (radians)
-        self._rel_slight = math.radians(30)   # ±30° around forward
-        self._rel_side   = math.radians(90)   # ±90° left/right
+        self._rel_slight = math.radians(30)   # +-30° around forward
+        # side sensors use +-90° via left/right basis vectors
 
-        # Populate cache initially so sensors draw even before first sense()
         self.sense(TRACK_BORDER_MASK, raycast_mask)
 
     # ---------- geometry ----------
     def _basis_vectors(self):
-        """Forward & left unit vectors consistent with Car.move() (angle=0 up)."""
+        """Forward & left unit vectors consistent with Car.move() (angle=0 points up)."""
         r = math.radians(self.angle)
         fwd  = (-math.sin(r), -math.cos(r))
         left = (-math.cos(r),  math.sin(r))
@@ -309,18 +311,18 @@ class NEATCar(Car):
         half_wid = w/2 - inset_side
 
         # Base anchors
-        front_nose = (self.centre_x + fwd[0]*half_len, self.centre_y + fwd[1]*half_len)
-        side_left  = (self.centre_x + left[0]*half_wid,  self.centre_y + left[1]*half_wid)
-        side_right = (self.centre_x + right[0]*half_wid, self.centre_y + right[1]*half_wid)
+        cx, cy = self.get_centre()
+        front_nose = (cx + fwd[0]*half_len, cy + fwd[1]*half_len)
+        side_left  = (cx + left[0]*half_wid,  cy + left[1]*half_wid)
+        side_right = (cx + right[0]*half_wid, cy + right[1]*half_wid)
 
-        # Front corners (slight sensors originate closer to corners than center)
-        # We push toward the corners using a blend of forward + lateral.
+        # Front corners for slight sensors
         corner_scale_fwd = half_len * 0.9
         corner_scale_lat = half_wid * 0.9
-        front_left_corner  = (self.centre_x + fwd[0]*corner_scale_fwd + left[0]*corner_scale_lat,
-                              self.centre_y + fwd[1]*corner_scale_fwd + left[1]*corner_scale_lat)
-        front_right_corner = (self.centre_x + fwd[0]*corner_scale_fwd + right[0]*corner_scale_lat,
-                              self.centre_y + fwd[1]*corner_scale_fwd + right[1]*corner_scale_lat)
+        front_left_corner  = (cx + fwd[0]*corner_scale_fwd + left[0]*corner_scale_lat,
+                              cy + fwd[1]*corner_scale_fwd + left[1]*corner_scale_lat)
+        front_right_corner = (cx + fwd[0]*corner_scale_fwd + right[0]*corner_scale_lat,
+                              cy + fwd[1]*corner_scale_fwd + right[1]*corner_scale_lat)
 
         return {
             'front':        front_nose,
@@ -330,7 +332,6 @@ class NEATCar(Car):
             'side_right':   side_right,
         }
 
-    # ---------- directions ----------
     def _dir_rel(self, rel_rad):
         """dir = forward*cos(a) + left*sin(a) (relative to forward)."""
         fwd, left = self._basis_vectors()
@@ -338,18 +339,15 @@ class NEATCar(Car):
         return (fwd[0]*ca + left[0]*sa, fwd[1]*ca + left[1]*sa)
 
     def _fixed_dirs(self):
-        """Return 5 normalized direction vectors for front, slight L/R, side L/R."""
+        """Return 5 direction vectors: front, slight L/R, side L/R."""
         fwd, left = self._basis_vectors()
         right = (-left[0], -left[1])
 
-        # Front
-        d0 = fwd
-        # Slight ±30°
-        d1 = self._dir_rel(+self._rel_slight)  # slight left
-        d2 = self._dir_rel(-self._rel_slight)  # slight right
-        # Full side ±90°
-        d3 = left
-        d4 = right
+        d0 = fwd                         # front
+        d1 = self._dir_rel(+self._rel_slight)  # slight-left (+30°)
+        d2 = self._dir_rel(-self._rel_slight)  # slight-right (-30°)
+        d3 = left                        # side-left (90°)
+        d4 = right                       # side-right (-90°)
         return [d0, d1, d2, d3, d4]
 
     # ---------- sensing ----------
@@ -361,6 +359,7 @@ class NEATCar(Car):
           3) front_right_corner (-30°)
           4) side_left (left 90°)
           5) side_right (right 90°)
+        Populates self.inputs and self._sensor_cache for drawing.
         """
         anchors = self._anchors()
         dirs = self._fixed_dirs()
@@ -382,7 +381,6 @@ class NEATCar(Car):
             dist = min(res['distance'], self.sensor_length)
             distances.append(dist / float(self.sensor_length))
 
-            # endpoint for drawing
             if res.get('hit') and res.get('point') is not None:
                 end = res['point']
             else:
@@ -391,7 +389,7 @@ class NEATCar(Car):
 
             rays.append((origin, end))
 
-        # inputs: 5 sensor distances + speed
+        # inputs: 5 sensor distances + normalized speed
         speed_norm = self.vel / self.max_vel if self.max_vel > 0 else 0.0
         self.inputs = distances + [speed_norm]
         self._sensor_cache = rays
@@ -410,8 +408,11 @@ class NEATCar(Car):
 
     # ---------- fitness ----------
     def update_fitness(self, on_road, dt):
+        # base shaping
         if on_road: self.fitness += (self.vel / max(1e-6, self.max_vel)) * dt
         else:       self.fitness -= 0.25 * dt
+
+        # checkpoint milestones (pixel coords with optional radius)
         if self.next_checkpoint < len(self.checkpoints):
             cp = self.checkpoints[self.next_checkpoint]
             cx, cy = cp[:2]
@@ -422,8 +423,9 @@ class NEATCar(Car):
 
     # ---------- drawing ----------
     def draw(self, win):
+        # draw car (Car.draw already uses center via bilt_rotate_center)
         bilt_rotate_center(win, self.img, (self.x, self.y), self.angle)
-        # draw anchors (optional, helpful for debug)
+        # draw anchors
         a = self._anchors()
         for pt in (a['front'], a['slight_left'], a['slight_right'], a['side_left'], a['side_right']):
             pygame.draw.circle(win, (255, 165, 0), (int(pt[0]), int(pt[1])), 3)
@@ -434,5 +436,4 @@ class NEATCar(Car):
                                  (int(origin[0]), int(origin[1])),
                                  (int(end[0]),    int(end[1])), 2)
                 pygame.draw.circle(win, (0, 255, 0), (int(end[0]), int(end[1])), 2)
-
 
