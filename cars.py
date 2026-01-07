@@ -132,8 +132,8 @@ class GBFSDetourCar(AbstractCar):
     LOOKAHEAD_DIST = 35      # pixels ahead along path to aim at
     ALIGN_ANGLE = 30          # degrees; slow down when misaligned by more than this
 
-    def __init__(self, max_vel, rotation_vel, checkpoints, GRIDSIZE, WAYPOINT_REACH, CHECKPOINT_RADIUS, GRID, TRACK_BORDER_MASK, allow_diag=True, clearance_weight=0.4, detour_alpha=0.5):
-        super().__init__(max_vel, rotation_vel)
+    def __init__(self, max_vel, rotation_vel, checkpoints, GRIDSIZE, WAYPOINT_REACH, CHECKPOINT_RADIUS, GRID, TRACK_BORDER_MASK, img, allow_diag=True, clearance_weight=0.4, detour_alpha=0.5, ):
+        super().__init__(img, self.START_POS, max_vel, rotation_vel)
         self.checkpoints = checkpoints
         self.current_checkpoint = 0
         self.path = []
@@ -170,7 +170,7 @@ class GBFSDetourCar(AbstractCar):
         """
         rows, cols = len(self.GRID), len(self.GRID[0])
 
-        def grid_to_world(self, rc):
+        def grid_to_world(rc):
             r, c = rc
             x = c * self.GRIDSIZE + self.GRIDSIZE / 2
             y = r * self.GRIDSIZE + self.GRIDSIZE / 2
@@ -193,7 +193,7 @@ class GBFSDetourCar(AbstractCar):
         def neighbors4(r, c):
             return [(r+1,c), (r-1,c), (r,c+1), (r,c-1)]
 
-        def neighbors8_safe(self, r, c):
+        def neighbors8_safe(r, c):
             """
             Diagonals allowed only if both adjacent orthogonals are open (prevents corner cutting).
             """
@@ -410,15 +410,14 @@ class GBFSDetourCar(AbstractCar):
         goal = self.world_to_grid(*goal_world)
 
         # NEW: snap both to nearest free cell so GBFS has a chance
-        start = self.nearest_walkable(self.GRID, start, max_radius=120)
-        goal  = self.nearest_walkable(self.GRID, goal,  max_radius=120)
+        start = self.nearest_walkable(start, max_radius=120)
+        goal  = self.nearest_walkable(goal,  max_radius=120)
         
         if not self.GRID[start[0]][start[1]] or not self.GRID[goal[0]][goal[1]]:
             print("Start/Goal blocked even after snapping:", start, goal)
 
         grid_path = self.greedy_best_first(
-            self.GRID, start, goal,
-            mask=self.TRACK_BORDER_MASK, grid_size=self.GRIDSIZE,
+            start, goal,
             allow_diag=self.allow_diag, clearance_weight=self.clearance_weight
         )
         
@@ -454,8 +453,7 @@ class GBFSDetourCar(AbstractCar):
         K = 4  # try top-K candidates
         for pick in candidates[:K]:
             rest = self.greedy_best_first(
-                self.GRID, pick, goal_grid,
-                grid_size=self.GRIDSIZE,
+                pick, goal_grid,
                 allow_diag=self.allow_diag, clearance_weight=self.clearance_weight
             )
             if rest:

@@ -88,7 +88,7 @@ def create_computer_car(max_vel=2, rotation_vel=4, path=PATH):
 
     return ComputerCar(TEMPLATE_CAR, (170, 200), max_vel, rotation_vel, path)
 
-def create_GBFS_car():
+def create_GBFS_car(max_vel=2, rotation_vel=4):
     WAYPOINT_REACH = 30 # radius to consider a waypoint reached
     from cars import GBFSDetourCar
-    return GBFSDetourCar(2.2, 4, PATH, GRID_SIZE, WAYPOINT_REACH, CHECKPOINT_RADIUS, TRACK_BORDER_MASK, allow_diag=False, clearance_weight=0.6, detour_alpha=0.7,)
+    return GBFSDetourCar(max_vel, rotation_vel, PATH, GRID_SIZE, WAYPOINT_REACH, CHECKPOINT_RADIUS, GRID, TRACK_BORDER_MASK, GREEN_CAR, allow_diag=False, clearance_weight=0.6, detour_alpha=0.7)

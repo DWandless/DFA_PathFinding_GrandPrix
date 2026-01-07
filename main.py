@@ -5,13 +5,13 @@ and assets live in `resources.py`, `cars.py` and `ui.py`.
 """
 
 import pygame
-from resources import WIN, FPS, images, create_player_car, create_computer_car
+from resources import WIN, FPS, images, create_player_car, create_computer_car, create_GBFS_car
 import ui
 
 
 def run():
     player_car = create_player_car()
-    computer_car = create_computer_car()
+    computer_car = create_GBFS_car()
 
     running = True
     clock = pygame.time.Clock()
