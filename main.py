@@ -5,13 +5,15 @@ and assets live in `resources.py`, `cars.py` and `ui.py`.
 """
 
 import pygame
-from resources import GameInfo, WIN, FPS, images, create_player_car, create_computer_car, blit_text_center
+from resources import GameInfo, WIN, FPS, images, create_player_car, create_computer_car, create_GBFS_car, blit_text_center
 import ui
 
 
 def run():
     player_car = create_player_car()
     computer_car = create_computer_car()
+    GBFS_car = create_GBFS_car() # create GBFS car
+
     game_info = GameInfo()
 
     running = True
@@ -20,10 +22,14 @@ def run():
     while running:
         clock.tick(FPS)
 
-        ui.draw(WIN, images, player_car, computer_car)
+        ui.draw(WIN, images, player_car, computer_car, GBFS_car)
 
         while not game_info.started:
             WIN.fill((0, 0, 0))  # black screen until game starts
+
+            # let a user upload/load however many cars they want here before the race starts, cars that are being uploaded should be added via a json file format
+            # the car should have a name, image, stats but also a pathfinding algorithm defined in code that the user can upload
+
             blit_text_center(WIN, pygame.font.SysFont(None, 48), "Press any key to start level {}".format(game_info.level))
             pygame.display.update()
             for event in pygame.event.get():
@@ -45,8 +51,9 @@ def run():
 
         ui.move_player(player_car)
         computer_car.move()
+        GBFS_car.move()
 
-        ui.handle_collision(player_car, computer_car)
+        ui.handle_collision(player_car, computer_car, GBFS_car)
 
 
 if __name__ == "__main__":
