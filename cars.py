@@ -1,6 +1,6 @@
 import math
 import pygame
-from utils import blit_rotate_center
+from resources import blit_rotate_center
 
 
 class AbstractCar:
@@ -81,11 +81,11 @@ class ComputerCar(AbstractCar):
         self.current_point = 0
         self.vel = max_vel
 
-    def draw_points(self, win):
+    def draw_points(self, win): # draws the path points for debugging
         for point in self.path:
             pygame.draw.circle(win, (255, 0, 0), point, 2)
 
-    def draw(self, win, show_points=True):
+    def draw(self, win, show_points=True): # shows the car and optionally the path points
         blit_rotate_center(win, self.img, (self.x, self.y), self.angle)
         if show_points:
             self.draw_points(win)
@@ -128,3 +128,8 @@ class ComputerCar(AbstractCar):
         self.calculate_angle()
         self.update_path_point()
         super().move()
+    
+    def next_level(self, level): # this will be used for when the level changes to update the cars start position and speed
+        self.reset()
+        self.current_point = 0
+        self.vel = self.max_vel + (level - 1) * 0.2# increase speed each level

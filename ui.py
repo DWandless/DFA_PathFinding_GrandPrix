@@ -7,17 +7,17 @@ from datetime import datetime
 import resources
 
 
-def format_time(seconds):
+def format_time(seconds): # formats time in seconds to string with 2 decimal places
     return f"{seconds:.2f}s"
 
 
-def log_result(winner, elapsed):
+def log_result(winner, elapsed): # logs result from winner to results.csv
     with open(resources.RESULTS_CSV, "a", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow([datetime.now().isoformat(), winner, f"{elapsed:.3f}"])
+        writer.writerow([datetime.now().isoformat(), winner, f"{elapsed:.3f}", resources.GameInfo().level])
 
 
-def load_leaderboard(limit=5):
+def load_leaderboard(limit=5): # loads leaderboard from results.csv - should filter by current level also
     rows = []
     if not os.path.exists(resources.RESULTS_CSV):
         return rows
@@ -36,53 +36,57 @@ def draw(win, images, player_car, computer_car):
     for img, pos in images:
         win.blit(img, pos)
 
-    player_car.draw(win)
-    computer_car.draw(win)
-    draw_timer_and_leaderboard(win)
+    player_car.draw(win) # draw player car
+    computer_car.draw(win) # draw computer car
+
+    draw_timer_leaderboard_level(win) # timer and leaderboard and level counter drawn at together
     pygame.display.update()
 
 
-def draw_timer_and_leaderboard(win):
+def draw_timer_leaderboard_level(win): # draws timer, leaderboard and level counter
     font = pygame.font.SysFont(None, 24)
     elapsed = time.time() - resources.start_time
+
+    level_text = pygame.font.SysFont(None, 24).render(f"Level: {resources.GameInfo().level}", True, (255, 255, 255))
+    win.blit(level_text, (10, resources.HEIGHT - level_text.get_height() - 160)) # level counter position
+
     timer_surf = font.render(f"Time: {format_time(elapsed)}", True, (255, 255, 255))
-    win.blit(timer_surf, (10, 10))
+    win.blit(timer_surf, (10, resources.HEIGHT - timer_surf.get_height() - 140)) # timer position
 
     if resources.last_winner is not None:
         last_surf = font.render(f"Last: {resources.last_winner} {format_time(resources.last_time)}", True, (255, 255, 0))
-        win.blit(last_surf, (10, 36))
+        win.blit(last_surf, (10, resources.HEIGHT - last_surf.get_height() - 120)) # last winner position
 
     lb = load_leaderboard(5)
     padding = 10
     x = 10
     y = win.get_height() - padding
-    title = font.render("Leaderboard (best times)", True, (200, 200, 200))
+    title = font.render("Leaderboard (best times)", True, (255, 255, 255))
     y -= title.get_height()
     win.blit(title, (x, y))
     y -= 6
     for i, row in enumerate(lb, start=1):
         ts, winner, t = row
-        entry = font.render(f"{i}. {winner}: {format_time(t)}", True, (180, 180, 180))
+        entry = font.render(f"{i}. {winner}: {format_time(t)}", True, (255, 255, 255))
         y -= entry.get_height()
         win.blit(entry, (x, y))
 
 
-def move_player(player_car):
+def move_player(player_car): # handle player input
     keys = pygame.key.get_pressed()
     moved = False
 
-    if keys[pygame.K_a]:
+    if keys[pygame.K_a]: # left
         player_car.rotate(left=True)
-    if keys[pygame.K_d]:
+    if keys[pygame.K_d]: # right
         player_car.rotate(right=True)
-    if keys[pygame.K_w]:
+    if keys[pygame.K_w]: # forward
         moved = True
         player_car.move_forward()
-    if keys[pygame.K_s]:
+    if keys[pygame.K_s]: # reverse
         moved = True
         player_car.move_backward()
-
-    if not moved:
+    if not moved: # no keys pressed, reduce speed
         player_car.reduce_speed()
 
 
@@ -90,7 +94,7 @@ def handle_collision(player_car, computer_car):
     if player_car.collide(resources.TRACK_BORDER_MASK) is not None:
         player_car.bounce()
 
-    computer_finish_poi_collide = computer_car.collide(resources.FINISH_MASK, *resources.FINISH_POSITION)
+    computer_finish_poi_collide = computer_car.collide(resources.FINISH_MASK, *resources.FINISH_POSITION) # when the computer car crosses the finish line
     if computer_finish_poi_collide is not None:
         elapsed = time.time() - resources.start_time
         resources.last_winner = "Computer"
@@ -100,7 +104,7 @@ def handle_collision(player_car, computer_car):
         computer_car.reset()
         resources.start_time = time.time()
 
-    player_finish_poi_collide = player_car.collide(resources.FINISH_MASK, *resources.FINISH_POSITION)
+    player_finish_poi_collide = player_car.collide(resources.FINISH_MASK, *resources.FINISH_POSITION) # when the player car crosses the finish line
     if player_finish_poi_collide is not None:
         if player_finish_poi_collide[1] == 0:
             player_car.bounce()

@@ -5,13 +5,14 @@ and assets live in `resources.py`, `cars.py` and `ui.py`.
 """
 
 import pygame
-from resources import WIN, FPS, images, create_player_car, create_computer_car
+from resources import GameInfo, WIN, FPS, images, create_player_car, create_computer_car, blit_text_center
 import ui
 
 
 def run():
     player_car = create_player_car()
     computer_car = create_computer_car()
+    game_info = GameInfo()
 
     running = True
     clock = pygame.time.Clock()
@@ -20,6 +21,22 @@ def run():
         clock.tick(FPS)
 
         ui.draw(WIN, images, player_car, computer_car)
+
+        while not game_info.started:
+            WIN.fill((0, 0, 0))  # black screen until game starts
+            blit_text_center(WIN, pygame.font.SysFont(None, 48), "Press any key to start level {}".format(game_info.level))
+            pygame.display.update()
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    break
+                if event.type == pygame.KEYDOWN:
+                    for n in ["3", "2", "1"]:
+                        WIN.fill((0, 0, 0))  # clear screen
+                        blit_text_center(WIN, pygame.font.SysFont(None, 48), n)
+                        pygame.display.update()
+                        pygame.time.delay(700)
+                    game_info.start_level()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:

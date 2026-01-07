@@ -6,11 +6,29 @@ import pygame
 import time
 import csv
 import os
-from utils import scale_image
 
 # Initialise pygame subsystems needed for image/font handling
 pygame.init()
 pygame.font.init()
+
+# --- Helper functions -----------------------------------------------------
+def scale_image(img, factor):
+    size = round(img.get_width() * factor), round(img.get_height() * factor)
+    return pygame.transform.scale(img, size)
+
+
+def blit_rotate_center(win, image, top_left, angle):
+    rotated_image = pygame.transform.rotate(image, angle)
+    new_rect = rotated_image.get_rect(
+        center=image.get_rect(topleft=top_left).center)
+    win.blit(rotated_image, new_rect.topleft)
+
+def blit_text_center(win, font, text):
+    render = font.render(text, True, (255, 0, 0))
+    win.blit(render, (
+        win.get_width() // 2 - render.get_width() // 2,
+        win.get_height() // 2 - render.get_height() // 2
+    ))
 
 # --- Images and masks ----------------------------------------------------
 GRASS = scale_image(pygame.image.load("assets/grass.jpg"), 2.5)
@@ -38,9 +56,9 @@ RESULTS_CSV = "results.csv"
 if not os.path.exists(RESULTS_CSV):
     with open(RESULTS_CSV, "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["timestamp", "winner", "time_seconds"])
+        writer.writerow(["timestamp", "winner", "time_seconds", "level"])
 
-# --- Waypoints -----------------------------------------------------------
+# --- Waypoints ----------------------------------------------------------- This will includes waypoints for each track (level)
 PATH = [
     (191, 131), (138, 80), (70, 135), (70, 514), (317, 785), (397, 811), (450, 753),
     (457, 586), (559, 532), (663, 596), (669, 753), (741, 814), (824, 746), (821, 469),
@@ -48,13 +66,45 @@ PATH = [
     (749, 83), (363, 86), (316, 150), (310, 405), (255, 460), (198, 404), (193, 263)
 ]
 
+class GameInfo:
+    LEVELS = 5 # total number of levels in the game (each with their own tracks and waypoints)
+
+    def __init__(self, level=1):
+        self.level = level
+        self.started = False
+        self.level_start_time = 0.0
+    
+    def next_level(self):
+        if self.level < self.LEVELS:
+            self.level += 1
+            self.started = False
+            self.level_start_time = 0.0
+            return True
+        return False
+
+    def reset(self):
+        self.level = 1
+        self.started = False
+        self.level_start_time = 0.0
+
+    def game_finished(self):
+        return self.level > self.LEVELS
+    
+    def start_level(self):
+        self.started = True
+        self.level_start_time = time.time()
+    
+    def get_level_time(self):
+        if not self.started:
+            return 0.0
+        return time.time() - self.level_start_time
+
 images = [(GRASS, (0, 0)), (TRACK, (0, 0)), (FINISH, FINISH_POSITION), (TRACK_BORDER, (0, 0))]
 
 # Shared state used by UI helpers
 start_time = time.time()
 last_winner = None
 last_time = 0.0
-
 
 def create_player_car(max_vel=4, rotation_vel=4):
     # Import here to avoid circular top-level imports during module load
