@@ -4,15 +4,30 @@ This file only wires together factories and the main loop; game logic
 and assets live in `resources.py`, `cars.py` and `ui.py`.
 """
 
-import pygame
-from resources import GameInfo, WIN, FPS, images, create_player_car, create_computer_car, create_GBFS_car, blit_text_center
+import pygame, math
+from resources import GameInfo, WIN, FPS, images, create_player_car, create_computer_car, create_GBFS_car, blit_text_center, create_neat_car, TRACK_BORDER_MASK, raycast_mask
 import ui
-
+from neatmanager import NEATManager
+import neat
+config = neat.Config(
+    neat.DefaultGenome,
+    neat.DefaultReproduction,
+    neat.DefaultSpeciesSet,
+    neat.DefaultStagnation,
+    'neat_config.ini'  # your config file
+)
+manager = NEATManager(neat_config=config,
+                      car_factory=create_neat_car,
+                      track_mask=TRACK_BORDER_MASK,
+                      raycast_fn=raycast_mask,
+                      fps=60,
+                      time_limit_sec=20.0)
 
 def run():
     player_car = create_player_car()
     computer_car = create_computer_car()
     GBFS_car = create_GBFS_car() # create GBFS car
+    neat_car = create_neat_car() # create NEAT car
 
     game_info = GameInfo()
 
@@ -52,8 +67,9 @@ def run():
         ui.move_player(player_car)
         computer_car.move()
         GBFS_car.move()
+        neat_car.move()
 
-        ui.handle_collision(player_car, computer_car, GBFS_car)
+        ui.handle_collision(player_car, computer_car, GBFS_car, neat_car)
 
 
 if __name__ == "__main__":

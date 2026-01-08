@@ -577,3 +577,178 @@ class GBFSDetourCar(AbstractCar):
 
         # Move if safe
         super().move()
+
+class NEATCar(AbstractCar):
+  
+    START_POS = (165, 200)
+
+    def __init__(self, max_vel, rotation_vel, checkpoints, grid_size, grid, sensor_length=300):
+        from resources import TRACK_BORDER_MASK, raycast_mask
+        super().__init__(self, self.START_POS,max_vel, rotation_vel)
+        self.grid_size = grid_size
+        self.grid = grid
+        self.checkpoints = checkpoints or []
+        self.next_checkpoint = 0
+        self.fitness = 0.0
+
+        # NEAT I/O
+        self.sensor_length = sensor_length
+        self.inputs = []             # 5 sensor distances + speed
+        self.outputs = [0.0, 0.0]    # [steer, throttle]
+        self.net = None
+        self._sensor_cache = None    # list of (origin, end) for drawing
+
+        # Fixed relative angles (radians)
+        self._rel_slight = math.radians(30)   # +-30° around forward
+        # side sensors use +-90° via left/right basis vectors
+
+        self.sense(TRACK_BORDER_MASK, raycast_mask)
+
+    # ---------- geometry ----------
+    def _basis_vectors(self):
+        """Forward & left unit vectors consistent with Car.move() (angle=0 points up)."""
+        r = math.radians(self.angle)
+        fwd  = (-math.sin(r), -math.cos(r))
+        left = (-math.cos(r),  math.sin(r))
+        return fwd, left
+
+    def _anchors(self, inset_front=2.0, inset_side=2.0):
+        """
+        Compute distinct origins for the 5 sensors:
+        - front: nose midpoint
+        - slight-left/right: near front corners (forward + left/right)
+        - side-left/right: side midpoints
+        """
+        w, h = self.img.get_size()
+        fwd, left = self._basis_vectors()
+        right = (-left[0], -left[1])
+
+        half_len = h/2 - inset_front
+        half_wid = w/2 - inset_side
+
+        # Base anchors
+        cx, cy = self.get_centre()
+        front_nose = (cx + fwd[0]*half_len, cy + fwd[1]*half_len)
+        side_left  = (cx + left[0]*half_wid,  cy + left[1]*half_wid)
+        side_right = (cx + right[0]*half_wid, cy + right[1]*half_wid)
+
+        # Front corners for slight sensors
+        corner_scale_fwd = half_len * 0.9
+        corner_scale_lat = half_wid * 0.9
+        front_left_corner  = (cx + fwd[0]*corner_scale_fwd + left[0]*corner_scale_lat,
+                              cy + fwd[1]*corner_scale_fwd + left[1]*corner_scale_lat)
+        front_right_corner = (cx + fwd[0]*corner_scale_fwd + right[0]*corner_scale_lat,
+                              cy + fwd[1]*corner_scale_fwd + right[1]*corner_scale_lat)
+
+        return {
+            'front':        front_nose,
+            'slight_left':  front_left_corner,
+            'slight_right': front_right_corner,
+            'side_left':    side_left,
+            'side_right':   side_right,
+        }
+
+    def _dir_rel(self, rel_rad):
+        """dir = forward*cos(a) + left*sin(a) (relative to forward)."""
+        fwd, left = self._basis_vectors()
+        ca, sa = math.cos(rel_rad), math.sin(rel_rad)
+        return (fwd[0]*ca + left[0]*sa, fwd[1]*ca + left[1]*sa)
+
+    def _fixed_dirs(self):
+        """Return 5 direction vectors: front, slight L/R, side L/R."""
+        fwd, left = self._basis_vectors()
+        right = (-left[0], -left[1])
+
+        d0 = fwd                         # front
+        d1 = self._dir_rel(+self._rel_slight)  # slight-left (+30°)
+        d2 = self._dir_rel(-self._rel_slight)  # slight-right (-30°)
+        d3 = left                        # side-left (90°)
+        d4 = right                       # side-right (-90°)
+        return [d0, d1, d2, d3, d4]
+
+    # ---------- sensing ----------
+    def sense(self, track_mask, raycast_fn):
+        """
+        Cast 5 rays with distinct origins:
+          1) front_nose (0°)
+          2) front_left_corner (+30°)
+          3) front_right_corner (-30°)
+          4) side_left (left 90°)
+          5) side_right (right 90°)
+        Populates self.inputs and self._sensor_cache for drawing.
+        """
+        anchors = self._anchors()
+        dirs = self._fixed_dirs()
+        origins = [
+            anchors['front'],
+            anchors['slight_left'],
+            anchors['slight_right'],
+            anchors['side_left'],
+            anchors['side_right'],
+        ]
+
+        distances = []
+        rays = []
+        for origin, d in zip(origins, dirs):
+            ang = math.atan2(d[1], d[0])  # raycaster: 0 along +X, CCW+
+            res = raycast_fn(track_mask, origin, ang,
+                             max_distance=self.sensor_length, step=3)
+
+            dist = min(res['distance'], self.sensor_length)
+            distances.append(dist / float(self.sensor_length))
+
+            if res.get('hit') and res.get('point') is not None:
+                end = res['point']
+            else:
+                end = (origin[0] + d[0]*self.sensor_length,
+                       origin[1] + d[1]*self.sensor_length)
+
+            rays.append((origin, end))
+
+        # inputs: 5 sensor distances + normalized speed
+        speed_norm = self.vel / self.max_vel if self.max_vel > 0 else 0.0
+        self.inputs = distances + [speed_norm]
+        self._sensor_cache = rays
+        return self.inputs
+
+    # ---------- NEAT ----------
+    def set_net(self, net): self.net = net
+    def think(self):
+        if self.net: self.outputs = self.net.activate(self.inputs)
+    def apply_controls(self):
+        steer, throttle = self.outputs
+        if steer > 0.1: self.rotate(left=True)
+        elif steer < -0.1: self.rotate(right=True)
+        if throttle >= 0.6: self.move_forward()
+        elif throttle <= 0.3: self.reduce_speed()
+
+    # ---------- fitness ----------
+    def update_fitness(self, on_road, dt):
+        # base shaping
+        if on_road: self.fitness += (self.vel / max(1e-6, self.max_vel)) * dt
+        else:       self.fitness -= 0.25 * dt
+
+        # checkpoint milestones (pixel coords with optional radius)
+        if self.next_checkpoint < len(self.checkpoints):
+            cp = self.checkpoints[self.next_checkpoint]
+            cx, cy = cp[:2]
+            radius = cp[2] if len(cp) > 2 else self.grid_size * 0.75
+            if (self.x - cx)**2 + (self.y - cy)**2 <= radius**2:
+                self.fitness += 10.0
+                self.next_checkpoint += 1
+
+    # ---------- drawing ----------
+    def draw(self, win):
+        # draw car (Car.draw already uses center via bilt_rotate_center)
+        blit_rotate_center(win, self.img, (self.x, self.y), self.angle)
+        # draw anchors
+        a = self._anchors()
+        for pt in (a['front'], a['slight_left'], a['slight_right'], a['side_left'], a['side_right']):
+            pygame.draw.circle(win, (255, 165, 0), (int(pt[0]), int(pt[1])), 3)
+        # draw rays
+        if self._sensor_cache:
+            for origin, end in self._sensor_cache:
+                pygame.draw.line(win, (0, 255, 0),
+                                 (int(origin[0]), int(origin[1])),
+                                 (int(end[0]),    int(end[1])), 2)
+                pygame.draw.circle(win, (0, 255, 0), (int(end[0]), int(end[1])), 2)
