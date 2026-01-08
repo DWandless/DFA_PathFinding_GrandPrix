@@ -8,6 +8,7 @@ import pygame
 import neat
 import math
 
+
 class NEATManager:
     """
     Integrates neat-python into your existing game loop:
@@ -150,9 +151,6 @@ class NEATManager:
                 return (self.generation, 0, 0)
 
         # Sense -> think -> control -> move
-        self._car.sense(self.track_mask, self.raycast_fn)
-        self._car.think()
-        self._car.apply_controls()
         self._car.move()
 
         # Fitness update
