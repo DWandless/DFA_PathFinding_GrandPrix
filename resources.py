@@ -152,7 +152,7 @@ def create_GBFS_car(max_vel=3, rotation_vel=4):
 
 def create_neat_car(max_vel = 3, rotation_vel = 4):
     from cars import NEATCar
-    return NEATCar(GREEN_CAR, (165, 200), max_vel, rotation_vel, GRID_SIZE, GRID)
+    return NEATCar(GREEN_CAR, (165, 200), max_vel, rotation_vel, PATH ,  GRID_SIZE, GRID)
 
 def raycast_mask(mask, origin, angle, max_distance=800, step=3):
     """

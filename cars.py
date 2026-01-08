@@ -60,6 +60,9 @@ class AbstractCar:
         self.x, self.y = self.START_POS
         self.angle = 0
         self.vel = 0
+    def get_centre(self):
+        w,h = self.img.get_size()
+        return (self.x + w/2, self.y + h/2)
 
 
 class PlayerCar(AbstractCar):
@@ -579,12 +582,9 @@ class GBFSDetourCar(AbstractCar):
         super().move()
 
 class NEATCar(AbstractCar):
-  
-    START_POS = (165, 200)
-
-    def __init__(self, max_vel, rotation_vel, checkpoints, grid_size, grid, sensor_length=300):
+    def __init__(self, img, start_pos,  max_vel, rotation_vel, checkpoints, grid_size, grid, sensor_length=300):
         from resources import TRACK_BORDER_MASK, raycast_mask
-        super().__init__(self, self.START_POS,max_vel, rotation_vel)
+        super().__init__(img, start_pos,max_vel, rotation_vel)
         self.grid_size = grid_size
         self.grid = grid
         self.checkpoints = checkpoints or []
@@ -706,7 +706,7 @@ class NEATCar(AbstractCar):
             rays.append((origin, end))
 
         # inputs: 5 sensor distances + normalized speed
-        speed_norm = self.vel / self.max_vel if self.max_vel > 0 else 0.0
+        speed_norm = self.vel / self.max_vel if self.max_vel > 0.0 else 0.0
         self.inputs = distances + [speed_norm]
         self._sensor_cache = rays
         return self.inputs

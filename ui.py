@@ -113,7 +113,7 @@ def move_player(player_car):
         player_car.reduce_speed()
 
 
-def handle_collision(player_car, computer_car, gbfs_car):
+def handle_collision(player_car, computer_car, gbfs_car, neat_car):
     # Prevent multiple winners in one race
     if getattr(resources, "race_finished", False):
         return
@@ -128,6 +128,8 @@ def handle_collision(player_car, computer_car, gbfs_car):
 
     elif gbfs_car.collide(resources.FINISH_MASK, *resources.FINISH_POSITION):
         winner = "GBFS Car"
+    elif neat_car.collide(resources.FINISH_MASK, *resources.FINISH_POSITION):
+        winner = "NEAT Car"
 
     else:
         player_finish = player_car.collide(
