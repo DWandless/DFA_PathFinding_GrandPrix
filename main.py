@@ -37,7 +37,7 @@ def run():
     while running:
         clock.tick(FPS)
 
-        ui.draw(WIN, images, player_car, computer_car, GBFS_car)
+        ui.draw(WIN, images, player_car, computer_car, GBFS_car, neat_car)
 
         while not game_info.started:
             WIN.fill((0, 0, 0))  # black screen until game starts

@@ -39,13 +39,14 @@ def load_leaderboard(limit=5):
     return rows[:limit]
 
 
-def draw(win, images, player_car, computer_car, GBFS_car):
+def draw(win, images, player_car, computer_car, GBFS_car, neat_car):
     for img, pos in images:
         win.blit(img, pos)
 
     player_car.draw(win)
     GBFS_car.draw(win)
     computer_car.draw(win)
+    neat_car.draw(win)
 
     draw_timer_leaderboard_level(win)
     pygame.display.update()
@@ -153,6 +154,7 @@ def handle_collision(player_car, computer_car, gbfs_car, neat_car):
         player_car.reset()
         computer_car.reset()
         gbfs_car.reset()
+        neat_car.reset()
 
         resources.start_time = time.time()
         resources.race_finished = False
