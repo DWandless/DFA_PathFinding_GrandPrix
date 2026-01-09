@@ -6,6 +6,7 @@ import pygame
 import time
 import csv
 import os
+import math
 
 # Initialise pygame subsystems needed for image/font handling
 pygame.init()
@@ -148,3 +149,60 @@ def create_GBFS_car(max_vel=3, rotation_vel=4):
     WAYPOINT_REACH = 30 # radius to consider a waypoint reached
     from cars import GBFSDetourCar
     return GBFSDetourCar(max_vel, rotation_vel, PATH, GRID_SIZE, WAYPOINT_REACH, CHECKPOINT_RADIUS, GRID, TRACK_BORDER_MASK, GREEN_CAR, allow_diag=False, clearance_weight=0.6, detour_alpha=0.7)
+
+def create_neat_car(max_vel = 3, rotation_vel = 4):
+    from cars import NEATCar
+    return NEATCar(GREEN_CAR, (165, 200), max_vel, rotation_vel, PATH ,TRACK_BORDER_MASK,  GRID_SIZE, GRID)
+
+def raycast_mask(mask, origin, angle, max_distance=800, step=3):
+    """
+    Cast a ray in pixel space against a Pygame mask.
+
+    Args:
+        mask (pygame.Mask): Track mask. Nonzero pixels are obstacles/border.
+        origin (tuple[int, int]): (x, y) starting point.
+        angle (float): Ray angle in radians, 0 along +x, increasing counterclockwise.
+        max_distance (float): Max length to cast (pixels).
+        step (int): Step size in pixels. 2–4 is a good trade-off.
+
+    Returns:
+        dict with keys:
+            'hit' (bool): True if hit border.
+            'distance' (float): distance to hit or max_distance if no hit.
+            'point' (tuple[int,int] or None): impact point if hit, else None.
+            'samples' (int): number of iterations performed.
+    """
+    width, height = mask.get_size()
+    ox, oy = origin
+    dx = math.cos(angle)
+    dy = math.sin(angle)
+
+    # Early bounds check: if origin is outside, clamp ray to bounds
+    # (optional; here we assume origin is valid)
+    dist = 0.0
+    samples = 0
+
+    # Fast path: if starting on border, report distance 0
+    if 0 <= ox < width and 0 <= oy < height and mask.get_at((ox, oy)) != 0:
+        return {'hit': True, 'distance': 0.0, 'point': (ox, oy), 'samples': 0}
+
+    while dist < max_distance:
+        samples += 1
+        # Increment position
+        px = int(ox + dx * dist)
+        py = int(oy + dy * dist)
+
+        # If out of bounds, terminate with no hit
+        if px < 0 or py < 0 or px >= width or py >= height:
+            return {'hit': False, 'distance': dist, 'point': None, 'samples': samples}
+
+        # Check border
+        if mask.get_at((px, py)) != 0:
+            # Optional: refine by binary search back one step for sub-pixel
+            # but integer pixels are usually sufficient for sensors.
+            return {'hit': True, 'distance': dist, 'point': (px, py), 'samples': samples}
+
+        dist += step
+
+    return {'hit': False, 'distance': max_distance, 'point': None, 'samples': samples}
+

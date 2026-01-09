@@ -2,6 +2,7 @@ import math
 import pygame
 from resources import blit_rotate_center
 import heapq
+from resources import raycast_mask
 
 
 class AbstractCar:
@@ -32,11 +33,9 @@ class AbstractCar:
 
     def move_forward(self):
         self.vel = min(self.vel + self.acceleration, self.max_vel)
-        self.move()
 
     def move_backward(self):
         self.vel = max(self.vel - self.acceleration, -self.max_vel / 2)
-        self.move()
 
     def move(self):
         radians = math.radians(self.angle)
@@ -60,6 +59,9 @@ class AbstractCar:
         self.x, self.y = self.START_POS
         self.angle = 0
         self.vel = 0
+    def get_centre(self):
+        w,h = self.img.get_size()
+        return (self.x + w/2, self.y + h/2)
 
 
 class PlayerCar(AbstractCar):
@@ -577,3 +579,191 @@ class GBFSDetourCar(AbstractCar):
 
         # Move if safe
         super().move()
+
+
+class NEATCar(AbstractCar):
+    def __init__(self, img, start_pos, max_vel, rotation_vel,
+                 checkpoints, track_mask, grid_size, grid, sensor_length=300):
+        # Base init (image, spawn, dynamics)
+        super().__init__(img, start_pos, max_vel, rotation_vel)
+
+        # Environment references
+        self.track_mask = track_mask
+        self.grid_size = grid_size
+        self.grid = grid
+        self.checkpoints = checkpoints or []
+
+        # NEAT I/O state
+        self.sensor_length = sensor_length
+        self.inputs = []             # 5 sensor distances + speed
+        self.outputs = [0.0, 0.0]    # [steer, throttle]
+        self.net = None
+        self._sensor_cache = None    # list of (origin, end) tuples for drawing
+
+        # Fitness
+        self.fitness = 0.0
+        self.next_checkpoint = 0
+
+        # Fixed relative angle for the “slight” sensors (±30° around forward)
+        self._rel_slight = math.radians(30)
+
+        # IMPORTANT: do NOT call sense() here; do it per-frame in your loop/manager.
+
+    # ---------- geometry ----------
+    def _basis_vectors(self):
+        """
+        Forward & left unit vectors consistent with AbstractCar.move():
+        angle=0° points up; forward = (-sinθ, -cosθ), left = (-cosθ, +sinθ)
+        """
+        r = math.radians(self.angle)
+        fwd  = (-math.sin(r), -math.cos(r))
+        left = (-math.cos(r),  math.sin(r))
+        return fwd, left
+
+    def _anchors(self, inset_front=2.0, inset_side=2.0):
+        """
+        Distinct origins for the 5 sensors, computed from the sprite **center** (self.x, self.y):
+          0 front nose, 1 front-left corner, 2 front-right corner,
+          3 side-left midpoint, 4 side-right midpoint
+        """
+        cx, cy = self.get_centre()
+        w, h = self.img.get_size()
+        fwd, left = self._basis_vectors()
+        right = (-left[0], -left[1])
+
+        half_len = h/2 - inset_front
+        half_wid = w/2 - inset_side
+
+        front_nose = (cx + fwd[0]*half_len, cy + fwd[1]*half_len)
+        side_left  = (cx + left[0]*half_wid,  cy + left[1]*half_wid)
+        side_right = (cx + right[0]*half_wid, cy + right[1]*half_wid)
+
+        # “Slight” sensors originate near front corners
+        corner_scale_fwd = half_len * 0.9
+        corner_scale_lat = half_wid * 0.9
+        front_left_corner  = (cx + fwd[0]*corner_scale_fwd + left[0]*corner_scale_lat,
+                              cy + fwd[1]*corner_scale_fwd + left[1]*corner_scale_lat)
+        front_right_corner = (cx + fwd[0]*corner_scale_fwd + right[0]*corner_scale_lat,
+                              cy + fwd[1]*corner_scale_fwd + right[1]*corner_scale_lat)
+
+        return [
+            front_nose,         # 0
+            front_left_corner,  # 1
+            front_right_corner, # 2
+            side_left,          # 3
+            side_right          # 4
+        ]
+
+    def _dir_rel(self, rel_rad):
+        """dir = forward*cos(a) + left*sin(a)  (relative to forward)."""
+        fwd, left = self._basis_vectors()
+        ca, sa = math.cos(rel_rad), math.sin(rel_rad)
+        return (fwd[0]*ca + left[0]*sa, fwd[1]*ca + left[1]*sa)
+
+    def _fixed_dirs(self):
+        """
+        Direction vectors for the 5 sensors:
+          front, slight-left (+30°), slight-right (-30°), side-left (90°), side-right (-90°).
+        """
+        fwd, left = self._basis_vectors()
+        right = (-left[0], -left[1])
+        return [
+            fwd,                         # front
+            self._dir_rel(+self._rel_slight),  # slight-left
+            self._dir_rel(-self._rel_slight),  # slight-right
+            left,                        # side-left
+            right                        # side-right
+        ]
+
+    # ---------- sensing ----------
+    def sense(self, track_mask, raycast_fn):
+        """
+        Cast 5 rays with distinct origins and cache endpoints for drawing.
+        Returns NEAT inputs: 5 normalized distances + normalized speed.
+        """
+        origins = self._anchors()
+        dirs = self._fixed_dirs()
+
+        distances = []
+        rays = []
+        for origin, d in zip(origins, dirs):
+            ang = math.atan2(d[1], d[0])  # raycaster convention: 0 along +X, CCW+
+            res = raycast_fn(track_mask, origin, ang,
+                             max_distance=self.sensor_length, step=3)
+
+            dist = min(res['distance'], self.sensor_length)
+            distances.append(dist / float(self.sensor_length))
+
+            end = res['point'] if (res.get('hit') and res.get('point') is not None) \
+                  else (origin[0] + d[0]*self.sensor_length,
+                        origin[1] + d[1]*self.sensor_length)
+            rays.append((origin, end))
+
+        speed_norm = self.vel / self.max_vel if self.max_vel > 0.0 else 0.0
+        self.inputs = distances + [speed_norm]
+        self._sensor_cache = rays
+        return self.inputs
+
+    # ---------- NEAT ----------
+    def set_net(self, net):
+        self.net = net
+
+    def think(self):
+        if self.net:
+            self.outputs = self.net.activate(self.inputs)
+
+    def apply_controls(self):
+        """
+        Apply NEAT outputs using **AbstractCar’s control methods**.
+        (rotate, move_forward, reduce_speed come from the base class.)
+        """
+        steer, throttle = self.outputs
+        if steer > 0.1:
+            self.rotate(left=True)
+        elif steer < -0.1:
+            self.rotate(right=True)
+
+        if throttle >= 0.6:
+            self.move_forward()
+        elif throttle <= 0:
+            self.move_backward()
+        # else: coast (no change this frame)
+    def move(self):
+        self.sense(self.track_mask, raycast_mask)
+        self.think()
+        self.apply_controls()
+        super().move()
+    # ---------- fitness ----------
+    def update_fitness(self, on_road, dt):
+        # Base shaping
+        if on_road:
+            self.fitness += (self.vel / max(1e-6, self.max_vel)) * dt
+        else:
+            self.fitness -= 0.25 * dt
+
+        # Checkpoint milestones (pixel coords with optional radius)
+        if self.next_checkpoint < len(self.checkpoints):
+            cp = self.checkpoints[self.next_checkpoint]
+            cx, cy = cp[:2]
+            radius = cp[2] if len(cp) > 2 else self.grid_size * 0.75
+            # Using center (self.x, self.y)
+            dx, dy = self.x - cx, self.y - cy
+            if dx*dx + dy*dy <= radius*radius:
+                self.fitness += 10.0
+                self.next_checkpoint += 1
+
+    # ---------- drawing ----------
+    def draw(self, win):
+        super().draw(win)
+
+        # Anchors (optional debug dots)
+        for pt in self._anchors():
+            pygame.draw.circle(win, (255, 165, 0), (int(pt[0]), int(pt[1])), 3)
+
+        # Rays (from last sense())
+        if self._sensor_cache:
+            for origin, end in self._sensor_cache:
+                pygame.draw.line(win, (0, 255, 0),
+                                 (int(origin[0]), int(origin[1])),
+                                 (int(end[0]),    int(end[1])), 2)
+                pygame.draw.circle(win, (0, 255, 0), (int(end[0]), int(end[1])), 2)
