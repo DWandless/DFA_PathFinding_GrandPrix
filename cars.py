@@ -767,3 +767,7 @@ class NEATCar(AbstractCar):
                                  (int(origin[0]), int(origin[1])),
                                  (int(end[0]),    int(end[1])), 2)
                 pygame.draw.circle(win, (0, 255, 0), (int(end[0]), int(end[1])), 2)
+    
+    def bounce(self):
+        self.vel = -self.vel
+        super().move()

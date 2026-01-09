@@ -129,9 +129,13 @@ def handle_collision(player_car, computer_car, gbfs_car, neat_car):
 
     elif gbfs_car.collide(resources.FINISH_MASK, *resources.FINISH_POSITION):
         winner = "GBFS Car"
-    elif neat_car.collide(resources.FINISH_MASK, *resources.FINISH_POSITION):
-        winner = "NEAT Car"
 
+    elif neat_car.collide(resources.FINISH_MASK, *resources.FINISH_POSITION):
+        neat_finish = neat_car.collide(resources.FINISH_MASK, *resources.FINISH_POSITION)
+        if neat_finish[1] == 0:
+            neat_car.bounce()
+        else:
+            winner = "NEAT Car"
     else:
         player_finish = player_car.collide(
             resources.FINISH_MASK,
