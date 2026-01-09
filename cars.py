@@ -725,8 +725,8 @@ class NEATCar(AbstractCar):
 
         if throttle >= 0.6:
             self.move_forward()
-        elif throttle <= 0:
-            self.move_backward()
+        #elif throttle <= 0: causing car to move back indefinitely
+            #self.move_backward()
         # else: coast (no change this frame)
     def move(self):
         self.sense(self.track_mask, raycast_mask)
