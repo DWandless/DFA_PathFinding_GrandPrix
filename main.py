@@ -85,9 +85,9 @@ def run():
     clock = pygame.time.Clock()
 
     # -----------------------------
-    # Pre-race training loop happens while game not started
+    # ENABLE Pre-race training loop happens while game not started
     # -----------------------------
-    training_done = True
+    training_done = False
 
     while running:
         dt = clock.tick(FPS) / 1000.0
@@ -153,9 +153,6 @@ def run():
             break
 
         # ---- Update (racing) ----
-        ui.move_player(player_car)
-        computer_car.move()
-        GBFS_car.move()
 
         # The NEAT car drives itself each frame:
         # If your NEATCar.move() already calls sense/think/apply, use neat_car.move().
@@ -164,7 +161,18 @@ def run():
         # neat_car.think()
         # neat_car.apply_controls()
         # AbstractCar.move is called inside apply_controls or here depending on your design.
+        
         neat_car.move()
+        neat_car.sense(neat_car.track_mask, raycast_mask)
+        neat_car.think()
+        neat_car.apply_controls()
+
+        
+
+        ui.move_player(player_car)
+        computer_car.move()
+        GBFS_car.move()
+
 
         # Collisions & level flow
         ui.handle_collision(player_car, computer_car, GBFS_car, neat_car)

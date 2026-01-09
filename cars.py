@@ -33,9 +33,11 @@ class AbstractCar:
 
     def move_forward(self):
         self.vel = min(self.vel + self.acceleration, self.max_vel)
+        self.move() # readded self.move() call here
 
     def move_backward(self):
         self.vel = max(self.vel - self.acceleration, -self.max_vel / 2)
+        self.move() # readded self.move() call here
 
     def move(self):
         radians = math.radians(self.angle)
@@ -725,9 +727,11 @@ class NEATCar(AbstractCar):
 
         if throttle >= 0.6:
             self.move_forward()
+
         #elif throttle <= 0: causing car to move back indefinitely
             #self.move_backward()
         # else: coast (no change this frame)
+
     def move(self):
         self.sense(self.track_mask, raycast_mask)
         self.think()
