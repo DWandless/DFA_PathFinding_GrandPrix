@@ -384,7 +384,7 @@ class GBFSDetourCar(AbstractCar):
         cx, cy = self.checkpoints[self.current_checkpoint]
         d = math.hypot(cx - self.x, cy - self.y)
         if d < max(self.CHECKPOINT_RADIUS, self.CHECKPOINT_RADIUS):
-            print("Reached checkpoint!")
+            # print("Reached checkpoint!")
             # Only advance if it is ahead in heading space
             rad = math.radians(self.angle)
             fwd = (-math.sin(rad), -math.cos(rad))
@@ -726,7 +726,14 @@ class NEATCar(AbstractCar):
             self.rotate(right=True)
 
         if throttle >= 0.6:
-            self.move_forward()
+            #self.move_forward()
+            self.vel = min(self.vel + self.acceleration, self.max_vel)
+            radians = math.radians(self.angle)
+            vertical = math.cos(radians) * self.vel
+            horizontal = math.sin(radians) * self.vel
+            self.y -= vertical
+            self.x -= horizontal
+            # Manually included move logic here to avoid recursive move calls
 
         #elif throttle <= 0: causing car to move back indefinitely
             #self.move_backward()
