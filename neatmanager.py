@@ -108,6 +108,7 @@ class NEATManager:
 
         # Advance one generation
         self.winner = self.pop.run(_assign_fitnesses, 1)
+        self.generation += 1
 
         # Prepare the next generation list
         self._begin_generation()

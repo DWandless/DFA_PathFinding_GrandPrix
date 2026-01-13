@@ -103,7 +103,11 @@ def run():
                     if event.key in (pygame.K_RETURN, pygame.K_SPACE):
                         training_done = True
 
-            gen, idx, total = manager.update(dt)
+            for i in range(5):
+                gen, idx, total = manager.update(dt)
+                if gen >= TRAIN_GENERATIONS:
+                    training_done = True
+                    break
 
             WIN.fill((25, 25, 25))
             manager.draw(WIN)
@@ -124,8 +128,7 @@ def run():
                 (10, 40)
             )
 
-            if gen >= TRAIN_GENERATIONS:
-                training_done = True
+            
 
             if training_done:
                 net = _build_winner_net()
