@@ -45,6 +45,7 @@ RED_CAR = scale_image(pygame.image.load("assets/red-car.png"), 0.55)
 GREEN_CAR = scale_image(pygame.image.load("assets/green-car.png"), 0.55)
 PURPLE_CAR = scale_image(pygame.image.load("assets/purple-car.png"), 0.55)
 TEMPLATE_CAR = scale_image(pygame.image.load("assets/car_template.png"), 0.55)
+WHITE_CAR = scale_image(pygame.image.load("assets/white-car.png"), 0.55)
 
 # --- Window & frame rate ------------------------------------------------
 WIDTH, HEIGHT = TRACK.get_width(), TRACK.get_height()
@@ -144,6 +145,11 @@ def create_computer_car(max_vel=2, rotation_vel=4, path=PATH):
     from cars import ComputerCar
 
     return ComputerCar(TEMPLATE_CAR, (170, 200), max_vel, rotation_vel, path)
+
+def create_dijkstra_car(max_vel=3, rotation_vel=4):
+    WAYPOINT_REACH = 30 # radius to consider a waypoint reached
+    from cars import DijkstraCar
+    return DijkstraCar(WHITE_CAR, (160, 200), max_vel, rotation_vel, PATH, GRID_SIZE, WAYPOINT_REACH, CHECKPOINT_RADIUS, GRID, TRACK_BORDER_MASK)
 
 def create_GBFS_car(max_vel=3, rotation_vel=4):
     WAYPOINT_REACH = 30 # radius to consider a waypoint reached

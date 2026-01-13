@@ -2,7 +2,8 @@ import pygame, math
 from resources import (
     GameInfo, WIN, FPS, images,
     create_player_car, create_computer_car, create_GBFS_car,
-    blit_text_center, create_neat_car, TRACK_BORDER_MASK, raycast_mask
+    blit_text_center, create_neat_car, TRACK_BORDER_MASK, raycast_mask,
+    create_dijkstra_car
 )
 import ui
 from neatmanager import NEATManager
@@ -78,6 +79,7 @@ def run():
     computer_car = create_computer_car()
     GBFS_car = create_GBFS_car()     # create GBFS car
     neat_car = create_neat_car()     # create NEAT car (controller attached after training)
+    dijkstra_car = create_dijkstra_car() # create Dijkstra car
 
     game_info = GameInfo()
 
@@ -94,7 +96,7 @@ def run():
 
         # ----- draw the whole scene when racing -----
         if game_info.started:
-            ui.draw(WIN, images, player_car, computer_car, GBFS_car, neat_car)
+            ui.draw(WIN, images, player_car, computer_car, GBFS_car, neat_car, dijkstra_car)
 
         # ----- TRAINING PHASE: runs before user starts level -----
         while not game_info.started and running:
@@ -172,10 +174,10 @@ def run():
         ui.move_player(player_car)
         computer_car.move()
         GBFS_car.move()
-
+        dijkstra_car.move()
 
         # Collisions & level flow
-        ui.handle_collision(player_car, computer_car, GBFS_car, neat_car)
+        ui.handle_collision(player_car, computer_car, GBFS_car, neat_car, dijkstra_car)
 
         pygame.display.flip()
 

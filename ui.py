@@ -39,7 +39,7 @@ def load_leaderboard(limit=5):
     return rows[:limit]
 
 
-def draw(win, images, player_car, computer_car, GBFS_car, neat_car):
+def draw(win, images, player_car, computer_car, GBFS_car, neat_car, dijkstra_car):
     for img, pos in images:
         win.blit(img, pos)
 
@@ -47,6 +47,7 @@ def draw(win, images, player_car, computer_car, GBFS_car, neat_car):
     GBFS_car.draw(win)
     computer_car.draw(win)
     neat_car.draw(win)
+    dijkstra_car.draw(win)
 
     draw_timer_leaderboard_level(win)
     pygame.display.update()
@@ -114,7 +115,7 @@ def move_player(player_car):
         player_car.reduce_speed()
 
 
-def handle_collision(player_car, computer_car, gbfs_car, neat_car):
+def handle_collision(player_car, computer_car, gbfs_car, neat_car, dijkstra_car):
     # Prevent multiple winners in one race
     if getattr(resources, "race_finished", False):
         return
@@ -129,6 +130,9 @@ def handle_collision(player_car, computer_car, gbfs_car, neat_car):
 
     elif gbfs_car.collide(resources.FINISH_MASK, *resources.FINISH_POSITION):
         winner = "GBFS Car"
+
+    elif dijkstra_car.collide(resources.FINISH_MASK, *resources.FINISH_POSITION):
+        winner = "Dijkstra Car" 
 
     elif neat_car.collide(resources.FINISH_MASK, *resources.FINISH_POSITION):
         neat_finish = neat_car.collide(resources.FINISH_MASK, *resources.FINISH_POSITION)
