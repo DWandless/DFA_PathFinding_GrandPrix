@@ -857,7 +857,7 @@ class DijkstraCar(AbstractCar):
 
     # ------------------ DEBUG DRAW ------------------
     def draw(self, win, show_points=True):
-        super().draw(win)
+        blit_rotate_center(win, self.img, (self.x, self.y), -self.angle)
         if show_points:
             for p in self.path:
                 pygame.draw.circle(win, (0, 0, 255), p, 3)
