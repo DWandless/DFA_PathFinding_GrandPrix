@@ -4,7 +4,6 @@ import neat
 from resources import PATH, GRID
 import ui
 from neatmanager import NEATManager
-import sys
 
 from resources import (
     GameInfo, WIN, FPS, images,
