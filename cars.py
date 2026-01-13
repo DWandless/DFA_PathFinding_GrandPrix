@@ -57,6 +57,9 @@ class AbstractCar:
         )
         return mask.overlap(car_mask, offset)
 
+    def set_start_pos(self, pos):
+        self.START_POS = pos
+
     def reset(self):
         self.x, self.y = self.START_POS
         self.angle = 0
@@ -73,6 +76,9 @@ class PlayerCar(AbstractCar):
     def reduce_speed(self):
         self.vel = max(self.vel - self.acceleration / 2, 0)
         self.move()
+    
+    def position(self):
+        return (self.x, self.y)
 
     def bounce(self):
         self.vel = -self.vel / 2

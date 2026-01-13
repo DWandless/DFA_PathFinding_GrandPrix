@@ -1,10 +1,9 @@
 # main.py
 import pygame
 import neat
-from resources import PATH, GRID
 import ui
 from neatmanager import NEATManager
-
+import resources
 from resources import (
     GameInfo, WIN, FPS, images,
     create_player_car, create_computer_car, create_GBFS_car,
@@ -184,11 +183,26 @@ def run():
                 # 🔹 update NEAT manager + cars to new mask/path
                 manager.track_mask = TRACK_BORDER_MASK
 
-                neat_car.track_mask = TRACK_BORDER_MASK
-                neat_car.path = PATH
+                start_pos = resources.START_POSITION
 
-                computer_car.path = PATH
-                GBFS_car.grid = GRID
+                player_car.set_start_pos(start_pos)
+                computer_car.set_start_pos(start_pos)
+                GBFS_car.set_start_pos(start_pos)
+                neat_car.set_start_pos(start_pos)
+
+                player_car.reset()
+                computer_car.reset()
+                GBFS_car.reset()
+                neat_car.reset()
+
+                new_path = resources.PATH
+                new_grid = resources.GRID
+                
+                neat_car.track_mask = TRACK_BORDER_MASK
+                neat_car.path = new_path
+
+                computer_car.path = new_path
+                GBFS_car.grid = new_grid
                 GBFS_car.track_mask = TRACK_BORDER_MASK
 
                 game_info.start_level()
