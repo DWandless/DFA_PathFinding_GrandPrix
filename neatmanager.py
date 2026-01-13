@@ -1,20 +1,36 @@
 import time
 import math
 import pygame
+from collections import deque
 
 from cars import *
 
-import pygame
 import neat
-import math
+
+
+
+class NEATEpisode:
+    """Holds per-genome runtime state for simultaneous evaluation."""
+    __slots__ = ("gid", "genome", "net", "car", "elapsed", "speed_history", "finished", "finish_reason")
+
+    def __init__(self, gid, genome, net, car, speed_window_frames):
+        self.gid = gid
+        self.genome = genome
+        self.net = net
+        self.car = car
+        self.elapsed = 0.0
+        self.speed_history = deque(maxlen=speed_window_frames)
+        self.finished = False
+        self.finish_reason = ""
 
 
 class NEATManager:
     """
-    Integrates neat-python into your existing game loop:
-      - Iterates genomes one-by-one across frames.
-      - Builds a net for the current genome and runs a NEATCar episode.
-      - Records fitness; when all genomes are done, advances one generation.
+    Simultaneous evaluation of all genomes in the generation:
+      - Builds all nets & cars for current generation.
+      - Steps them together every frame.
+      - Ends each episode independently; records fitness.
+      - When all are finished, advances one generation.
     """
 
     def __init__(self,
@@ -42,50 +58,41 @@ class NEATManager:
         self.time_limit = time_limit_sec
         self.stuck_thresh = stuck_speed_thresh
         self.stuck_time_sec = stuck_time_sec
+        self._speed_window_frames = max(1, int(self.stuck_time_sec * self.fps))
 
         # Runtime state
         self.generation = 0
         self._genomes_list = []            # [(id, genome), ...] for current generation
-        self._fitness_map = {}             # genome_id -> fitness collected by loop
-        self._current_index = -1
-        self._car = None
-        self._net = None
-        self._elapsed = 0.0
-        self._speed_history = []
-        self._speed_window_frames = max(1, int(self.stuck_time_sec * self.fps))
-        self.done = False                  # True when max generations reached (optional)
+        self._fitness_map = {}             # genome_id -> fitness
+        self._episodes = []                # list[NEATEpisode]
+        self.done = False                  # True when max generations reached (if you add a cap)
         self.winner = None
 
+        # Prepare first generation
         self._begin_generation()
 
     # ---------------------------
     # Generation / genome control
     # ---------------------------
     def _begin_generation(self):
-        """Prepare genomes list for the current population and reset per-episode state."""
+        """Prepare episodes list for the current population and reset per-gen state."""
+        # Grab current generation's genomes
         self._genomes_list = list(self.pop.population.items())  # [(genome_id, genome), ...]
         self._fitness_map.clear()
-        self._current_index = -1
-        self._net = None
-        self._car = None
-        self._elapsed = 0.0
-        self._speed_history = []
+        self._episodes = []
+
+        # For neat-python StatisticsReporter, try to keep generation number in sync
         self.generation = getattr(self.stats, 'generation', self.generation)
 
-    def _advance_to_next_genome(self):
-        """Move to next genome; build car and network."""
-        self._current_index += 1
-        if self._current_index >= len(self._genomes_list):
-            # All genomes evaluated -> advance one generation through neat-python
-            self._advance_generation()
-            return
-
-        genome_id, genome = self._genomes_list[self._current_index]
-        self._net = neat.nn.FeedForwardNetwork.create(genome, self.config)
-        self._car = self.car_factory()
-        self._car.set_net(self._net)
-        self._elapsed = 0.0
-        self._speed_history = []
+        # Build car + net for every genome, all at once
+        for gid, genome in self._genomes_list:
+            net = neat.nn.FeedForwardNetwork.create(genome, self.config)
+            car = self.car_factory()
+            # Provide the net to the car
+            car.set_net(net)
+            # If your car needs raycast_fn or track_mask, ensure car_factory wired them in.
+            ep = NEATEpisode(gid, genome, net, car, speed_window_frames=self._speed_window_frames)
+            self._episodes.append(ep)
 
     def _advance_generation(self):
         """
@@ -98,10 +105,9 @@ class NEATManager:
 
         # Advance one generation
         self.winner = self.pop.run(_assign_fitnesses, 1)
+
         # Prepare the next generation list
         self._begin_generation()
-        # Immediately start with the first genome of the new generation
-        self._advance_to_next_genome()
 
     # ---------------------------
     # Utility
@@ -112,22 +118,20 @@ class NEATManager:
         w, h = self.track_mask.get_size()
         if cx < 0 or cy < 0 or cx >= w or cy >= h:
             return False
+        # Road is 0, border is nonzero per your comment
         return self.track_mask.get_at((cx, cy)) == 0
 
-    def _episode_done(self, car, on_road):
-        # Off-road ends the episode (simple rule; replace with precise overlap if desired)
+    def _episode_done_state(self, on_road, elapsed, speed_history):
+        """Termination check for one car's episode based on its own state."""
         if not on_road:
             return True, "off-road"
 
         # Stuck: speed < thresh for N frames
-        self._speed_history.append(car.vel)
-        if len(self._speed_history) > self._speed_window_frames:
-            self._speed_history.pop(0)
-        if len(self._speed_history) == self._speed_window_frames and all(v < self.stuck_thresh for v in self._speed_history):
+        if len(speed_history) == self._speed_window_frames and all(v < self.stuck_thresh for v in speed_history):
             return True, "stuck"
 
         # Time limit
-        if self._elapsed >= self.time_limit:
+        if elapsed >= self.time_limit:
             return True, "time"
 
         return False, ""
@@ -138,37 +142,56 @@ class NEATManager:
     def update(self, dt):
         """
         Call from your game loop each frame.
-        - If no current genome, loads the next.
-        - Steps one frame of sensing/thinking/movement.
-        - When an episode ends, records fitness and loads the next genome or generation.
+        Steps all active cars simultaneously.
+        Records fitness when a car finishes.
+        When all cars are finished, advances generation.
         Returns:
-            (gen, idx, total) for HUD/debug (current generation, current genome index, total genomes).
+            (gen, finished_count, total) for HUD/debug.
         """
-        if self._car is None:
-            self._advance_to_next_genome()
-            # If there were zero genomes (shouldn't happen), bail
-            if self._car is None:
-                return (self.generation, 0, 0)
+        if not self._episodes:
+            # Shouldn't happen, but guard against empty generation
+            return (self.generation, 0, 0)
 
-        # Sense -> think -> control -> move
-        self._car.move()
+        finished_count = 0
+        total = len(self._episodes)
 
-        # Fitness update
-        on_road = self._on_road(self._car)
-        self._car.update_fitness(on_road, dt)
-        self._elapsed += dt
+        for ep in self._episodes:
+            if ep.finished:
+                finished_count += 1
+                continue
 
-        # Episode termination?
-        done, reason = self._episode_done(self._car, on_road)
-        if done:
-            gid, _ = self._genomes_list[self._current_index]
-            self._fitness_map[gid] = self._car.fitness
-            # Move on
-            self._advance_to_next_genome()
+            # Sense -> think -> control -> move
+            ep.car.move()
 
-        return (self.generation, self._current_index + 1, len(self._genomes_list))
+            # Fitness update
+            on_road = self._on_road(ep.car)
+            ep.car.update_fitness(on_road, dt)
+            ep.elapsed += dt
 
-    def draw(self, win):
-        """Draw the current car & sensors."""
-        if self._car:
-            self._car.draw(win)
+            # Track speed history for stuck detection
+            # Assuming car.vel is scalar speed; if it's a vector, use magnitude
+            speed_val = ep.car.vel if isinstance(ep.car.vel, (int, float)) else (ep.car.vel.length() if hasattr(ep.car.vel, "length") else float(ep.car.vel))
+            ep.speed_history.append(speed_val)
+
+            # Episode termination?
+            done, reason = self._episode_done_state(on_road, ep.elapsed, ep.speed_history)
+            if done:
+                ep.finished = True
+                ep.finish_reason = reason
+                self._fitness_map[ep.gid] = ep.car.fitness
+                finished_count += 1
+
+        # All cars finished? Advance generation immediately.
+        if finished_count >= total:
+            self._advance_generation()
+            # After advancing, the new generation starts with 0 finished
+            return (self.generation, 0, len(self._episodes))
+
+        return (self.generation, finished_count, total)
+
+    def draw(self, win, draw_sensors=True):
+        """Draw all cars (and optionally sensors) simultaneously."""
+        for ep in self._episodes:
+            # Draw every car; if your car.draw already handles sensors toggling, this is enough.
+            # Otherwise, add logic to skip expensive sensor visualization when many cars exist.
+            ep.car.draw(win)
