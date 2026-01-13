@@ -188,6 +188,96 @@ def log_result(winner, elapsed):
             resources.GameInfo().get_level()
         ])
 
+# --------------------------------------------------
+# GAME MENU
+# --------------------------------------------------
+
+WHITE = (255, 255, 255)
+BLUE = (0, 120, 215)
+GRAY = (200, 200, 200)
+
+class Menu():
+    
+    def __init__(self, width=500, height=500):
+        self.width = width
+        self.height = height
+        self.play = Button((width//2 - 100, height//2 - 60, 200, 50), "Play", BLUE, WHITE)
+        self.quit = Button((width//2 - 100, height//2 + 10, 200, 50), "Quit", GRAY, (50, 50, 50))
+        self.train = Button((width//2 - 100, height//2 + 80, 200, 50), "Train NEAT", GRAY, (50, 50, 50))
+        self.bg = (0, 0, 0)
+
+    def draw(self, surface):
+        surface.fill(self.bg)
+        self.play.draw(surface)
+        self.quit.draw(surface)
+        self.train.draw(surface)
+        pygame.display.flip()
+
+    def handle_event(self, event):
+        if self.play.handle_event(event):
+            return "play"
+        if self.quit.handle_event(event):
+            return "quit"
+        if self.train.handle_event(event):
+            return "train"
+        return None
+    
+class Button():
+
+    def __init__(self, rect, label, bg_color, text_color):
+        self.rect = pygame.Rect(rect)
+        self.label = label
+        self.bg_color = bg_color
+        self.text_color = text_color
+        self.font = pygame.font.Font(None, 50)
+
+    def draw(self, surface):
+        pygame.draw.rect(surface, self.bg_color, self.rect)
+        text = self.font.render(self.label, True, self.text_color)
+        # center text
+        text_rect = text.get_rect(center=self.rect.center)
+        surface.blit(text, text_rect)
+
+    def handle_event(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if self.rect.collidepoint(event.pos):
+                return True
+        return False
+
+
+
+
+# Possibly redundant
+# def loadMenu(win):
+#     win.fill((0, 0, 0))
+#     font_large = pygame.font.SysFont(None, 48)
+#     font_small = pygame.font.SysFont(None, 24)
+
+    
+#     WHITE = (255, 255, 255)
+#     BLUE = (0, 120, 215)
+#     GRAY = (200, 200, 200)
+
+#     # Font
+#     font = pygame.font.Font(None, 50)
+
+#     # Button setup
+#     play_button = pygame.Rect(500//2 - 100, 500//2 - 60, 200, 50)
+#     quit_button = pygame.Rect(500//2 - 100, 500//2 + 10, 200, 50)
+
+
+    
+#     pygame.draw.rect(win, BLUE, play_button)
+#     pygame.draw.rect(win, GRAY, quit_button)
+#     # Draw text
+#     play_text = font.render("Play", True, WHITE)
+#     quit_text = font.render("Quit", True, (50, 50, 50))
+#     win.blit(play_text, (play_button.x + 60, play_button.y + 5))
+#     win.blit(quit_text, (quit_button.x + 60, quit_button.y + 5))
+#     pygame.display.flip()
+
+    
+
 
 def load_leaderboard(limit=5):
     rows = []

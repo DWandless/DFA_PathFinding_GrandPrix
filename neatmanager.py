@@ -201,11 +201,15 @@ class NEATManager:
         return (self.generation, finished_count, total)
 
     
-    def draw(self, win, draw_sensors=True, draw_crosses=True):
+    def draw(self, win, images, draw_sensors=True, draw_crosses=True):
         
         """Draw all cars (optionally with sensors) and overlay crash markers (crosses)."""
 
-        # 1) Draw cars (and optionally sensors)
+        # 1) Draw track 
+        for img, pos in images:
+            win.blit(img, pos)
+
+        # 2) Draw cars (and optionally sensors)
         for ep in self._episodes:
             if ep.finished is False:
                 ep.car.draw(win, draw_sensors=draw_sensors)

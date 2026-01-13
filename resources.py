@@ -175,7 +175,7 @@ def load_track_for_level(level):
 class GameInfo:
     LEVELS = 5
 
-    def __init__(self, level=1):
+    def __init__(self, level=0):
         self.level = level
         self.started = False
         self.level_start_time = 0.0
