@@ -21,7 +21,6 @@ class NEATEpisode:
         self.elapsed = 0.0
         self.speed_history = deque(maxlen=speed_window_frames)
         self.finished = False
-        self.finish_reason = ""
 
 
 class NEATManager:
@@ -67,6 +66,8 @@ class NEATManager:
         self._episodes = []                # list[NEATEpisode]
         self.done = False                  # True when max generations reached (if you add a cap)
         self.winner = None
+        self._crash_markers = []           # list[{"pos":(x,y), "reason":str}]
+
 
         # Prepare first generation
         self._begin_generation()
@@ -80,6 +81,8 @@ class NEATManager:
         self._genomes_list = list(self.pop.population.items())  # [(genome_id, genome), ...]
         self._fitness_map.clear()
         self._episodes = []
+        
+        self._crash_markers.clear()
 
         # For neat-python StatisticsReporter, try to keep generation number in sync
         self.generation = getattr(self.stats, 'generation', self.generation)
@@ -177,8 +180,15 @@ class NEATManager:
             done, reason = self._episode_done_state(on_road, ep.elapsed, ep.speed_history)
             if done:
                 ep.finished = True
-                ep.finish_reason = reason
                 self._fitness_map[ep.gid] = ep.car.fitness
+                
+                # add a red cross marker at the final position
+                cx, cy = ep.car.get_centre()
+                self._crash_markers.append({
+                    "pos": (int(cx), int(cy)),
+                    "reason": reason
+                })
+
                 finished_count += 1
 
         # All cars finished? Advance generation immediately.
@@ -189,9 +199,23 @@ class NEATManager:
 
         return (self.generation, finished_count, total)
 
-    def draw(self, win, draw_sensors=True):
-        """Draw all cars (and optionally sensors) simultaneously."""
+    
+    def draw(self, win, draw_sensors=True, draw_crosses=True):
+        
+        """Draw all cars (optionally with sensors) and overlay crash markers (crosses)."""
+
+        # 1) Draw cars (and optionally sensors)
         for ep in self._episodes:
-            # Draw every car; if your car.draw already handles sensors toggling, this is enough.
-            # Otherwise, add logic to skip expensive sensor visualization when many cars exist.
-            ep.car.draw(win)
+            if ep.finished is False:
+                ep.car.draw(win, draw_sensors=draw_sensors)
+            else:
+                color = (255, 0, 0)
+                self._draw_cross(win, ep.car.get_centre(), color=color, size=10, width=2)
+                
+    def _draw_cross(self, surface, pos, color=(220, 20, 60), size=10, width=2):
+        """Draws a simple 'X' centered at pos."""
+        x, y = pos
+        pygame.draw.line(surface, color, (x - size, y - size), (x + size, y + size), width)
+        pygame.draw.line(surface, color, (x - size, y + size), (x + size, y - size), width)
+
+

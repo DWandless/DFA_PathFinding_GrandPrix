@@ -605,6 +605,7 @@ class NEATCar(AbstractCar):
         # Fitness
         self.fitness = 0.0
         self.next_checkpoint = 0
+        self.stuck = False
 
         # Fixed relative angle for the “slight” sensors (±30° around forward)
         self._rel_slight = math.radians(30)
@@ -763,21 +764,25 @@ class NEATCar(AbstractCar):
                 self.fitness += 10.0
                 self.next_checkpoint += 1
 
-    # ---------- drawing ----------
-    def draw(self, win):
+    def draw(self, win, draw_sensors: bool = True):
         super().draw(win)
 
-        # Anchors (optional debug dots)
         for pt in self._anchors():
             pygame.draw.circle(win, (255, 165, 0), (int(pt[0]), int(pt[1])), 3)
 
+        # draw sensors only when requested
+        if draw_sensors:
+            self._draw_sensors(win)
+
+    def _draw_sensors(self, win):
         # Rays (from last sense())
         if self._sensor_cache:
             for origin, end in self._sensor_cache:
                 pygame.draw.line(win, (0, 255, 0),
                                  (int(origin[0]), int(origin[1])),
                                  (int(end[0]),    int(end[1])), 2)
-                pygame.draw.circle(win, (0, 255, 0), (int(end[0]), int(end[1])), 2)
+                #pygame.draw.circle(win, (0, 255, 0), (int(end[0]), int(end[1])), 2)
+
     
     def bounce(self):
         self.vel = -self.vel
