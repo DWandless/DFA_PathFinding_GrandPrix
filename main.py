@@ -4,6 +4,7 @@ import neat
 from resources import PATH, GRID
 import ui
 from neatmanager import NEATManager
+import sys
 
 from resources import (
     GameInfo, WIN, FPS, images,
@@ -78,12 +79,55 @@ def run():
 
     game_info = GameInfo()
 
+    setup = True
     running = True
     clock = pygame.time.Clock()
     training_done = False
 
+    menu = ui.Menu()
+    menu.draw(WIN)
+
     while running:
         dt = clock.tick(FPS) / 1000.0
+
+        # -------------------------------
+        # Draw Menu (before racing)
+        # -------------------------------
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+
+            if setup:
+                action = menu.handle_event(event)
+                if action == "play":
+                    setup = False
+                    #game_info.next_level()
+                    print(game_info.get_level())# TEMP
+                    game_info.started = True
+                elif action == "train":
+                    setup = False
+                elif action == "quit":
+                    running = False
+
+                if event.type == pygame.KEYDOWN and event.key in (pygame.K_RETURN, pygame.K_SPACE):
+                    setup = False
+                    #game_info.next_level()
+                    print(game_info.get_level()) # TEMP
+                    game_info.started = True
+            else:
+                # gameplay event handling
+                pass
+
+        if setup:
+            # Optional: redraw each frame for hover effects later
+            menu.draw(WIN)
+        else:
+            ui.draw(WIN, images, player_car, computer_car, GBFS_car, neat_car)
+
+        #pygame.quit()
+        #sys.exit()
+
 
         # -------------------------------
         # Draw (when racing)
@@ -94,7 +138,7 @@ def run():
         # -------------------------------
         # TRAINING PHASE
         # -------------------------------
-        while not game_info.started and running:
+        while not game_info.started and not setup and running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
