@@ -138,7 +138,7 @@ def run():
                     break
 
             WIN.fill((25, 25, 25))
-            manager.draw(WIN)
+            manager.draw(WIN, images)
 
             hud_font = _font(24)
             WIN.blit(
