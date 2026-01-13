@@ -93,7 +93,6 @@ def run():
         # -------------------------------
         # Draw Menu (before racing)
         # -------------------------------
-        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -101,32 +100,18 @@ def run():
             if setup:
                 action = menu.handle_event(event)
                 if action == "play":
+                    game_info.next_level()  # Start at level 1
                     setup = False
-                    #game_info.next_level()
-                    print(game_info.get_level())# TEMP
-                    game_info.started = True
+                    game_info.start_level()
                 elif action == "train":
+                    game_info.next_level()  # Start at level 1
                     setup = False
                 elif action == "quit":
                     running = False
 
                 if event.type == pygame.KEYDOWN and event.key in (pygame.K_RETURN, pygame.K_SPACE):
                     setup = False
-                    #game_info.next_level()
-                    print(game_info.get_level()) # TEMP
                     game_info.started = True
-            else:
-                # gameplay event handling
-                pass
-
-        if setup:
-            # Optional: redraw each frame for hover effects later
-            menu.draw(WIN)
-        else:
-            ui.draw(WIN, images, player_car, computer_car, GBFS_car, neat_car)
-
-        #pygame.quit()
-        #sys.exit()
 
 
         # -------------------------------
@@ -138,7 +123,7 @@ def run():
         # -------------------------------
         # TRAINING PHASE
         # -------------------------------
-        while not game_info.started and not setup and running:
+        while not game_info.started and not setup:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
@@ -201,14 +186,14 @@ def run():
         # -------------------------------
         # Update cars
         # -------------------------------
-        neat_car.move()
-        neat_car.sense(neat_car.track_mask, raycast_mask)
-        neat_car.think()
-        neat_car.apply_controls()
-
-        ui.move_player(player_car)
-        computer_car.move()
-        GBFS_car.move()
+        if game_info.started:
+            neat_car.move()
+            neat_car.sense(neat_car.track_mask, raycast_mask)
+            neat_car.think()
+            neat_car.apply_controls()
+            ui.move_player(player_car)
+            computer_car.move()
+            GBFS_car.move()
 
         # -------------------------------
         # Collisions & LEVEL SWITCH
