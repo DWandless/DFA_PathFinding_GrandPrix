@@ -2,8 +2,7 @@ import math
 import pygame
 from resources import blit_rotate_center
 import heapq
-from resources import raycast_mask
-
+from resources import raycast_mask, PATH
 
 class AbstractCar:
     """Base car providing position, movement, rotation and collisions.
@@ -23,6 +22,7 @@ class AbstractCar:
         self.acceleration = 0.1
     
     def SetTunables(self, TuningData):
+        # Add as many tunables as you like.
         self.max_vel = TuningData[0]
         self.acceleration = TuningData[1]
         # Breaking goes here -- dunno what to bind it to.
@@ -74,7 +74,6 @@ class AbstractCar:
         w,h = self.img.get_size()
         return (self.x + w/2, self.y + h/2)
 
-
 class PlayerCar(AbstractCar):
     def __init__(self, img, start_pos, max_vel, rotation_vel):
         super().__init__(img, start_pos, max_vel, rotation_vel)
@@ -90,13 +89,19 @@ class PlayerCar(AbstractCar):
         self.vel = -self.vel / 2
         self.move()
 
-
 class ComputerCar(AbstractCar):
     def __init__(self, img, start_pos, max_vel, rotation_vel, path=None):
         super().__init__(img, start_pos, max_vel, rotation_vel)
         self.path = path or []
         self.current_point = 0
         self.vel = max_vel
+
+    def SetTunables(self, TuningData):
+        # Add as many tunables as you like.
+        self.max_vel = TuningData[0]
+        self.acceleration = TuningData[1]
+        # Breaking goes here -- dunno what to bind it to.
+        self.rotation_vel = TuningData[2]
 
     def draw_points(self, win): # draws the path points for debugging
         for point in self.path:
@@ -179,6 +184,13 @@ class GBFSDetourCar(AbstractCar):
         self._last_dist = None
         self._stuck_frames = 0
         self._stuck_threshold = 45  # ~0.75s at 60 FPS
+
+    def SetTunables(self, TuningData):
+        # Add as many tunables as you like.
+        self.max_vel = TuningData[0]
+        self.acceleration = TuningData[1]
+        # Breaking goes here -- dunno what to bind it to.
+        self.rotation_vel = TuningData[2]
 
     def bounce(self):
         self.vel = -self.vel
@@ -594,10 +606,8 @@ class GBFSDetourCar(AbstractCar):
         # Move if safe
         super().move()
 
-
 class NEATCar(AbstractCar):
-    def __init__(self, img, start_pos, max_vel, rotation_vel,
-                 checkpoints, track_mask, grid_size, grid, sensor_length=300):
+    def __init__(self, img, start_pos, max_vel, rotation_vel, checkpoints, track_mask, grid_size, grid, sensor_length=300):
         # Base init (image, spawn, dynamics)
         super().__init__(img, start_pos, max_vel, rotation_vel)
 
@@ -805,3 +815,92 @@ class NEATCar(AbstractCar):
     def bounce(self):
         self.vel = -self.vel
         super().move()
+
+class DijkstraCar(AbstractCar):
+    def __init__(self, img, start_pos, max_vel, rotation_vel,
+                 path, grid_size=None, waypoint_reach=10,
+                 checkpoint_radius=None, grid=None,
+                 track_border_mask=None, loop=True):
+        super().__init__(img, start_pos, max_vel, rotation_vel)
+        self.PATH = path
+        self.WAYPOINT_REACH = waypoint_reach
+        self.TRACK_BORDER_MASK = track_border_mask
+        self.loop = loop
+
+        self.vel = max_vel
+        self.current_point = 0
+        self.path = self.PATH[:]
+        self.current_point = self._nearest_waypoint_index()
+
+    def SetTunables(self, TuningData):
+        self.max_vel = TuningData[0]
+        self.acceleration = TuningData[1]
+        # Breaking goes here -- dunno what to bind it to.
+        self.rotation_vel = TuningData[2]
+
+    # ------------------ HELPERS ------------------
+    def _nearest_waypoint_index(self):
+        cx, cy = self.x, self.y
+        best_i, best_d = 0, float("inf")
+        for i, (px, py) in enumerate(self.PATH):
+            d = math.hypot(px - cx, py - cy)
+            if d < best_d:
+                best_d = d
+                best_i = i
+        return best_i
+
+    # ------------------ MOVEMENT ------------------
+    def calculate_angle(self, target_x, target_y):
+    # Compute vector from car to target
+        dx = target_x - self.x
+        dy = target_y - self.y
+
+        # In screen coords: 0 deg = up, 90 deg = right
+        desired = math.degrees(math.atan2(dx, -dy))  # note the negative dy
+        diff = (desired - self.angle + 180) % 360 - 180
+
+        if diff > 0:
+            self.angle += min(self.rotation_vel, diff)
+        else:
+            self.angle -= min(self.rotation_vel, -diff)
+
+        self.angle %= 360
+
+    def move(self):
+        if self.current_point >= len(self.path):
+            return
+
+        tx, ty = self.path[self.current_point]
+
+        # Rotate toward next waypoint
+        self.calculate_angle(tx, ty)
+
+        # Stepwise movement to avoid embedding in walls
+        steps = max(int(self.vel), 1)
+        rad = math.radians(self.angle)
+        for i in range(1, steps + 1):
+            step_size = self.vel / steps
+            test_x = self.x + math.sin(rad) * step_size
+            test_y = self.y - math.cos(rad) * step_size
+
+            if self.TRACK_BORDER_MASK.get_at((int(test_x), int(test_y))) == 0:
+                self.x = test_x
+                self.y = test_y
+            else:
+                break
+
+        # Update waypoint after movement
+        if math.hypot(tx - self.x, ty - self.y) < self.WAYPOINT_REACH:
+            self.current_point += 1
+            if self.loop:
+                self.current_point %= len(self.path)
+
+    # ------------------ DEBUG DRAW ------------------
+    def draw(self, win, show_points=True):
+        blit_rotate_center(win, self.img, (self.x, self.y), -self.angle)
+        if show_points:
+            for p in self.path:
+                pygame.draw.circle(win, (0, 0, 255), p, 3)
+            if self.current_point < len(self.path):
+                tx, ty = self.path[self.current_point]
+                pygame.draw.circle(win, (0, 255, 0), (int(tx), int(ty)), 5)

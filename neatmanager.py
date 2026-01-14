@@ -72,12 +72,10 @@ class NEATManager:
         # Prepare first generation
         self._begin_generation()
 
-
+    
     def SetTunables(self, TuningData):
-        self.max_vel = TuningData[0]
-        self.acceleration = TuningData[1]
-        # Breaking goes here -- dunno what to bind it to.
-        self.rotation_vel = TuningData[2]
+        for genome in self._genomes_list:
+            genome[1].SetTunables(TuningData)
 
     # ---------------------------
     # Generation / genome control
