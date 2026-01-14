@@ -9,7 +9,7 @@ from resources import (
     create_player_car, create_computer_car, create_GBFS_car,
     create_neat_car, blit_text_center,
     TRACK_BORDER_MASK, raycast_mask,
-    load_track_for_level
+    load_track_for_level, create_dijkstra_car
 )
 
 # -----------------------------
@@ -74,6 +74,7 @@ def run():
     computer_car = create_computer_car()
     GBFS_car = create_GBFS_car()
     neat_car = create_neat_car()
+    dijkstra_car = create_dijkstra_car() 
 
     game_info = GameInfo()
 
@@ -124,7 +125,7 @@ def run():
         # Draw (when racing)
         # -------------------------------
         if game_info.started:
-            ui.draw(WIN, images, player_car, computer_car, GBFS_car, neat_car)
+            ui.draw(WIN, images, player_car, computer_car, GBFS_car, neat_car, dijkstra_car)
 
         # -------------------------------
         # TRAINING PHASE
@@ -203,13 +204,14 @@ def run():
             ui.move_player(player_car)
             computer_car.move()
             GBFS_car.move()
+            dijkstra_car.move()
 
         # -------------------------------
         # Collisions & LEVEL SWITCH
         # -------------------------------
         level_finished = ui.handle_collision(
-            player_car, computer_car, GBFS_car, neat_car
-        )
+            player_car, computer_car, GBFS_car, neat_car, dijkstra_car)
+        
 
         if level_finished:
             if game_info.next_level():
@@ -225,11 +227,13 @@ def run():
                 computer_car.set_start_pos(start_pos)
                 GBFS_car.set_start_pos(start_pos)
                 neat_car.set_start_pos(start_pos)
+                dijkstra_car.set_start_pos(start_pos)
 
                 player_car.reset()
                 computer_car.reset()
                 GBFS_car.reset()
                 neat_car.reset()
+                dijkstra_car.reset()
 
                 new_path = resources.PATH
                 new_grid = resources.GRID
@@ -240,6 +244,9 @@ def run():
                 computer_car.path = new_path
                 GBFS_car.grid = new_grid
                 GBFS_car.track_mask = TRACK_BORDER_MASK
+
+                dijkstra_car.grid = new_grid
+                dijkstra_car.track_mask = TRACK_BORDER_MASK
 
                 game_info.start_level()
 
