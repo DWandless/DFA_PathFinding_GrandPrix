@@ -66,7 +66,7 @@ PATH = [
     (191, 131), (138, 80), (70, 135), (70, 514), (317, 785), (397, 811), (450, 753),
     (457, 586), (559, 532), (663, 596), (669, 753), (741, 814), (824, 746), (821, 469),
     (757, 400), (502, 398), (446, 347), (514, 288), (763, 282), (822, 238), (820, 130),
-    (749, 83), (363, 86), (316, 150), (310, 405), (255, 460), (178, 404), (193, 263)
+    (749, 83), (363, 86), (316, 150), (310, 405), (255, 460), (178, 404), (193, 193)
 ]
 
 GRID_SIZE = 4  # pixels per grid cell (used for GBFS car)
@@ -147,7 +147,7 @@ def create_computer_car(max_vel=2, rotation_vel=4, path=PATH):
     return ComputerCar(TEMPLATE_CAR, (170, 200), max_vel, rotation_vel, path)
 
 def create_dijkstra_car(max_vel=3, rotation_vel=4):
-    WAYPOINT_REACH = 30 # radius to consider a waypoint reached
+    WAYPOINT_REACH = 50 # radius to consider a waypoint reached
     from cars import DijkstraCar
     return DijkstraCar(WHITE_CAR, (160, 200), max_vel, rotation_vel, PATH, GRID_SIZE, WAYPOINT_REACH, CHECKPOINT_RADIUS, GRID, TRACK_BORDER_MASK)
 

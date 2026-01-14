@@ -165,4 +165,4 @@ def handle_collision(player_car, computer_car, gbfs_car, neat_car, dijkstra_car)
         neat_car.reset()
 
         resources.start_time = time.time()
-        resources.race_finished = False
+        #resources.race_finished = False

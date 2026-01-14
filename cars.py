@@ -835,13 +835,14 @@ class DijkstraCar(AbstractCar):
 
         # Rotate toward next waypoint
         self.calculate_angle(tx, ty)
-
+    
         # Stepwise movement to avoid embedding in walls
         steps = max(int(self.vel), 1)
         rad = math.radians(self.angle)
         for i in range(1, steps + 1):
-            test_x = self.x + math.sin(rad) * i   # sin -> horizontal (x)
-            test_y = self.y - math.cos(rad) * i   # cos -> vertical (y), minus because y down
+            step_size = self.vel / steps
+            test_x = self.x + math.sin(rad) * step_size
+            test_y = self.y - math.cos(rad) * step_size
 
             if self.TRACK_BORDER_MASK.get_at((int(test_x), int(test_y))) == 0:
                 self.x = test_x
