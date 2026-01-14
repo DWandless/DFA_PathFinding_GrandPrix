@@ -198,28 +198,83 @@ GRAY = (200, 200, 200)
 
 class Menu():
     
-    def __init__(self, width=500, height=500):
+    def __init__(self, width=500, height=500, page = 0):
         self.width = width
         self.height = height
-        self.play = Button((width//2 - 100, height//2 - 60, 200, 50), "Play", BLUE, WHITE)
-        self.quit = Button((width//2 - 100, height//2 + 10, 200, 50), "Quit", GRAY, (50, 50, 50))
-        self.train = Button((width//2 - 100, height//2 + 80, 200, 50), "Train NEAT", GRAY, (50, 50, 50))
         self.bg = (0, 0, 0)
+        self.page = page
 
-    def draw(self, surface):
+        # Main Menu Buttons
+        self.playButton = Button((width//2 - 100, height//2 - 60, 200, 50), "Play", BLUE, WHITE)
+        self.trainButton = Button((width//2 - 100, height//2 + 10, 200, 50), "Train NEAT", GRAY, (50, 50, 50))
+        self.page1Button = Button((width//2 - 100, height//2 + 80, 200, 50), "Page 1", GRAY, (50, 50, 50))
+        self.page2Button = Button((width//2 - 100, height//2 + 150, 200, 50), "Page 2", GRAY, (50, 50, 50))
+        self.quitButton = Button((width//2 - 100, height//2 + 220, 200, 50), "Quit", GRAY, (50, 50, 50))
+        # Page 1 Buttons                    <---1
+        self.page1BackButton = Button((width//2 + 100, height - 80, 200, 50), "Back Page 1", GRAY, (50, 50, 50))
+        # Page 2 Buttons                    <---2
+        self.page2BackButton = Button((width//2 + 100, height - 80, 200, 50), "Back Page 2", GRAY, (50, 50, 50))
+
+    def drawMain(self, surface):
         surface.fill(self.bg)
-        self.play.draw(surface)
-        self.quit.draw(surface)
-        self.train.draw(surface)
+        self.playButton.draw(surface)
+        self.trainButton.draw(surface)
+        self.page1Button.draw(surface)
+        self.page2Button.draw(surface)
+        self.quitButton.draw(surface)
         pygame.display.flip()
 
+    def drawPage1(self, surface):
+        surface.fill(self.bg)
+        # Remove menu buttons
+        self.playButton.enabled = False
+        self.trainButton.enabled = False
+        self.page1Button.enabled = False
+        self.page2Button.enabled = False
+        self.quitButton.draw(surface)
+        # Draw Page 1 buttons               <---1
+        self.page1BackButton.draw(surface)
+        pygame.display.flip()
+    
+    def backPage1(self, surface):
+        # Remove page 1 buttons             <---1
+        self.page1BackButton.enabled = False
+        self.drawMain(surface)
+    
+    def drawPage2(self, surface):
+        surface.fill(self.bg)
+        # Remove menu buttons
+        self.playButton.enabled = False
+        print(self.playButton.enabled)
+        self.trainButton.enabled = False
+        self.page1Button.enabled = False
+        self.page2Button.enabled = False
+        self.quitButton.draw(surface)
+        # Draw Page 2 buttons               <---2
+        self.page2BackButton.draw(surface)
+        pygame.display.flip()
+    
+    def backPage2(self, surface):
+        # Remove page 2 buttons             <---2
+        self.page2BackButton.enabled = False
+        self.drawMain(surface)
+
+    # Button triggers                       <---
     def handle_event(self, event):
-        if self.play.handle_event(event):
+        if self.playButton.handle_event(event):
             return "play"
-        if self.quit.handle_event(event):
-            return "quit"
-        if self.train.handle_event(event):
+        if self.trainButton.handle_event(event):
             return "train"
+        if self.page1Button.handle_event(event):
+            return "page1"
+        if self.page1BackButton.handle_event(event):
+            return "page1Back"
+        if self.page2Button.handle_event(event):
+            return "page2"
+        if self.page2BackButton.handle_event(event):
+            return "page2Back"
+        if self.quitButton.handle_event(event):
+            return "quit"
         return None
     
 class Button():
@@ -230,6 +285,7 @@ class Button():
         self.bg_color = bg_color
         self.text_color = text_color
         self.font = pygame.font.Font(None, 50)
+        self.enabled = True
 
     def draw(self, surface):
         pygame.draw.rect(surface, self.bg_color, self.rect)
@@ -237,9 +293,10 @@ class Button():
         # center text
         text_rect = text.get_rect(center=self.rect.center)
         surface.blit(text, text_rect)
+        self.enabled = True
 
     def handle_event(self, event):
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self.enabled == True:
             if self.rect.collidepoint(event.pos):
                 return True
         return False

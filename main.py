@@ -83,7 +83,7 @@ def run():
     training_done = False
 
     menu = ui.Menu()
-    menu.draw(WIN)
+    menu.drawMain(WIN)
 
     while running:
         dt = clock.tick(FPS) / 1000.0
@@ -95,7 +95,7 @@ def run():
             if event.type == pygame.QUIT:
                 running = False
 
-            if setup:
+            if setup:                                          # <---
                 action = menu.handle_event(event)
                 if action == "play":
                     game_info.next_level()  # Start at level 1
@@ -104,6 +104,14 @@ def run():
                 elif action == "train":
                     game_info.next_level()  # Start at level 1
                     setup = False
+                elif action == "page1":
+                    menu.drawPage1(WIN)
+                elif action == "page1Back":
+                    menu.backPage1(WIN)
+                elif action == "page2":
+                    menu.drawPage2(WIN)
+                elif action == "page2Back":
+                    menu.backPage2(WIN)
                 elif action == "quit":
                     running = False
 
