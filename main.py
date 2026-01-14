@@ -101,6 +101,11 @@ def run():
                 if action == "play":
                     game_info.next_level()  # Start at level 1
                     setup = False
+                    for n in ["3", "2", "1"]:
+                        WIN.fill((0, 0, 0))
+                        blit_text_center(WIN, _font(48), n)
+                        pygame.display.update()
+                        pygame.time.delay(700)
                     game_info.start_level()
                 elif action == "train":
                     game_info.next_level()  # Start at level 1
