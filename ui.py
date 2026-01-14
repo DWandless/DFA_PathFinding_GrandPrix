@@ -245,7 +245,6 @@ class Menu():
         surface.fill(self.bg)
         # Remove menu buttons
         self.playButton.enabled = False
-        print(self.playButton.enabled)
         self.trainButton.enabled = False
         self.page1Button.enabled = False
         self.page2Button.enabled = False
