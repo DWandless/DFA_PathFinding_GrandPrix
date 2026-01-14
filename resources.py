@@ -272,3 +272,16 @@ def CalculateMoney(TuningData: list):
     # Combine Costs
     FinalCost = sum(Costs)
     return TotalMoney - FinalCost
+
+def SetCarTuning(CarObj, TuningData: list):
+    # Tuning data should be in the same order as the car object's tuning options
+    # a list of lists, each list inside tuning data should be like: [MINVAL, MAXVAL, CURRENTVAL]
+
+    # Performing Checks
+    MoneyLeft = CalculateMoney(TuningData)
+    if MoneyLeft < 0: return False, MoneyLeft
+
+    # Applying Changes
+    TunablesToApply = lambda lst: list(map(lambda x: x[2], lst))
+    CarObj.SetTunables(TunablesToApply(TuningData))
+    return True, MoneyLeft
