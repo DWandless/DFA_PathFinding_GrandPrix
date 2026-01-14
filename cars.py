@@ -21,6 +21,13 @@ class AbstractCar:
         self.angle = 0
         self.x, self.y = self.START_POS
         self.acceleration = 0.1
+        # Tuning
+        self.TunableItems = { # Examples for items you can edit via sliders, will cost money
+            "Engine": self.max_vel,
+            "Tires": self.rotation_vel,
+            "Brakes": "",
+            "Steering": self.rotation_vel
+        }
 
     def rotate(self, left=False, right=False):
         if left:

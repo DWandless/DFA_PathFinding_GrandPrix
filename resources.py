@@ -248,3 +248,27 @@ def raycast_mask(mask, origin, angle, max_distance=800, step=3):
         dist += step
 
     return {"hit": False, "distance": max_distance, "point": None}
+# --------------------------------------------------
+# Money Systems
+# --------------------------------------------------
+def CalculateMoney(TuningData: list):
+    #TuningData Format looks like this:
+    # a list of lists, each list inside tuning data should be like: [MINVAL, MAXVAL, CURRENTVAL]
+    # If all values equate to 50% then money will return 0 
+
+    # Definitions
+    TotalMoney = 1000
+
+    # Converting values into decimal percentages
+    Percentages = []
+    for Entry in TuningData:
+        Percentages.append((Entry[2] - Entry[0]) / (Entry[1] - Entry[0]))
+    
+    # Calculate remaining money
+    Costs = []
+    for Percentage in Percentages:
+        Costs.append(((TotalMoney / len(Percentages)) * 2) * Percentage)
+
+    # Combine Costs
+    FinalCost = sum(Costs)
+    return TotalMoney - FinalCost
