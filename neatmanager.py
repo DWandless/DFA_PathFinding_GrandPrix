@@ -72,9 +72,6 @@ class NEATManager:
         # Prepare first generation
         self._begin_generation()
 
-    # ---------------------------
-    # Generation / genome control
-    # ---------------------------
     def _begin_generation(self):
         """Prepare episodes list for the current population and reset per-gen state."""
         # Grab current generation's genomes
@@ -97,10 +94,10 @@ class NEATManager:
             ep = NEATEpisode(gid, genome, net, car, speed_window_frames=self._speed_window_frames)
             self._episodes.append(ep)
 
+    
     def _advance_generation(self):
         """
-        Advance one generation by calling pop.run with a callback that simply
-        assigns our collected fitnesses to the genomes. This is very fast and non-blocking.
+        Advance one generation by calling pop.run with a callback that assigns fitnesses.
         """
         def _assign_fitnesses(genomes, config):
             for gid, g in genomes:
@@ -110,12 +107,58 @@ class NEATManager:
         self.winner = self.pop.run(_assign_fitnesses, 1)
         self.generation += 1
 
-        # Prepare the next generation list
+        # Prepare next generation
         self._begin_generation()
 
-    # ---------------------------
-    # Utility
-    # ---------------------------
+
+
+    
+    
+    def get_generation_summary(self) -> str:
+        """
+        Returns a string similar to NEAT's StdOutReporter output:
+        - Generation number
+        - Population stats
+        - Species table (ID, size, fitness, adj fitness, stagnation)
+        """
+        species_set = self.pop.species
+        population_size = len(self.pop.population)
+        num_species = len(species_set.species)
+
+        # Best genome and fitness
+        best_genome = max(self.pop.population.values(), key=lambda g: g.fitness if g.fitness is not None else -float("inf"))
+        best_fitness = best_genome.fitness if best_genome.fitness is not None else 0.0
+
+        # Compute averages
+        fitnesses = [g.fitness for g in self.pop.population.values() if g.fitness is not None]
+        avg_fitness = sum(fitnesses) / len(fitnesses) if fitnesses else 0.0
+        stdev = (sum((f - avg_fitness) ** 2 for f in fitnesses) / len(fitnesses)) ** 0.5 if fitnesses else 0.0
+
+        # Header
+        lines = [
+            f"****** Running generation {self.generation} ******",
+            f"Population's average fitness: {avg_fitness:.5f} stdev: {stdev:.5f}",
+            f"Best fitness: {best_fitness:.5f} - id {best_genome.key}",
+            f"Population of {population_size} members in {num_species} species:",
+            "   ID  size   fitness   adj fit  stag",
+            "  ====  ====  =========  =======  ===="
+        ]
+
+        # Species details
+        for sid, species in species_set.species.items():
+            fitness = species.fitness if species.fitness is not None else 0.0
+            adj_fit = species.adjusted_fitness if species.adjusted_fitness is not None else 0.0
+            stag = species.last_improved if species.last_improved is not None else 0
+            lines.append(
+                f"{sid:6d}{len(species.members):6d}"
+                f"{fitness:11.3f}{adj_fit:9.3f}{stag:7d}"
+            )
+
+        return "\n".join(lines)
+
+
+
+
     def _on_road(self, car):
         cx, cy = car.get_centre()
         cx, cy = int(cx), int(cy)
@@ -144,14 +187,6 @@ class NEATManager:
     # Loop hooks
     # ---------------------------
     def update(self, dt):
-        """
-        Call from your game loop each frame.
-        Steps all active cars simultaneously.
-        Records fitness when a car finishes.
-        When all cars are finished, advances generation.
-        Returns:
-            (gen, finished_count, total) for HUD/debug.
-        """
         if not self._episodes:
             # Shouldn't happen, but guard against empty generation
             return (self.generation, 0, 0)

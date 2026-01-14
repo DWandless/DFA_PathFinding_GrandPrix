@@ -168,7 +168,14 @@ def run():
                 ),
                 (10, 40)
             )
-
+            summary_text = manager.get_generation_summary()
+            WIN.blit(
+                hud_font.render(
+                    summary_text,
+                    True, (200, 200, 200)
+                ),
+                (10, 70)
+            )
             
 
             if training_done:

@@ -753,6 +753,8 @@ class NEATCar(AbstractCar):
         super().move()
     # ---------- fitness ----------
     def update_fitness(self, on_road, dt):
+        # new fitness function: less fitness over time for moving in the same spot(resets on checkpoint?). More fitness as closer to next checkpoint
+    
         # Base shaping
         if on_road:
             self.fitness += (self.vel / max(1e-6, self.max_vel)) * dt
