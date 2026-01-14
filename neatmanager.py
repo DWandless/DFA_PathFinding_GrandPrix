@@ -68,11 +68,10 @@ class NEATManager:
         self.winner = None
         self._crash_markers = []           # list[{"pos":(x,y), "reason":str}]
 
-
         # Prepare first generation
         self._begin_generation()
 
-    
+
     def SetTunables(self, TuningData):
         for genome in self._genomes_list:
             genome[1].SetTunables(TuningData)
@@ -227,5 +226,3 @@ class NEATManager:
         x, y = pos
         pygame.draw.line(surface, color, (x - size, y - size), (x + size, y + size), width)
         pygame.draw.line(surface, color, (x - size, y + size), (x + size, y - size), width)
-
-

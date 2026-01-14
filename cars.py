@@ -158,133 +158,59 @@ class ComputerCar(AbstractCar):
 
 class GBFSDetourCar(AbstractCar):
     START_POS = (165, 200)
-    LOOKAHEAD_DIST = 35      # pixels ahead along path to aim at
-    ALIGN_ANGLE = 30          # degrees; slow down when misaligned by more than this
 
-    def __init__(self, max_vel, rotation_vel, checkpoints, GRIDSIZE, WAYPOINT_REACH, CHECKPOINT_RADIUS, GRID, TRACK_BORDER_MASK, img, allow_diag=True, clearance_weight=0.4, detour_alpha=0.5, ):
-        super().__init__(img, self.START_POS, max_vel, rotation_vel)
+    def __init__(self, checkpoints, GRIDSIZE, WAYPOINT_REACH, CHECKPOINT_RADIUS, GRID, TRACK_BORDER_MASK, img):
+        super().__init__(img, self.START_POS, 3, 4)
+        
+        # Basics
         self.checkpoints = checkpoints
         self.current_checkpoint = 0
         self.path = []
         self.current_point = 0
-        self.vel = max_vel
-        self.allow_diag = allow_diag
-        self.clearance_weight = clearance_weight
-        self.detour_alpha = detour_alpha
-        w, h = self.img.get_size()
-        self.center_x = self.x + w / 2.0
-        self.center_y = self.y + h / 2.0
+        self.vel = 3
 
+        # Tunables Defaults (In order)
+        self.max_vel = 3
+        self.acceleration = 0.1
+        self.rotation_vel = 4
+        self.brake_factor = 0.6
+        self.Lookahead_Dist = 32
+        self.ahead_window = 50
+        self.clearance_weight = 0.4
+        self.detour_alpha = 0.5
+        self.max_expansions = 50000
+        self.Align_Angle = 30
+        self.allow_diag = False
+        
+
+        # Map Specific
         self.GRIDSIZE = GRIDSIZE
         self.WAYPOINT_REACH = WAYPOINT_REACH
         self.CHECKPOINT_RADIUS = CHECKPOINT_RADIUS
         self.GRID = GRID
         self.TRACK_BORDER_MASK = TRACK_BORDER_MASK
 
+        # Stuck detection
         self._last_dist = None
         self._stuck_frames = 0
         self._stuck_threshold = 45  # ~0.75s at 60 FPS
 
     def SetTunables(self, TuningData):
-        # Add as many tunables as you like.
-        self.max_vel = TuningData[0]
-        self.acceleration = TuningData[1]
-        # Breaking goes here -- dunno what to bind it to.
-        self.rotation_vel = TuningData[2]
+        # Basic params
+        self.max_vel = TuningData[0] # Speed
+        self.acceleration = TuningData[1] # Acceleration
+        self.rotation_vel = TuningData[2] # Steering
+        self.brake_factor = TuningData[3] # Braking
+        # GBFS specific params
+        self.Lookahead_Dist = TuningData[4] # How far it looks ahead
+        self.ahead_window = TuningData[5] # Reduces fixation and turning back
+        self.clearance_weight = TuningData[6] # Higher = prefers open space, lower hugs tight lines, more crashes
+        self.detour_alpha = TuningData[7] # Higher = detoures chose clearer neighbores
+        self.max_expansions = TuningData[8] # Higher = more likely to find a path, lower = faster but can fail more
+        self.Align_Angle = TuningData[9]
+        self.allow_diag = bool(TuningData[10]) # Either 0 or 1 to represent true or false
 
-    def bounce(self):
-        self.vel = -self.vel
-        super().move()
-
-    def greedy_best_first(self, start, goal, allow_diag=True, clearance_weight=0.4, max_expansions=50000):
-        """
-        Pure Greedy Best-First Search (no path cost), biased by local clearance.
-
-        Priority = h(n, goal) - clearance_weight * clearance(n)
-
-        Returns: list of (row, col) nodes from start(exclusive) -> goal(inclusive), or None.
-        """
-        rows, cols = len(self.GRID), len(self.GRID[0])
-
-        def grid_to_world(rc):
-            r, c = rc
-            x = c * self.GRIDSIZE + self.GRIDSIZE / 2
-            y = r * self.GRIDSIZE + self.GRIDSIZE / 2
-            return x, y
-
-        def local_clearance(rc, radius=6, step=2):
-            x, y = grid_to_world(rc)
-            width, height = self.TRACK_BORDER_MASK.get_size()
-            hits, samples = 0, 0
-            ix, iy = int(x), int(y)
-            for dx in range(-radius, radius+1, step):
-                for dy in range(-radius, radius+1, step):
-                    sx, sy = ix + dx, iy + dy
-                    if 0 <= sx < width and 0 <= sy < height:
-                        samples += 1
-                        if self.TRACK_BORDER_MASK.get_at((sx, sy)) != 0:
-                            hits += 1
-            return 0.0 if samples == 0 else (1.0 - hits / samples)
-
-        def neighbors4(r, c):
-            return [(r+1,c), (r-1,c), (r,c+1), (r,c-1)]
-
-        def neighbors8_safe(r, c):
-            """
-            Diagonals allowed only if both adjacent orthogonals are open (prevents corner cutting).
-            """
-            cand = [(r+1,c), (r-1,c), (r,c+1), (r,c-1)]
-            diags = [
-                (r+1,c+1, (r+1,c), (r,c+1)),
-                (r+1,c-1, (r+1,c), (r,c-1)),
-                (r-1,c+1, (r-1,c), (r,c+1)),
-                (r-1,c-1, (r-1,c), (r,c-1)),
-            ]
-            res = []
-            for nr, nc in cand:
-                if 0 <= nr < rows and 0 <= nc < cols and self.GRID[nr][nc]:
-                    res.append((nr, nc))
-            for (nr, nc, o1, o2) in diags:
-                if (0 <= nr < rows and 0 <= nc < cols and
-                    self.GRID[nr][nc] and
-                    0 <= o1[0] < rows and 0 <= o1[1] < cols and self.GRID[o1[0]][o1[1]] and
-                    0 <= o2[0] < rows and 0 <= o2[1] < cols and self.GRID[o2[0]][o2[1]]):
-                    res.append((nr, nc))
-            return res
-
-        neigh_fn = neighbors8_safe if allow_diag else neighbors4
-
-        open_set = []
-        visited = set([start])
-        h0 = abs(start[0] - goal[0]) + abs(start[1] - goal[1])
-        p0 = h0 - clearance_weight * local_clearance(start)
-        heapq.heappush(open_set, (p0, start))
-        came_from = {}
-
-        expansions = 0
-        while open_set and expansions < max_expansions:
-            _, current = heapq.heappop(open_set)
-            expansions += 1
-
-            if current == goal:
-                path = []
-                while current in came_from:
-                    path.append(current)
-                    current = came_from[current]
-                path.reverse()
-                return path
-
-            r, c = current
-            for nr, nc in neigh_fn(r, c):
-                if (nr, nc) not in visited:
-                    visited.add((nr, nc))
-                    h = abs(nr - goal[0]) + abs(nc - goal[1])
-                    p = h - clearance_weight * local_clearance((nr, nc))
-                    heapq.heappush(open_set, (p, (nr, nc)))
-                    came_from[(nr, nc)] = current
-
-        return None
-
+    # ------------------ HELPERS ------------------
     def nearest_walkable(self, start_rc, max_radius=80):
         rows, cols = len(self.GRID), len(self.GRID[0])
         sr, sc = start_rc
@@ -319,7 +245,7 @@ class GBFSDetourCar(AbstractCar):
         x = gy * self.GRIDSIZE + self.GRIDSIZE / 2
         y = gx * self.GRIDSIZE + self.GRIDSIZE / 2
         return x, y
-
+    
     def _clearance_at(self, x, y, radius=6, step=2):
         width, height = self.TRACK_BORDER_MASK.get_size()
         hits, samples = 0, 0
@@ -383,7 +309,7 @@ class GBFSDetourCar(AbstractCar):
 
         # Search a window to avoid scanning whole path
         start_i = max(0, self.current_point - 3)
-        end_i = min(len(self.path), self.current_point + 50)
+        end_i = min(len(self.path), self.current_point + self.ahead_window)
 
         for i in range(start_i, end_i):
             px, py = self.path[i]
@@ -407,7 +333,7 @@ class GBFSDetourCar(AbstractCar):
     def _advance_checkpoint_if_reached(self):
         cx, cy = self.checkpoints[self.current_checkpoint]
         d = math.hypot(cx - self.x, cy - self.y)
-        if d < max(self.CHECKPOINT_RADIUS, self.CHECKPOINT_RADIUS):
+        if d < max(self.WAYPOINT_REACH, self.CHECKPOINT_RADIUS):
             # print("Reached checkpoint!")
             # Only advance if it is ahead in heading space
             rad = math.radians(self.angle)
@@ -440,6 +366,100 @@ class GBFSDetourCar(AbstractCar):
         # normalize to [-180, 180) relative to current angle when you compute diff
         return desired_deg
 
+    # ------------------ Movement ------------------
+    def bounce(self):
+        self.vel = -self.vel
+        super().move()
+    
+    def greedy_best_first(self, start, goal, allow_diag=True):
+        """
+        Pure Greedy Best-First Search (no path cost), biased by local clearance.
+
+        Priority = h(n, goal) - clearance_weight * clearance(n)
+
+        Returns: list of (row, col) nodes from start(exclusive) -> goal(inclusive), or None.
+        """
+        rows, cols = len(self.GRID), len(self.GRID[0])
+
+        def grid_to_world(rc):
+            r, c = rc
+            x = c * self.GRIDSIZE + self.GRIDSIZE / 2
+            y = r * self.GRIDSIZE + self.GRIDSIZE / 2
+            return x, y
+
+        def local_clearance(rc, radius=6, step=2):
+            x, y = grid_to_world(rc)
+            width, height = self.TRACK_BORDER_MASK.get_size()
+            hits, samples = 0, 0
+            ix, iy = int(x), int(y)
+            for dx in range(-radius, radius+1, step):
+                for dy in range(-radius, radius+1, step):
+                    sx, sy = ix + dx, iy + dy
+                    if 0 <= sx < width and 0 <= sy < height:
+                        samples += 1
+                        if self.TRACK_BORDER_MASK.get_at((sx, sy)) != 0:
+                            hits += 1
+            return 0.0 if samples == 0 else (1.0 - hits / samples)
+
+        def neighbors4(r, c):
+            return [(r+1,c), (r-1,c), (r,c+1), (r,c-1)]
+
+        def neighbors8_safe(r, c):
+            """
+            Diagonals allowed only if both adjacent orthogonals are open (prevents corner cutting).
+            """
+            cand = [(r+1,c), (r-1,c), (r,c+1), (r,c-1)]
+            diags = [
+                (r+1,c+1, (r+1,c), (r,c+1)),
+                (r+1,c-1, (r+1,c), (r,c-1)),
+                (r-1,c+1, (r-1,c), (r,c+1)),
+                (r-1,c-1, (r-1,c), (r,c-1)),
+            ]
+            res = []
+            for nr, nc in cand:
+                if 0 <= nr < rows and 0 <= nc < cols and self.GRID[nr][nc]:
+                    res.append((nr, nc))
+            for (nr, nc, o1, o2) in diags:
+                if (0 <= nr < rows and 0 <= nc < cols and
+                    self.GRID[nr][nc] and
+                    0 <= o1[0] < rows and 0 <= o1[1] < cols and self.GRID[o1[0]][o1[1]] and
+                    0 <= o2[0] < rows and 0 <= o2[1] < cols and self.GRID[o2[0]][o2[1]]):
+                    res.append((nr, nc))
+            return res
+
+        neigh_fn = neighbors8_safe if allow_diag else neighbors4
+
+        open_set = []
+        visited = set([start])
+        h0 = abs(start[0] - goal[0]) + abs(start[1] - goal[1])
+        p0 = h0 - self.clearance_weight * local_clearance(start)
+        heapq.heappush(open_set, (p0, start))
+        came_from = {}
+
+        expansions = 0
+        while open_set and expansions < self.max_expansions:
+            _, current = heapq.heappop(open_set)
+            expansions += 1
+
+            if current == goal:
+                path = []
+                while current in came_from:
+                    path.append(current)
+                    current = came_from[current]
+                path.reverse()
+                return path
+
+            r, c = current
+            for nr, nc in neigh_fn(r, c):
+                if (nr, nc) not in visited:
+                    visited.add((nr, nc))
+                    h = abs(nr - goal[0]) + abs(nc - goal[1])
+                    p = h - self.clearance_weight * local_clearance((nr, nc))
+                    heapq.heappush(open_set, (p, (nr, nc)))
+                    came_from[(nr, nc)] = current
+
+        return None
+
     def compute_path(self):
         start = self.world_to_grid(self.x, self.y)
         goal_world = self.checkpoints[self.current_checkpoint]
@@ -454,7 +474,7 @@ class GBFSDetourCar(AbstractCar):
 
         grid_path = self.greedy_best_first(
             start, goal,
-            allow_diag=self.allow_diag, clearance_weight=self.clearance_weight
+            allow_diag=self.allow_diag
         )
         
         if grid_path is None:
@@ -490,7 +510,7 @@ class GBFSDetourCar(AbstractCar):
         for pick in candidates[:K]:
             rest = self.greedy_best_first(
                 pick, goal_grid,
-                allow_diag=self.allow_diag, clearance_weight=self.clearance_weight
+                allow_diag=self.allow_diag
             )
             if rest:
                 micro_world = [self.grid_to_world(*pick)]
@@ -533,7 +553,7 @@ class GBFSDetourCar(AbstractCar):
             d = math.hypot(tx - lastx, ty - lasty)
             accum += d
             lastx, lasty = tx, ty
-            if accum >= self.LOOKAHEAD_DIST:
+            if accum >= self.Lookahead_Dist:
                 px, py = tx, ty
                 break
             idx += 1
@@ -542,7 +562,7 @@ class GBFSDetourCar(AbstractCar):
 
         # 5) Advance raw waypoint if very close (keeps index moving forward)
         nxt_x, nxt_y = self.path[self.current_point]
-        if math.hypot(nxt_x - self.x, nxt_y - self.y) < self.CHECKPOINT_RADIUS:
+        if math.hypot(nxt_x - self.x, nxt_y - self.y) < self.WAYPOINT_REACH:
             self.current_point = min(self.current_point + 1, len(self.path) - 1)
 
         # 6) Heading & speed gating (then tiny kick if stuck at zero)
@@ -553,8 +573,8 @@ class GBFSDetourCar(AbstractCar):
         else:
             self.angle -= min(self.rotation_vel, -angle_diff)
 
-        if abs(angle_diff) > self.ALIGN_ANGLE:
-            self.vel = max(self.vel - self.acceleration * 0.6, 0)
+        if abs(angle_diff) > self.Align_Angle:
+            self.vel = max(self.vel - self.acceleration * self.brake_factor, 0)
         else:
             self.vel = min(self.vel + self.acceleration, self.max_vel)
         if self.vel <= 0.01:
@@ -811,7 +831,6 @@ class NEATCar(AbstractCar):
                                  (int(end[0]),    int(end[1])), 2)
                 #pygame.draw.circle(win, (0, 255, 0), (int(end[0]), int(end[1])), 2)
 
-    
     def bounce(self):
         self.vel = -self.vel
         super().move()
@@ -833,9 +852,7 @@ class DijkstraCar(AbstractCar):
         self.current_point = self._nearest_waypoint_index()
 
     def SetTunables(self, TuningData):
-        self.max_vel = TuningData[0]
-        self.acceleration = TuningData[1]
-        # Breaking goes here -- dunno what to bind it to.
+        self.vel = TuningData[0]
         self.rotation_vel = TuningData[2]
 
     # ------------------ HELPERS ------------------

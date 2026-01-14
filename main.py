@@ -75,9 +75,7 @@ def run():
     GBFS_car = create_GBFS_car()
     neat_car = create_neat_car()
 
-    Result, MoneyLeft = resources.SetCarTuning(GBFS_car, [[0,10,10], [0,10,0], [0,10,0], [0,10,5]])
-    print(Result, MoneyLeft)
-    print(GBFS_car.max_vel, GBFS_car.acceleration, GBFS_car.rotation_vel)
+    Result, MoneyLeft = resources.SetCarTuning(GBFS_car, [[1,5,3],[0.0,0.2,0.1],[2,6,4],[0.2,1.0,0.6],[16,48,32],[20,80,50],[0.1,0.7,0.4],[0.2,0.8,0.5],[20000,80000,50000],[15,45,30],[0,1,0]])
 
     game_info = GameInfo()
 
