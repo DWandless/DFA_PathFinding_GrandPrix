@@ -296,7 +296,7 @@ def load_leaderboard(limit=5):
     return rows[:limit]
 
 
-def draw(win, images, player_car, computer_car, GBFS_car, neat_car):
+def draw(win, images, player_car, computer_car, GBFS_car, neat_car, dijkstra_car):
     for img, pos in images:
         win.blit(img, pos)
 
@@ -304,6 +304,7 @@ def draw(win, images, player_car, computer_car, GBFS_car, neat_car):
     GBFS_car.draw(win)
     computer_car.draw(win)
     neat_car.draw(win)
+    dijkstra_car.draw(win)
 
     draw_timer_leaderboard_level(win)
     pygame.display.update()
@@ -367,7 +368,7 @@ def move_player(player_car):
         # print(player_car.position()) #  DEBUGGING prints cars current stopped position.
 
 
-def handle_collision(player_car, computer_car, gbfs_car, neat_car):
+def handle_collision(player_car, computer_car, gbfs_car, neat_car, dijkstra_car):
     """
     Returns True exactly once when a car legally finishes the race.
     Cars bounce if they cross the finish line in the wrong direction.
@@ -427,6 +428,17 @@ def handle_collision(player_car, computer_car, gbfs_car, neat_car):
         else:
             winner = "Player"
 
+    # -----------------------
+    # DIJKSTRA CAR
+    # -----------------------            
+    dijkstra_finish = dijkstra_car.collide(
+        resources.FINISH_MASK, *resources.FINISH_POSITION
+    )
+    if dijkstra_finish and winner is None:
+        if dijkstra_finish[1] == 0:
+            dijkstra_car.bounce()
+        else:
+            winner = "DIJKSTRA"
     if winner is None:
         return False
 
