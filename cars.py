@@ -661,6 +661,8 @@ class NEATCar(AbstractCar):
         self.rotation_vel = TuningData[2] # Steering
         self.brake_factor = TuningData[3] # Braking
 
+        
+
     # ---------- geometry ----------
     def _basis_vectors(self):
         """

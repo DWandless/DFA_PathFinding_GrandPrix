@@ -71,10 +71,51 @@ class NEATManager:
         # Prepare first generation
         self._begin_generation()
 
+    def RestartWithNewPopulationSize(self):
+        self.pop = neat.Population(self.config)
+        self.pop.add_reporter(neat.StdOutReporter(True))
+        self.pop.add_reporter(self.stats)
+        self._begin_generation()
 
     def SetTunables(self, TuningData):
         for genome in self._genomes_list:
             genome[1].SetTunables(TuningData)
+
+        gc = self.config.genome_config
+
+        gc.weight_mutate_rate = TuningData[4]
+
+        # How often connection weights mutate (0.0–1.0)
+        # Higher = faster exploration, noisier learning
+        gc.weight_mutate_rate = TuningData[5]
+
+        # How large each weight mutation is
+        # Higher = more drastic behavior changes
+        gc.weight_mutate_power = TuningData[6]
+
+        # Probability of adding a new node during mutation
+        # Controls network complexity growth
+        gc.node_add_prob = TuningData[7]
+
+        # Probability of adding a new connection
+        # Higher = denser networks
+        gc.conn_add_prob = TuningData[8]
+
+        # frcation of genomes allowed to reproduce
+        gc.survival_threshold = TuningData[9]
+
+        # --------------------------------------------------
+        # 3) Species-level NEAT parameters (diversity control)
+        # --------------------------------------------------
+        sc = self.config.species_set_config
+
+        # generations before a species is killed
+        sc.max_stagnation = TuningData[10]
+        # population size
+        self.config.pop_size = TuningData[11]
+        RestartWithNewPopulationSize()
+
+    
 
     # ---------------------------
     # Generation / genome control
