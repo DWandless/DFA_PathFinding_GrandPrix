@@ -809,7 +809,6 @@ class NEATCar(AbstractCar):
             cp = self.checkpoints[self.next_checkpoint]
             cx, cy = cp[:2]
             radius = CHECKPOINT_RADIUS
-            if self.fitness > 5: print(self.fitness)
             if (self.x - cx)**2 + (self.y - cy)**2 <= radius**2:
                 self.timeSinceLastCheckpoint = 0
                 self.fitness += 2.0
