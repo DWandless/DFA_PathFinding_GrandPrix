@@ -76,6 +76,8 @@ def run():
     neat_car = create_neat_car()
     dijkstra_car = create_dijkstra_car() 
 
+    Result, MoneyLeft = resources.SetCarTuning(GBFS_car, [[1,5,3],[0.0,0.2,0.1],[2,6,4],[0.2,1.0,0.6],[16,48,32],[20,80,50],[0.1,0.7,0.4],[0.2,0.8,0.5],[20000,80000,50000],[15,45,30],[0,1,0]])
+
     game_info = GameInfo()
 
     setup = True
