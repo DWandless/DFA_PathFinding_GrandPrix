@@ -648,6 +648,7 @@ class NEATCar(AbstractCar):
         self.fitness = 0.0
         self.next_checkpoint = 0
         self.stuck = False
+        self.timeSinceLastCheckpoint = 0
 
         # Fixed relative angle for the “slight” sensors (±30° around forward)
         self._rel_slight = math.radians(30)
@@ -798,27 +799,27 @@ class NEATCar(AbstractCar):
         super().move()
     # ---------- fitness ----------
    
-
-    def update_fitness(self, on_road, dt):
+    def update_fitness(self, on_road, dt, elapsed):
+        self.timeSinceLastCheckpoint += dt
         # base shaping
         if on_road: self.fitness += (self.vel / max(1e-6, self.max_vel)) * dt
         else:       self.fitness -= 0.25 * dt
-       
         # checkpoint milestones (pixel coords with optional radius)
         if self.next_checkpoint < len(self.checkpoints):
             #print("printing")
             cp = self.checkpoints[self.next_checkpoint]
             #print(cp)
             cx, cy = cp[:2]
-            #print(cx)
-            #print(cy)
             radius = CHECKPOINT_RADIUS
-            #print(radius)
             if (self.x - cx)**2 + (self.y - cy)**2 <= radius**2:
-                self.fitness += 10.0
+                self.timeSinceLastCheckpoint = 0
+                self.fitness += 2.0
                 self.next_checkpoint += 1
-                
-
+        
+        if self.timeSinceLastCheckpoint > 1.5:
+            self.fitness -= 0.3*dt  # Small penalty for making no progress too long
+        if self.timeSinceLastCheckpoint > 3:
+            self.fitness -= 0.3*dt  # Small penalty for making no progress too long
 
 
     def draw(self, win, draw_sensors: bool = True):
