@@ -67,6 +67,10 @@ class AbstractCar:
     def get_centre(self):
         w,h = self.img.get_size()
         return (self.x + w/2, self.y + h/2)
+    
+    def bounce(self):
+        self.vel = -self.vel / 2
+        self.move()
 
 
 class PlayerCar(AbstractCar):
@@ -79,10 +83,6 @@ class PlayerCar(AbstractCar):
     
     def position(self):
         return (self.x, self.y)
-
-    def bounce(self):
-        self.vel = -self.vel / 2
-        self.move()
 
 
 class ComputerCar(AbstractCar):
@@ -173,10 +173,6 @@ class GBFSDetourCar(AbstractCar):
         self._last_dist = None
         self._stuck_frames = 0
         self._stuck_threshold = 45  # ~0.75s at 60 FPS
-
-    def bounce(self):
-        self.vel = -self.vel
-        super().move()
 
     def greedy_best_first(self, start, goal, allow_diag=True, clearance_weight=0.4, max_expansions=50000):
         """
@@ -790,10 +786,6 @@ class NEATCar(AbstractCar):
                 #pygame.draw.circle(win, (0, 255, 0), (int(end[0]), int(end[1])), 2)
 
     
-    def bounce(self):
-        self.vel = -self.vel
-        super().move()
-
 class DijkstraCar(AbstractCar):
     def __init__(self, img, start_pos, max_vel, rotation_vel,
                  path, grid_size=None, waypoint_reach=10,
