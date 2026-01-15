@@ -252,7 +252,7 @@ class NEATManager:
 
             # Fitness update
             on_road = self._on_road(ep.car)
-            ep.car.update_fitness(on_road, dt)
+            ep.car.update_fitness(on_road, dt, ep.elapsed)
             ep.elapsed += dt
 
             # Track speed history for stuck detection
