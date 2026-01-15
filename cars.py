@@ -655,10 +655,11 @@ class NEATCar(AbstractCar):
         # IMPORTANT: do NOT call sense() here; do it per-frame in your loop/manager.
 
     def SetTunables(self, TuningData):
-        self.max_vel = TuningData[0]
-        self.acceleration = TuningData[1]
-        # Breaking goes here -- dunno what to bind it to.
-        self.rotation_vel = TuningData[2]
+        # Basic params
+        self.max_vel = TuningData[0] # Speed
+        self.acceleration = TuningData[1] # Acceleration
+        self.rotation_vel = TuningData[2] # Steering
+        self.brake_factor = TuningData[3] # Braking
 
     # ---------- geometry ----------
     def _basis_vectors(self):
