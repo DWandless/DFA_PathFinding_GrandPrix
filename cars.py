@@ -752,25 +752,70 @@ class NEATCar(AbstractCar):
         self.apply_controls()
         super().move()
     # ---------- fitness ----------
-    def update_fitness(self, on_road, dt):
-        # new fitness function: less fitness over time for moving in the same spot(resets on checkpoint?). More fitness as closer to next checkpoint
-    
-        # Base shaping
-        if on_road:
-            self.fitness += (self.vel / max(1e-6, self.max_vel)) * dt
-        else:
-            self.fitness -= 0.25 * dt
+   
 
-        # Checkpoint milestones (pixel coords with optional radius)
+    def update_fitness(self, on_road, dt):
+        """
+        Fitness shaping:
+        - Penalize staying in the same spot over time (resets on checkpoint).
+        - Reward progress toward next checkpoint.
+        - Base reward for moving on road.
+        """
+
+        # ---- Base reward/penalty ----
+        #if on_road:
+        #    # Reward proportional to speed while on road
+        #    maxv = max(1e-6, getattr(self, "max_vel", 1.0))
+        #    self.fitness += (float(getattr(self, "vel", 0.0)) / maxv) * dt
+        #else:
+            # Off-road time penalty
+        #    self.fitness -= 0.25 * dt
+
+        # ---- Checkpoint progress shaping ----
         if self.next_checkpoint < len(self.checkpoints):
             cp = self.checkpoints[self.next_checkpoint]
             cx, cy = cp[:2]
             radius = cp[2] if len(cp) > 2 else self.grid_size * 0.75
-            # Using center (self.x, self.y)
-            dx, dy = self.x - cx, self.y - cy
-            if dx*dx + dy*dy <= radius*radius:
+
+            # Distance from car centre to checkpoint
+            dx, dy = (self.x - cx), (self.y - cy)
+            dist_to_cp = (dx * dx + dy * dy) ** 0.5
+
+            # Initialize the tracker on first use (avoids None comparisons)
+            if not hasattr(self, "_last_dist_to_cp") or self._last_dist_to_cp is None:
+                self._last_dist_to_cp = dist_to_cp
+
+            # Compare to previous distance to decide reward/penalty
+            # Use a small epsilon to avoid jitter when distances fluctuate slightly.
+            eps = 1e-3
+            delta = self._last_dist_to_cp - dist_to_cp  # positive means closer
+
+            if delta > eps:
+                # Reward measurable progress toward the checkpoint
+                # Scale small so it complements base reward; tune as needed.
+                self.fitness += 0.05 * delta
+            elif delta < -eps:
+                # Penalize moving away from the checkpoint (or oscillating backwards)
+                self.fitness -= 0.02 * dt
+            else:
+                # Very small/zero movement -> mild idle penalty over time
+                self.fitness -= 0.01 * dt
+
+            # Update the last distance for next frame
+            self._last_dist_to_cp = dist_to_cp
+
+            # Checkpoint reached -> grant bonus and reset progress tracking
+            if dist_to_cp <= radius:
                 self.fitness += 10.0
                 self.next_checkpoint += 1
+                # Reset tracker so the next checkpoint starts fresh
+                self._last_dist_to_cp = None
+        else:
+            # No more checkpoints: optional small survival reward
+            # You can leave this out or tune it to your use-case.
+            self.fitness += 0.01 * dt
+
+
 
     def draw(self, win, draw_sensors: bool = True):
         super().draw(win)
