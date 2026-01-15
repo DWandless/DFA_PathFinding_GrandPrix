@@ -93,7 +93,7 @@ def run():
             [0.02, 0.2, 0.05],  # 7  conn_add_prob
             [0.1, 0.5, 0.2],    # 8  survival_threshold
             [5, 30, 15],        # 9  max_stagnation
-            [20, 150, 50],      # 10 pop_size
+            [20, 150, 2],      # 10 pop_size
         ])
     game_info = GameInfo()
 

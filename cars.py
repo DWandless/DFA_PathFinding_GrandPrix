@@ -2,7 +2,7 @@ import math
 import pygame
 from resources import blit_rotate_center
 import heapq
-from resources import raycast_mask, PATH
+from resources import raycast_mask, PATH, CHECKPOINT_RADIUS
 
 class AbstractCar:
     """Base car providing position, movement, rotation and collisions.
@@ -803,15 +803,21 @@ class NEATCar(AbstractCar):
         # base shaping
         if on_road: self.fitness += (self.vel / max(1e-6, self.max_vel)) * dt
         else:       self.fitness -= 0.25 * dt
-
+       
         # checkpoint milestones (pixel coords with optional radius)
         if self.next_checkpoint < len(self.checkpoints):
+            #print("printing")
             cp = self.checkpoints[self.next_checkpoint]
+            #print(cp)
             cx, cy = cp[:2]
-            radius = cp[2] if len(cp) > 2 else self.grid_size * 0.75
+            #print(cx)
+            #print(cy)
+            radius = CHECKPOINT_RADIUS
+            #print(radius)
             if (self.x - cx)**2 + (self.y - cy)**2 <= radius**2:
                 self.fitness += 10.0
                 self.next_checkpoint += 1
+                
 
 
 
