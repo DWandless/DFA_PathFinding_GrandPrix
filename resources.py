@@ -210,9 +210,9 @@ def create_computer_car():
 def create_GBFS_car():
     from cars import GBFSDetourCar
     car = GBFSDetourCar(
-        3, 4, PATH, GRID_SIZE, 30,
+        PATH, GRID_SIZE, 30,
         CHECKPOINT_RADIUS, GRID, TRACK_BORDER_MASK,
-        GREEN_CAR, False, 0.6, 0.7
+        GREEN_CAR
     )
     car.x, car.y = START_POSITION
     return car
@@ -255,3 +255,49 @@ def raycast_mask(mask, origin, angle, max_distance=800, step=3):
         dist += step
 
     return {"hit": False, "distance": max_distance, "point": None}
+# --------------------------------------------------
+# Money Systems
+# --------------------------------------------------
+def CalculateMoney(TuningData: list):
+    #TuningData Format looks like this:
+    # a list of lists, each list inside tuning data should be like: [MINVAL, MAXVAL, CURRENTVAL]
+    # If all values equate to 50% then money will return 0 
+    # If the tunable is a toggle set min to 0 and max to 1
+
+    # Definitions
+    TotalMoney = 1000
+
+    # Converting values into decimal percentages
+    Percentages = []
+    for Entry in TuningData:
+        if Entry[0] == 0 and Entry[1] == 1:
+            Percentages.append(str(Entry[2]))
+        else:
+            Percentages.append((Entry[2] - Entry[0]) / (Entry[1] - Entry[0]))
+    # Calculate remaining money
+    Costs = []
+    for Percentage in Percentages:
+        if isinstance(Percentage, str):
+            if int(Percentage) == 0:
+                Costs.append(0)
+            else:
+                Costs.append((TotalMoney / len(Percentages)))
+        else:
+            Costs.append(((TotalMoney / len(Percentages)) * 2) * Percentage)
+    
+    # Combine Costs
+    FinalCost = sum(Costs)
+    return TotalMoney - FinalCost
+
+def SetCarTuning(CarObj, TuningData: list):
+    # Tuning data should be in the same order as the car object's tuning options
+    # a list of lists, each list inside tuning data should be like: [MINVAL, MAXVAL, CURRENTVAL]
+
+    # Performing Checks
+    MoneyLeft = CalculateMoney(TuningData)
+    if MoneyLeft < 0: return False, MoneyLeft
+
+    # Applying Changes
+    TunablesToApply = lambda lst: list(map(lambda x: x[2], lst))
+    CarObj.SetTunables(TunablesToApply(TuningData))
+    return True, MoneyLeft

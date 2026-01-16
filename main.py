@@ -76,6 +76,25 @@ def run():
     neat_car = create_neat_car()
     dijkstra_car = create_dijkstra_car() 
 
+    Result_gbfs, MoneyLeft_gbfs = resources.SetCarTuning(GBFS_car, [[1,5,3],[0.0,0.2,0.1],[2,6,4],[0.2,1.0,0.6],[16,48,32],[20,80,50],[0.1,0.7,0.4],[0.2,0.8,0.5],[20000,80000,50000],[15,45,30],[0,1,0]])
+    result_neat, moneyleft_neat = resources.SetCarTuning(
+        neat_car,
+        [
+            [1, 5, 3],          # 0  (handled elsewhere)
+            [0.0, 0.2, 0.1],    # 1  (handled elsewhere)
+            [2, 6, 4],          # 2  (handled elsewhere)
+            [0.2, 1.0, 0.6],    # 3  (handled elsewhere)
+
+            # --- NEAT tunables used here ---
+
+            [0.2, 0.9, 0.6],    # 4  weight_mutate_rate
+            [0.05, 1.0, 0.3],   # 5  weight_mutate_power
+            [0.005, 0.1, 0.03], # 6  node_add_prob
+            [0.02, 0.2, 0.05],  # 7  conn_add_prob
+            [0.1, 0.5, 0.2],    # 8  survival_threshold
+            [5, 30, 15],        # 9  max_stagnation
+            [20, 150, 2],      # 10 pop_size
+        ])
     game_info = GameInfo()
 
     setup = True
@@ -168,7 +187,14 @@ def run():
                 ),
                 (10, 40)
             )
-
+            summary_text = manager.get_generation_summary()
+            WIN.blit(
+                hud_font.render(
+                    summary_text,
+                    True, (200, 200, 200)
+                ),
+                (10, 70)
+            )
             
 
             if training_done:
