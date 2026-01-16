@@ -781,15 +781,14 @@ class NEATCar(AbstractCar):
         if throttle >= 0.6:
             #self.move_forward()
             self.vel = min(self.vel + self.acceleration, self.max_vel)
-            radians = math.radians(self.angle)
-            vertical = math.cos(radians) * self.vel
-            horizontal = math.sin(radians) * self.vel
-            self.y -= vertical
-            self.x -= horizontal
-            # Manually included move logic here to avoid recursive move calls
+            #radians = math.radians(self.angle)
+            #vertical = math.cos(radians) * self.vel
+            #horizontal = math.sin(radians) * self.vel
+            #self.y -= vertical
+            #self.x -= horizontal
 
-        #elif throttle <= 0: causing car to move back indefinitely
-            #self.move_backward()
+        elif throttle <= -0.2: #causing car to move back indefinitely
+            self.vel = max(self.vel - self.acceleration, -self.max_vel / 2)
         # else: coast (no change this frame)
 
     def move(self):
