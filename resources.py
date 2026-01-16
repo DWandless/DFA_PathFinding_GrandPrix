@@ -53,6 +53,7 @@ PURPLE_CAR = scale_image(pygame.image.load("assets/purple-car.png"), 0.55)
 TEMPLATE_CAR = scale_image(pygame.image.load("assets/car_template.png"), 0.55)
 WHITE_CAR = scale_image(pygame.image.load("assets/white-car.png"), 0.55)
 
+level_active = False
 FPS = 60
 GRID_SIZE = 4
 CHECKPOINT_RADIUS = 30
@@ -83,6 +84,23 @@ PATH = [
     (749,83),(363,86),(316,150),(310,405),(255,460),
     (178,404),(193,193)
 ]
+
+# --------------------------------------------------
+# LEVEL PATHS
+# --------------------------------------------------
+LEVEL_PATHS = {
+    1: PATH,
+    2: [
+        (60, 287), (60,138), (152, 64), (401, 64), (748, 64),
+        (810, 104), (812, 217), (731, 411), (732, 475), (778, 583),
+        (810, 660),
+        (234, 452), (123, 457), (62, 395), (62, 287)
+    ],
+}
+
+def get_path_for_level(level):
+    """Get the path for a specific level."""
+    return LEVEL_PATHS.get(level, [])
 
 # --------------------------------------------------
 # Results CSV
@@ -127,32 +145,41 @@ def load_track_for_level(level):
     global TRACK, TRACK_BORDER, TRACK_BORDER_MASK
     global PATH, GRID, images, WIN
     global FINISH_POSITION, START_POSITION
+    global level_active
 
     if level == 1:
+        level_active = True
         track_img = "assets/track.png"
         border_img = "assets/track-border.png"
 
         FINISH_POSITION = (135, 250)
         START_POSITION = (200, 200)
 
+        
         PATH = [
             (191,131),(138,80),(70,135),(70,514),(317,785),(397,811),
             (450,753),(457,586),(559,532),(663,596),(669,753),
             (741,814),(824,746),(821,469),(757,400),(502,398),
             (446,347),(514,288),(763,282),(822,238),(820,130),
             (749,83),(363,86),(316,150),(310,405),(255,460),
-            (178,404),(193,263)
+            (178,404),(193,193)
         ]
 
     elif level == 2:
+        level_active = True
+        track_img = "assets/track2.png"
         track_img = "assets/track4.png"
         border_img = "assets/track4-border.png"
 
         FINISH_POSITION = (20, 380)
         START_POSITION = (60, 288)
 
+        
         PATH = [
-            (0, 0)  # placeholder path
+            (60, 287), (60,138), (152, 64), (401, 64), (748, 64),
+            (820, 104), (812, 217), (731, 411), (732, 475), (778, 583),
+            (810, 660),
+            (234, 452), (123, 457), (62, 395), (62, 287)
         ]
 
     TRACK = scale_image(pygame.image.load(track_img), 1)
@@ -196,6 +223,8 @@ class GameInfo:
         self.started = True
         self.level_start_time = time.time()
 
+    
+
 # --------------------------------------------------
 # Car factories (UNCHANGED API)
 # --------------------------------------------------
@@ -228,7 +257,7 @@ def create_neat_car():
 def create_dijkstra_car(max_vel=3, rotation_vel=4):
     WAYPOINT_REACH = 50 # radius to consider a waypoint reached
     from cars import DijkstraCar
-    return DijkstraCar(WHITE_CAR, (160, 200), max_vel, 
+    return DijkstraCar(WHITE_CAR, START_POSITION, max_vel, 
                        rotation_vel, PATH, GRID_SIZE, WAYPOINT_REACH, 
                        CHECKPOINT_RADIUS, GRID, TRACK_BORDER_MASK)
 

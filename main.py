@@ -8,7 +8,7 @@ from resources import (
     GameInfo, WIN, FPS, images,
     create_player_car, create_computer_car, create_GBFS_car,
     create_neat_car, blit_text_center,
-    TRACK_BORDER_MASK, raycast_mask,
+    raycast_mask,
     load_track_for_level, create_dijkstra_car
 )
 
@@ -26,7 +26,7 @@ config = neat.Config(
 manager = NEATManager(
     neat_config=config,
     car_factory=create_neat_car,
-    track_mask=TRACK_BORDER_MASK,
+    track_mask=resources.TRACK_BORDER_MASK,
     raycast_fn=raycast_mask,
     fps=FPS,
     time_limit_sec=20.0
@@ -70,13 +70,14 @@ def run():
     # --------------------------------------------------
     # Initial setup
     # --------------------------------------------------
-    player_car = create_player_car()
-    computer_car = create_computer_car()
-    GBFS_car = create_GBFS_car()
-    neat_car = create_neat_car()
-    dijkstra_car = create_dijkstra_car() 
-
     game_info = GameInfo()
+    
+    # Cars will be created when level starts
+    player_car = None
+    computer_car = None
+    GBFS_car = None
+    neat_car = None
+    dijkstra_car = None
 
     setup = True
     running = True
@@ -100,6 +101,13 @@ def run():
                 action = menu.handle_event(event)
                 if action == "play":
                     game_info.next_level()  # Start at level 1
+                    load_track_for_level(game_info.get_level())
+                    # Create fresh cars for this level
+                    player_car = create_player_car()
+                    computer_car = create_computer_car()
+                    GBFS_car = create_GBFS_car()
+                    neat_car = create_neat_car()
+                    dijkstra_car = create_dijkstra_car()
                     setup = False
                     for n in ["3", "2", "1"]:
                         WIN.fill((0, 0, 0))
@@ -109,6 +117,13 @@ def run():
                     game_info.start_level()
                 elif action == "train":
                     game_info.next_level()  # Start at level 1
+                    load_track_for_level(game_info.get_level())
+                    # Create fresh cars for training
+                    player_car = create_player_car()
+                    computer_car = create_computer_car()
+                    GBFS_car = create_GBFS_car()
+                    neat_car = create_neat_car()
+                    dijkstra_car = create_dijkstra_car()
                     setup = False
                 elif action == "page1":
                     menu.drawPage1(WIN)
@@ -129,7 +144,7 @@ def run():
         # -------------------------------
         # Draw (when racing)
         # -------------------------------
-        if game_info.started:
+        if game_info.started and player_car is not None:
             ui.draw(WIN, images, player_car, computer_car, GBFS_car, neat_car, dijkstra_car)
 
         # -------------------------------
@@ -201,7 +216,8 @@ def run():
         # -------------------------------
         # Update cars
         # -------------------------------
-        if game_info.started:
+        if game_info.started and player_car is not None:
+
             neat_car.move()
             neat_car.sense(neat_car.track_mask, raycast_mask)
             neat_car.think()
@@ -214,8 +230,10 @@ def run():
         # -------------------------------
         # Collisions & LEVEL SWITCH
         # -------------------------------
-        level_finished = ui.handle_collision(
-            player_car, computer_car, GBFS_car, neat_car, dijkstra_car)
+        level_finished = False
+        if player_car is not None:
+            level_finished = ui.handle_collision(
+                player_car, computer_car, GBFS_car, neat_car, dijkstra_car)
         
 
         if level_finished:
@@ -224,34 +242,14 @@ def run():
                 load_track_for_level(game_info.get_level())
 
                 # 🔹 update NEAT manager + cars to new mask/path
-                manager.track_mask = TRACK_BORDER_MASK
+                manager.track_mask = resources.TRACK_BORDER_MASK
 
-                start_pos = resources.START_POSITION
-
-                player_car.set_start_pos(start_pos)
-                computer_car.set_start_pos(start_pos)
-                GBFS_car.set_start_pos(start_pos)
-                neat_car.set_start_pos(start_pos)
-                dijkstra_car.set_start_pos(start_pos)
-
-                player_car.reset()
-                computer_car.reset()
-                GBFS_car.reset()
-                neat_car.reset()
-                dijkstra_car.reset()
-
-                new_path = resources.PATH
-                new_grid = resources.GRID
-                
-                neat_car.track_mask = TRACK_BORDER_MASK
-                neat_car.path = new_path
-
-                computer_car.path = new_path
-                GBFS_car.grid = new_grid
-                GBFS_car.track_mask = TRACK_BORDER_MASK
-
-                dijkstra_car.grid = new_grid
-                dijkstra_car.track_mask = TRACK_BORDER_MASK
+                # Recreate all cars fresh for the new level
+                player_car = create_player_car()
+                computer_car = create_computer_car()
+                GBFS_car = create_GBFS_car()
+                neat_car = create_neat_car()
+                dijkstra_car = create_dijkstra_car()
 
                 game_info.start_level()
 

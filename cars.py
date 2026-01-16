@@ -2,7 +2,7 @@ import math
 import pygame
 from resources import blit_rotate_center
 import heapq
-from resources import raycast_mask, PATH
+from resources import raycast_mask
 
 
 class AbstractCar:
@@ -71,6 +71,13 @@ class AbstractCar:
     def bounce(self):
         self.vel = -self.vel / 2
         self.move()
+
+    def set_level(self, level):
+        """
+        Called when the level changes.
+        Subclasses may override or extend.
+        """
+        pass
 
 
 class PlayerCar(AbstractCar):
@@ -144,6 +151,11 @@ class ComputerCar(AbstractCar):
         self.reset()
         self.current_point = 0
         self.vel = self.max_vel + (level - 1) * 0.2# increase speed each level
+
+    def set_level(self, level):
+        from resources import get_path_for_level
+        self.path = get_path_for_level(level)
+        self.current_point = 0
 
 class GBFSDetourCar(AbstractCar):
     START_POS = (165, 200)
@@ -583,7 +595,19 @@ class GBFSDetourCar(AbstractCar):
 
         # Move if safe
         super().move()
+        
+    def set_level(self, level):
+        import resources
+        self.checkpoints = resources.get_path_for_level(level)
+        self.current_checkpoint = 0
+        self.path = []
+        self.current_point = 0
+        self.GRID = resources.GRID
+        self.TRACK_BORDER_MASK = resources.TRACK_BORDER_MASK
 
+        self.current_checkpoint = 0
+        self.path = []
+        self.reset()
 
 class NEATCar(AbstractCar):
     def __init__(self, img, start_pos, max_vel, rotation_vel,
@@ -784,8 +808,16 @@ class NEATCar(AbstractCar):
                                  (int(origin[0]), int(origin[1])),
                                  (int(end[0]),    int(end[1])), 2)
                 #pygame.draw.circle(win, (0, 255, 0), (int(end[0]), int(end[1])), 2)
+    def set_level(self, level):
+        import resources
+        self.path = resources.get_path_for_level(level)
+        self.grid = resources.GRID
+        self.track_mask = resources.TRACK_BORDER_MASK
+        self.checkpoints = resources.PATH[:]
 
-    
+        self.next_checkpoint = 0
+        self.reset()
+        
 class DijkstraCar(AbstractCar):
     def __init__(self, img, start_pos, max_vel, rotation_vel,
                  path, grid_size=None, waypoint_reach=10,
@@ -868,3 +900,15 @@ class DijkstraCar(AbstractCar):
             if self.current_point < len(self.path):
                 tx, ty = self.path[self.current_point]
                 pygame.draw.circle(win, (0, 255, 0), (int(tx), int(ty)), 5)
+
+    def set_level(self, level):
+        import resources
+        path = resources.get_path_for_level(level)
+        self.PATH = path
+        self.path = self.PATH[:]
+        self.current_point = 0
+        self.TRACK_BORDER_MASK = resources.TRACK_BORDER_MASK
+        self.grid = resources.GRID
+
+        self.current_point = self._nearest_waypoint_index()
+        self.reset()
