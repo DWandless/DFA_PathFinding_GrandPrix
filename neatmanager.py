@@ -113,7 +113,7 @@ class NEATManager:
         sc.max_stagnation = TuningData[10]
         # population size
         self.config.pop_size = TuningData[11]
-        RestartWithNewPopulationSize()
+        # RestartWithNewPopulationSize()
 
     
 
