@@ -216,6 +216,13 @@ class Menu():
         self.page1BackButton = Button((width, height - 80, 200, 50), "Back Page 1", GRAY, WHITE)
         # Page 2 Buttons                    <---2
         self.page2BackButton = Button((width, height - 80, 200, 50), "Back Page 2", GRAY, WHITE)
+    
+    def enable_main_buttons(self):
+        self.playButton.enabled = True
+        self.trainButton.enabled = True
+        self.page1Button.enabled = True
+        self.page2Button.enabled = True
+        self.quitButton.enabled = True
 
     def drawMain(self, surface):
         surface.blit(MENU, (0, 0))
@@ -239,8 +246,8 @@ class Menu():
         pygame.display.flip()
     
     def backPage1(self, surface):
-        # Remove page 1 buttons             <---1
         self.page1BackButton.enabled = False
+        self.enable_main_buttons()
         self.drawMain(surface)
     
     def drawPage2(self, surface):
@@ -256,8 +263,8 @@ class Menu():
         pygame.display.flip()
     
     def backPage2(self, surface):
-        # Remove page 2 buttons             <---2
         self.page2BackButton.enabled = False
+        self.enable_main_buttons()
         self.drawMain(surface)
 
     # Button triggers                       <---
@@ -281,6 +288,7 @@ class Menu():
 class Button():
 
     def __init__(self, rect, label, bg_color, text_color):
+        self.page = "main"  # "main", "page1", "page2"
         self.rect = pygame.Rect(rect)
         self.label = label
         self.bg_color = bg_color
@@ -311,7 +319,6 @@ class Button():
         text_rect = text.get_rect(center=self.rect.center)
         surface.blit(text, text_rect)
 
-        self.enabled = True
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self.enabled == True:
@@ -440,7 +447,7 @@ def move_player(player_car):
         player_car.move_backward()
     if not moved:
         player_car.reduce_speed()
-        print(player_car.position()) #  DEBUGGING prints cars current stopped position.
+        #print(player_car.position()) #  DEBUGGING prints cars current stopped position.
 
 
 def handle_collision(player_car, computer_car, gbfs_car, neat_car, dijkstra_car):
