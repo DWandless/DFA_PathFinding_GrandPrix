@@ -20,7 +20,7 @@ config = neat.Config(
     neat.DefaultReproduction,
     neat.DefaultSpeciesSet,
     neat.DefaultStagnation,
-    'neat_config.ini'
+    'assets/neat_config.ini'
 )
 
 manager = NEATManager(
