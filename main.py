@@ -100,6 +100,7 @@ def run():
             if setup:                                          # <---
                 action = menu.handle_event(event)
                 if action == "play":
+                    resources.click_sound.play()
                     game_info.next_level()  # Start at level 1
                     load_track_for_level(game_info.get_level())
                     # Create fresh cars for this level
@@ -126,14 +127,19 @@ def run():
                     dijkstra_car = create_dijkstra_car()
                     setup = False
                 elif action == "page1":
+                    resources.click_sound.play()
                     menu.drawPage1(WIN)
                 elif action == "page1Back":
+                    resources.click_sound.play()
                     menu.backPage1(WIN)
                 elif action == "page2":
+                    resources.click_sound.play()
                     menu.drawPage2(WIN)
                 elif action == "page2Back":
+                    resources.click_sound.play()
                     menu.backPage2(WIN)
                 elif action == "quit":
+                    resources.click_sound.play()
                     running = False
 
                 if event.type == pygame.KEYDOWN and event.key in (pygame.K_RETURN, pygame.K_SPACE):
