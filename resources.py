@@ -150,15 +150,36 @@ def load_track_for_level(level):
         FINISH_POSITION = (20, 380)
         START_POSITION = (60, 288)
 
-        
-        RACING_LINE = [
+        # Two possible paths after checkpoint (830, 660)
+        path_to_junction = [
             (60, 287), (60,138), (152, 64), (401, 64), (748, 64),
             (820, 104), (812, 217), (731, 411), (732, 475), (778, 583),
             (830, 660),
-            (750, 750), (604, 810), (348, 810), (118, 810), (69, 744), (93, 696), (222, 632), (470, 527), (510, 416), (370, 392),
-            (630, 699), (629, 589), (617, 262), (532, 194), (348, 195), (245, 237), (229, 357),
-            (234, 452), (123, 457), (62, 395), (62, 287)
         ]
+        
+        # Path A: through (750, 750)
+        path_a = path_to_junction + [
+            (750, 750), (604, 810), (348, 810), (118, 810), (69, 744), (93, 696), 
+            (222, 632), (470, 527), (510, 416), (370, 392),
+            (62, 395), (62, 287)
+        ]
+        
+        # Path B: through (630, 699)
+        path_b = path_to_junction + [
+            (630, 699), (629, 589), (617, 262), (532, 194), (348, 195), (245, 237), 
+            (229, 357), (234, 452), (123, 457), (62, 395), (62, 287)
+        ]
+        
+        # Choose the shorter path to the finish
+        def compute_path_length(path):
+            total = 0.0
+            for i in range(len(path) - 1):
+                x1, y1 = path[i]
+                x2, y2 = path[i + 1]
+                total += math.hypot(x2 - x1, y2 - y1)
+            return total
+        
+        RACING_LINE = path_a if compute_path_length(path_a) <= compute_path_length(path_b) else path_b
 
     TRACK = scale_image(pygame.image.load(track_img), 1)
     TRACK_BORDER = scale_image(pygame.image.load(border_img), 1)
