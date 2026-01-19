@@ -421,7 +421,7 @@ def move_player(player_car):
         player_car.move_backward()
     if not moved:
         player_car.reduce_speed()
-        print(player_car.position()) #  DEBUGGING prints cars current stopped position.
+        #print(player_car.position()) #  DEBUGGING prints cars current stopped position.
 
 
 def handle_collision(player_car, computer_car, gbfs_car, neat_car, dijkstra_car):

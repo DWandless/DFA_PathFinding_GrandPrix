@@ -238,13 +238,14 @@ def run():
 
         if level_finished:
             if game_info.next_level():
-                # 🔹 SWITCH TRACK (updates globals)
+
+                # 1️⃣ Load new track + racing line
                 load_track_for_level(game_info.get_level())
 
-                # 🔹 update NEAT manager + cars to new mask/path
+                # 2️⃣ Update NEAT manager mask
                 manager.track_mask = resources.TRACK_BORDER_MASK
 
-                # Recreate all cars fresh for the new level
+                # 3️⃣ Recreate all cars cleanly (they auto-pull RACING_LINE)
                 player_car = create_player_car()
                 computer_car = create_computer_car()
                 GBFS_car = create_GBFS_car()

@@ -185,6 +185,7 @@ class GBFSDetourCar(AbstractCar):
         self._last_dist = None
         self._stuck_frames = 0
         self._stuck_threshold = 45  # ~0.75s at 60 FPS
+        self._frames_since_replan = 0  # Grace period after replan before checking collisions
 
     def greedy_best_first(self, start, goal, allow_diag=True, clearance_weight=0.4, max_expansions=50000):
         """
@@ -351,6 +352,7 @@ class GBFSDetourCar(AbstractCar):
         Return the index of the nearest path waypoint that is 'ahead' of the car
         in heading space (positive projection onto forward direction).
         Prevents turning back to points behind.
+        For newly computed paths, prefer starting close to the beginning.
         """
         
         if not self.path:
@@ -362,7 +364,6 @@ class GBFSDetourCar(AbstractCar):
         if self.current_point >= len(self.path):
             self.current_point = len(self.path) - 1
 
-
         # Car forward unit vector (sprite faces up -> angle 0 is forward up)
         rad = math.radians(self.angle)
         fwd = (-math.sin(rad), -math.cos(rad))  # (fx, fy) forward direction
@@ -372,8 +373,9 @@ class GBFSDetourCar(AbstractCar):
         cx, cy = self.x, self.y
 
         # Search a window to avoid scanning whole path
+        # Start closer to current point to avoid jumping too far ahead
         start_i = max(0, self.current_point - 3)
-        end_i = min(len(self.path), self.current_point + 50)
+        end_i = min(len(self.path), self.current_point + 20)  # Reduced from 50 to 20
 
         for i in range(start_i, end_i):
             px, py = self.path[i]
@@ -427,8 +429,17 @@ class GBFSDetourCar(AbstractCar):
         # -> a = atan2(sin(a), cos(a)) = atan2(-fx, -fy)
         desired_rad = math.atan2(-fx, -fy)
         desired_deg = math.degrees(desired_rad)
-        # normalize to [-180, 180) relative to current angle when you compute diff
-        return desired_deg
+        
+        # Normalize desired_deg to [0, 360)
+        desired_deg = desired_deg % 360
+        
+        # Normalize current angle to [0, 360)
+        current_normalized = self.angle % 360
+        
+        # Calculate shortest rotation direction
+        diff = (desired_deg - current_normalized + 180) % 360 - 180
+        
+        return current_normalized + diff  # Return the target angle directly, not delta
 
     def compute_path(self):
         start = self.world_to_grid(self.x, self.y)
@@ -448,16 +459,17 @@ class GBFSDetourCar(AbstractCar):
         )
         
         if grid_path is None:
-            print("GBFS failed at checkpoint", self.current_checkpoint, "start", start, "goal", goal)
+            pass
 
         if grid_path:
             self.path = [self.grid_to_world(gx, gy) for gx, gy in grid_path]
-            self.current_point = self._next_ahead_index()
+            # Start at beginning of new path, not using heading which is from previous checkpoint
+            self.current_point = 0
         else:
             detour = self.smart_detour(goal_world)
             if detour:
                 self.path = detour
-                self.current_point = self._next_ahead_index()
+                self.current_point = 0  # Start at beginning of detour path
             else:
                 self.path = []
                 self.current_point = 0
@@ -497,14 +509,20 @@ class GBFSDetourCar(AbstractCar):
         advanced = self._advance_checkpoint_if_reached()
         if advanced:
             self.compute_path()
+            self._frames_since_replan = 0  # Reset grace period
+            # After recomputing path, don't immediately jump ahead - start fresh
+            # Skip the _next_ahead_index() call this frame
+            if not self.path:
+                return
 
         # 2) Replan when path is missing/exhausted
-        if not self.path or self.current_point >= len(self.path):
+        elif not self.path or self.current_point >= len(self.path):
             self.compute_path()
             if not self.path:
                 return  # nothing to follow yet
-        # 3) Choose nearest forward waypoint (prevents turn-back)
-        self.current_point = self._next_ahead_index()
+        else:
+            # Only call _next_ahead_index if we're continuing on the same path
+            self.current_point = self._next_ahead_index()
 
         if not self.path:
             self.compute_path()
@@ -564,15 +582,20 @@ class GBFSDetourCar(AbstractCar):
         car_mask = pygame.mask.from_surface(rotated_img)
 
         # Border collision predicted -> detour or replan (GBFS-only)
-        if self.TRACK_BORDER_MASK.overlap(car_mask, (int(rotated_rect.left), int(rotated_rect.top))):
+        # But skip collision check for a few frames after replanning to let car orient
+        if self._frames_since_replan > 5 and self.TRACK_BORDER_MASK.overlap(car_mask, (int(rotated_rect.left), int(rotated_rect.top))):
             detour = self.smart_detour(self.checkpoints[self.current_checkpoint])
             if detour:
                 self.path = detour
                 self.current_point = self._next_ahead_index()
+                self._frames_since_replan = 0
                 return
             else:
                 self.compute_path()
+                self._frames_since_replan = 0
                 return
+        
+        self._frames_since_replan += 1
 
         # --- STUCK RESOLUTION ---
         d_to_lookahead = math.hypot(target_x - self.x, target_y - self.y)
@@ -824,35 +847,138 @@ class DijkstraCar(AbstractCar):
                  checkpoint_radius=None, grid=None,
                  track_border_mask=None, loop=True):
         super().__init__(img, start_pos, max_vel, rotation_vel)
-        self.PATH = path
+        self.CHECKPOINTS = path  # Expected path becomes checkpoints for Dijkstra to plan between
         self.WAYPOINT_REACH = waypoint_reach
+        self.CHECKPOINT_RADIUS = checkpoint_radius or 30
         self.TRACK_BORDER_MASK = track_border_mask
+        self.GRID = grid
+        self.GRID_SIZE = grid_size or 4
         self.loop = loop
 
         self.vel = max_vel
+        self.current_checkpoint = 0
+        self.path = []  # Dijkstra-computed path
         self.current_point = 0
-        self.path = self.PATH[:]
-        self.current_point = self._nearest_waypoint_index()
+        
+        # Compute initial path to first checkpoint
+        self._compute_path_to_checkpoint()
 
-    # ------------------ HELPERS ------------------
-    def _nearest_waypoint_index(self):
-        cx, cy = self.x, self.y
-        best_i, best_d = 0, float("inf")
-        for i, (px, py) in enumerate(self.PATH):
-            d = math.hypot(px - cx, py - cy)
-            if d < best_d:
-                best_d = d
-                best_i = i
-        return best_i
+    # ------------------ DIJKSTRA ALGORITHM ------------------
+    def _world_to_grid(self, x, y):
+        """Convert world coordinates to grid coordinates."""
+        gx = int(y / self.GRID_SIZE)
+        gy = int(x / self.GRID_SIZE)
+        return (gx, gy)
+
+    def _grid_to_world(self, gx, gy):
+        """Convert grid coordinates to world coordinates."""
+        x = gy * self.GRID_SIZE + self.GRID_SIZE / 2
+        y = gx * self.GRID_SIZE + self.GRID_SIZE / 2
+        return (x, y)
+
+    def _dijkstra_path(self, start_world, goal_world):
+        """
+        Compute shortest path using Dijkstra's algorithm.
+        Returns list of (x, y) world coordinates from start to goal.
+        """
+        import heapq
+        
+        start_grid = self._world_to_grid(*start_world)
+        goal_grid = self._world_to_grid(*goal_world)
+        
+        rows, cols = len(self.GRID), len(self.GRID[0])
+        
+        # Check if start/goal are walkable
+        if not (0 <= start_grid[0] < rows and 0 <= start_grid[1] < cols):
+            return []
+        if not (0 <= goal_grid[0] < rows and 0 <= goal_grid[1] < cols):
+            return []
+        if not self.GRID[start_grid[0]][start_grid[1]]:
+            return []
+        if not self.GRID[goal_grid[0]][goal_grid[1]]:
+            return []
+        
+        # Dijkstra: (cost, node)
+        open_set = [(0, start_grid)]
+        visited = set()
+        came_from = {}
+        cost_so_far = {start_grid: 0}
+        
+        while open_set:
+            current_cost, current = heapq.heappop(open_set)
+            
+            if current in visited:
+                continue
+            visited.add(current)
+            
+            if current == goal_grid:
+                # Reconstruct path
+                path = []
+                node = current
+                while node in came_from:
+                    path.append(node)
+                    node = came_from[node]
+                path.append(start_grid)
+                path.reverse()
+                
+                # Convert grid path to world path
+                world_path = [self._grid_to_world(gx, gy) for gx, gy in path]
+                return world_path
+            
+            # Explore 8 neighbors (diagonal allowed)
+            cr, cc = current
+            neighbors = [
+                (cr - 1, cc), (cr + 1, cc), (cr, cc - 1), (cr, cc + 1),  # 4-neighbors
+                (cr - 1, cc - 1), (cr - 1, cc + 1), (cr + 1, cc - 1), (cr + 1, cc + 1)  # diagonals
+            ]
+            
+            for nr, nc in neighbors:
+                if not (0 <= nr < rows and 0 <= nc < cols):
+                    continue
+                if not self.GRID[nr][nc]:  # Blocked cell
+                    continue
+                if (nr, nc) in visited:
+                    continue
+                
+                # Cost: 1 for 4-neighbors, sqrt(2) for diagonals
+                move_cost = 1.0 if abs(nr - cr) + abs(nc - cc) == 1 else 1.414
+                new_cost = cost_so_far[current] + move_cost
+                
+                if (nr, nc) not in cost_so_far or new_cost < cost_so_far[(nr, nc)]:
+                    cost_so_far[(nr, nc)] = new_cost
+                    came_from[(nr, nc)] = current
+                    heapq.heappush(open_set, (new_cost, (nr, nc)))
+        
+        return []  # No path found
+
+    def _compute_path_to_checkpoint(self):
+        """Compute Dijkstra path to current checkpoint."""
+        if self.current_checkpoint >= len(self.CHECKPOINTS):
+            if self.loop:
+                self.current_checkpoint = 0
+            else:
+                return
+        
+        checkpoint = self.CHECKPOINTS[self.current_checkpoint]
+        start_pos = (self.x, self.y)
+        
+        new_path = self._dijkstra_path(start_pos, checkpoint)
+        if new_path:
+            self.path = new_path
+            self.current_point = 0
+        else:
+            # Fallback: direct point if no path found
+            self.path = [checkpoint]
+            self.current_point = 0
 
     # ------------------ MOVEMENT ------------------
     def calculate_angle(self, target_x, target_y):
-    # Compute vector from car to target
+        """Compute and smoothly rotate towards target."""
         dx = target_x - self.x
         dy = target_y - self.y
 
         # In screen coords: 0 deg = up, 90 deg = right
-        desired = math.degrees(math.atan2(dx, -dy))  # note the negative dy
+        desired = math.degrees(math.atan2(dx, -dy))
         diff = (desired - self.angle + 180) % 360 - 180
 
         if diff > 0:
@@ -863,52 +989,64 @@ class DijkstraCar(AbstractCar):
         self.angle %= 360
 
     def move(self):
-        if self.current_point >= len(self.path):
-            return
-
+        """Move along Dijkstra path, replanning at checkpoints."""
+        # Replan if path is empty or exhausted
+        if not self.path or self.current_point >= len(self.path):
+            self.current_checkpoint += 1
+            if self.loop:
+                self.current_checkpoint %= len(self.CHECKPOINTS)
+            self._compute_path_to_checkpoint()
+            if not self.path:
+                return
+        
         tx, ty = self.path[self.current_point]
-
+        
         # Rotate toward next waypoint
         self.calculate_angle(tx, ty)
-
+        
         # Stepwise movement to avoid embedding in walls
         steps = max(int(self.vel), 1)
         rad = math.radians(self.angle)
+        width, height = self.TRACK_BORDER_MASK.get_size()
         for i in range(1, steps + 1):
             step_size = self.vel / steps
             test_x = self.x + math.sin(rad) * step_size
             test_y = self.y - math.cos(rad) * step_size
-
-            if self.TRACK_BORDER_MASK.get_at((int(test_x), int(test_y))) == 0:
-                self.x = test_x
-                self.y = test_y
-            else:
-                break
-
+            
+            # Boundary check
+            if (0 <= int(test_x) < width and
+                0 <= int(test_y) < height):
+                if self.TRACK_BORDER_MASK.get_at((int(test_x), int(test_y))) == 0:
+                    self.x = test_x
+                    self.y = test_y
+                else:
+                    break
+        
         # Update waypoint after movement
         if math.hypot(tx - self.x, ty - self.y) < self.WAYPOINT_REACH:
             self.current_point += 1
-            if self.loop:
-                self.current_point %= len(self.path)
 
     # ------------------ DEBUG DRAW ------------------
     def draw(self, win, show_points=True):
         blit_rotate_center(win, self.img, (self.x, self.y), -self.angle)
         if show_points:
+            # Draw checkpoints in red
+            for p in self.CHECKPOINTS:
+                pygame.draw.circle(win, (255, 0, 0), p, 5)
+            # Draw computed path in blue
             for p in self.path:
-                pygame.draw.circle(win, (0, 0, 255), p, 3)
+                pygame.draw.circle(win, (0, 0, 255), p, 2)
             if self.current_point < len(self.path):
                 tx, ty = self.path[self.current_point]
                 pygame.draw.circle(win, (0, 255, 0), (int(tx), int(ty)), 5)
 
     def set_level(self, level):
         import resources
-        path = resources.get_path_for_level(level)
-        self.PATH = path
-        self.path = self.PATH[:]
-        self.current_point = 0
+        self.CHECKPOINTS = resources.get_path_for_level(level)
         self.TRACK_BORDER_MASK = resources.TRACK_BORDER_MASK
-        self.grid = resources.GRID
-
-        self.current_point = self._nearest_waypoint_index()
+        self.GRID = resources.GRID
         self.reset()
+        self.current_checkpoint = 0
+        self.path = []
+        self.current_point = 0
+        self._compute_path_to_checkpoint()
