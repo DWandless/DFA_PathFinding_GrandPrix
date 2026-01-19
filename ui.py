@@ -166,12 +166,14 @@ def handle_collision(player_car, computer_car, gbfs_car, neat_car):
 """
 
 """UI helpers: drawing, leaderboard, input and collision handling."""
+from pydoc import text
 import pygame
 import time
 import csv
 import os
 from datetime import datetime
 import resources
+from resources import MENU
 
 
 def format_time(seconds):
@@ -205,18 +207,18 @@ class Menu():
         self.page = page
 
         # Main Menu Buttons
-        self.playButton = Button((width//2 - 100, height//2 - 60, 200, 50), "Play", BLUE, WHITE)
-        self.trainButton = Button((width//2 - 100, height//2 + 10, 200, 50), "Train NEAT", GRAY, (50, 50, 50))
-        self.page1Button = Button((width//2 - 100, height//2 + 80, 200, 50), "Page 1", GRAY, (50, 50, 50))
-        self.page2Button = Button((width//2 - 100, height//2 + 150, 200, 50), "Page 2", GRAY, (50, 50, 50))
-        self.quitButton = Button((width//2 - 100, height//2 + 220, 200, 50), "Quit", GRAY, (50, 50, 50))
+        self.playButton = Button((width, height//2 + 25, 200, 50), "Play", BLUE, WHITE)
+        self.trainButton = Button((width, height//2 + 150, 200, 50), "Train NEAT", GRAY, WHITE)
+        self.page1Button = Button((width, height//2 + 275, 200, 50), "Page 1", GRAY, WHITE)
+        self.page2Button = Button((width, height//2 + 400, 200, 50), "Page 2", GRAY, WHITE)
+        self.quitButton = Button((width, height//2 + 525, 200, 50), "Quit", GRAY, WHITE)
         # Page 1 Buttons                    <---1
-        self.page1BackButton = Button((width//2 + 100, height - 80, 200, 50), "Back Page 1", GRAY, (50, 50, 50))
+        self.page1BackButton = Button((width, height - 80, 200, 50), "Back Page 1", GRAY, WHITE)
         # Page 2 Buttons                    <---2
-        self.page2BackButton = Button((width//2 + 100, height - 80, 200, 50), "Back Page 2", GRAY, (50, 50, 50))
+        self.page2BackButton = Button((width, height - 80, 200, 50), "Back Page 2", GRAY, WHITE)
 
     def drawMain(self, surface):
-        surface.fill(self.bg)
+        surface.blit(MENU, (0, 0))
         self.playButton.draw(surface)
         self.trainButton.draw(surface)
         self.page1Button.draw(surface)
@@ -225,7 +227,7 @@ class Menu():
         pygame.display.flip()
 
     def drawPage1(self, surface):
-        surface.fill(self.bg)
+        surface.blit(MENU, (0, 0))
         # Remove menu buttons
         self.playButton.enabled = False
         self.trainButton.enabled = False
@@ -242,7 +244,7 @@ class Menu():
         self.drawMain(surface)
     
     def drawPage2(self, surface):
-        surface.fill(self.bg)
+        surface.blit(MENU, (0, 0))
         # Remove menu buttons
         self.playButton.enabled = False
         self.trainButton.enabled = False
@@ -287,11 +289,28 @@ class Button():
         self.enabled = True
 
     def draw(self, surface):
-        pygame.draw.rect(surface, self.bg_color, self.rect)
+        if not self.enabled:
+            return
+
+        # Create a transparent surface
+        button_surf = pygame.Surface(
+            (self.rect.width, self.rect.height),
+            pygame.SRCALPHA
+        )
+        # RGBA color (A = transparency)
+        # 0 = fully transparent, 255 = solid
+        button_color = (*self.bg_color, 0)  # <-- adjust alpha here
+
+        button_surf.fill(button_color)
+
+        # Blit transparent box
+        surface.blit(button_surf, self.rect.topleft)
+
+        # Draw text on top
         text = self.font.render(self.label, True, self.text_color)
-        # center text
         text_rect = text.get_rect(center=self.rect.center)
         surface.blit(text, text_rect)
+
         self.enabled = True
 
     def handle_event(self, event):
