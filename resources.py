@@ -54,6 +54,7 @@ PURPLE_CAR = scale_image(pygame.image.load("assets/purple-car.png"), 0.55)
 TEMPLATE_CAR = scale_image(pygame.image.load("assets/car_template.png"), 0.55)
 WHITE_CAR = scale_image(pygame.image.load("assets/white-car.png"), 0.55)
 
+level_active = False
 FPS = 60
 GRID_SIZE = 4
 CHECKPOINT_RADIUS = 30
@@ -76,14 +77,7 @@ START_POSITION = (200, 200)
 
 HEIGHT, WIDTH = TRACK.get_size()
 
-PATH = [
-    (191,131),(138,80),(70,135),(70,514),(317,785),(397,811),
-    (450,753),(457,586),(559,532),(663,596),(669,753),
-    (741,814),(824,746),(821,469),(757,400),(502,398),
-    (446,347),(514,288),(763,282),(822,238),(820,130),
-    (749,83),(363,86),(316,150),(310,405),(255,460),
-    (178,404),(193,193)
-]
+RACING_LINE = []
 
 # --------------------------------------------------
 # Results CSV
@@ -126,35 +120,67 @@ WIN = pygame.display.set_mode(TRACK.get_size())
 # --------------------------------------------------
 def load_track_for_level(level):
     global TRACK, TRACK_BORDER, TRACK_BORDER_MASK
-    global PATH, GRID, images, WIN
+    global RACING_LINE, GRID, images, WIN
     global FINISH_POSITION, START_POSITION
+    global level_active
 
     if level == 1:
+        level_active = True
         track_img = "assets/track.png"
         border_img = "assets/track-border.png"
 
         FINISH_POSITION = (135, 250)
         START_POSITION = (200, 200)
 
-        PATH = [
+        
+        RACING_LINE = [
             (191,131),(138,80),(70,135),(70,514),(317,785),(397,811),
             (450,753),(457,586),(559,532),(663,596),(669,753),
             (741,814),(824,746),(821,469),(757,400),(502,398),
             (446,347),(514,288),(763,282),(822,238),(820,130),
             (749,83),(363,86),(316,150),(310,405),(255,460),
-            (178,404),(193,263)
+            (178,404),(193,193)
         ]
 
     elif level == 2:
+        level_active = True
+        track_img = "assets/track2.png"
         track_img = "assets/track4.png"
         border_img = "assets/track4-border.png"
 
         FINISH_POSITION = (20, 380)
         START_POSITION = (60, 288)
 
-        PATH = [
-            (0, 0)  # placeholder path
+        # Two possible paths after checkpoint (830, 660)
+        path_to_junction = [
+            (60, 287), (60,138), (152, 64), (401, 64), (748, 64),
+            (820, 104), (812, 217), (731, 411), (732, 475), (778, 583),
+            (830, 660),
         ]
+        
+        # Path A: through (750, 750)
+        path_a = path_to_junction + [
+            (750, 750), (604, 810), (348, 810), (118, 810), (69, 744), (93, 696), 
+            (222, 632), (470, 527), (510, 416), (370, 392),
+            (62, 395), (62, 287)
+        ]
+        
+        # Path B: through (630, 699)
+        path_b = path_to_junction + [
+            (630, 699), (629, 589), (617, 262), (532, 194), (348, 195), (245, 237), 
+            (229, 357), (234, 452), (123, 457), (62, 395), (62, 287)
+        ]
+        
+        # Choose the shorter path to the finish
+        def compute_path_length(path):
+            total = 0.0
+            for i in range(len(path) - 1):
+                x1, y1 = path[i]
+                x2, y2 = path[i + 1]
+                total += math.hypot(x2 - x1, y2 - y1)
+            return total
+        
+        RACING_LINE = path_a if compute_path_length(path_a) <= compute_path_length(path_b) else path_b
 
     TRACK = scale_image(pygame.image.load(track_img), 1)
     TRACK_BORDER = scale_image(pygame.image.load(border_img), 1)
@@ -197,6 +223,8 @@ class GameInfo:
         self.started = True
         self.level_start_time = time.time()
 
+    
+
 # --------------------------------------------------
 # Car factories (UNCHANGED API)
 # --------------------------------------------------
@@ -206,12 +234,14 @@ def create_player_car():
 
 def create_computer_car():
     from cars import ComputerCar
-    return ComputerCar(TEMPLATE_CAR, START_POSITION, 2, 4, PATH)
+    path_with_finish = RACING_LINE + [FINISH_POSITION]
+    return ComputerCar(TEMPLATE_CAR, START_POSITION, 2, 4, path_with_finish)
 
 def create_GBFS_car():
     from cars import GBFSDetourCar
+    path_with_finish = RACING_LINE + [FINISH_POSITION]
     car = GBFSDetourCar(
-        PATH, GRID_SIZE, 30,
+        3, 4, path_with_finish, GRID_SIZE, 30,
         CHECKPOINT_RADIUS, GRID, TRACK_BORDER_MASK,
         GREEN_CAR
     )
@@ -224,13 +254,14 @@ def create_neat_car():
         PURPLE_CAR,
         START_POSITION,
         3, 4,
-        PATH, TRACK_BORDER_MASK, GRID_SIZE, GRID
+        RACING_LINE, TRACK_BORDER_MASK, GRID_SIZE, GRID
     )
 def create_dijkstra_car(max_vel=3, rotation_vel=4):
     WAYPOINT_REACH = 50 # radius to consider a waypoint reached
     from cars import DijkstraCar
-    return DijkstraCar(WHITE_CAR, (160, 200), max_vel, 
-                       rotation_vel, PATH, GRID_SIZE, WAYPOINT_REACH, 
+    path_with_finish = RACING_LINE + [FINISH_POSITION]
+    return DijkstraCar(WHITE_CAR, START_POSITION, max_vel, 
+                       rotation_vel, path_with_finish, GRID_SIZE, WAYPOINT_REACH, 
                        CHECKPOINT_RADIUS, GRID, TRACK_BORDER_MASK)
 
 # --------------------------------------------------
