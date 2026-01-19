@@ -241,7 +241,7 @@ def create_GBFS_car():
     from cars import GBFSDetourCar
     path_with_finish = RACING_LINE + [FINISH_POSITION]
     car = GBFSDetourCar(
-        3, 4, path_with_finish, GRID_SIZE, 30,
+        path_with_finish, GRID_SIZE, 30,
         CHECKPOINT_RADIUS, GRID, TRACK_BORDER_MASK,
         GREEN_CAR
     )
