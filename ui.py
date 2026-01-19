@@ -173,7 +173,7 @@ import csv
 import os
 from datetime import datetime
 import resources
-from resources import MENU
+from resources import MENU, MENU2
 
 
 def format_time(seconds):
@@ -213,9 +213,9 @@ class Menu():
         self.page2Button = Button((width, height//2 + 400, 200, 50), "Page 2", GRAY, WHITE)
         self.quitButton = Button((width, height//2 + 525, 200, 50), "Quit", GRAY, WHITE)
         # Page 1 Buttons                    <---1
-        self.page1BackButton = Button((width, height - 80, 200, 50), "Back Page 1", GRAY, WHITE)
+        self.page1BackButton = Button((width/2 + 100, height//2 + 425, 200, 50), "Back Page 1", GRAY, WHITE)
         # Page 2 Buttons                    <---2
-        self.page2BackButton = Button((width, height - 80, 200, 50), "Back Page 2", GRAY, WHITE)
+        self.page2BackButton = Button((width/2 + 100, height//2 + 425, 200, 50), "Back Page 2", GRAY, WHITE)
     
     def enable_main_buttons(self):
         self.playButton.enabled = True
@@ -224,8 +224,19 @@ class Menu():
         self.page2Button.enabled = True
         self.quitButton.enabled = True
 
+           
     def drawMain(self, surface):
         surface.blit(MENU, (0, 0))
+        # Make sure page back buttons are off on main
+        self.page1BackButton.enabled = False
+        self.page2BackButton.enabled = False
+
+        self.playButton.enabled = True
+        self.trainButton.enabled = True
+        self.page1Button.enabled = True
+        self.page2Button.enabled = True
+        self.quitButton.enabled = True
+
         self.playButton.draw(surface)
         self.trainButton.draw(surface)
         self.page1Button.draw(surface)
@@ -234,38 +245,43 @@ class Menu():
         pygame.display.flip()
 
     def drawPage1(self, surface):
-        surface.blit(MENU, (0, 0))
-        # Remove menu buttons
+        surface.blit(MENU2, (0, 0))
+        # Disable main menu buttons
         self.playButton.enabled = False
         self.trainButton.enabled = False
         self.page1Button.enabled = False
         self.page2Button.enabled = False
-        self.quitButton.draw(surface)
-        # Draw Page 1 buttons               <---1
+        self.quitButton.enabled = False
+        # Re‑enable the Page 1 back button
+        self.page1BackButton.enabled = True
         self.page1BackButton.draw(surface)
         pygame.display.flip()
-    
-    def backPage1(self, surface):
-        self.page1BackButton.enabled = False
-        self.enable_main_buttons()
-        self.drawMain(surface)
-    
+
     def drawPage2(self, surface):
-        surface.blit(MENU, (0, 0))
-        # Remove menu buttons
+        surface.blit(MENU2, (0, 0))
+        # Disable main menu buttons
         self.playButton.enabled = False
         self.trainButton.enabled = False
         self.page1Button.enabled = False
         self.page2Button.enabled = False
-        self.quitButton.draw(surface)
-        # Draw Page 2 buttons               <---2
+        self.quitButton.enabled = False
+        # Re‑enable the Page 2 back button
+        self.page2BackButton.enabled = True
         self.page2BackButton.draw(surface)
         pygame.display.flip()
+
+
     
-    def backPage2(self, surface):
-        self.page2BackButton.enabled = False
+    
+    
+    def backPage1(self, surface):
         self.enable_main_buttons()
         self.drawMain(surface)
+
+    def backPage2(self, surface):
+        self.enable_main_buttons()
+        self.drawMain(surface)
+
 
     # Button triggers                       <---
     def handle_event(self, event):
