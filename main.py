@@ -1,4 +1,4 @@
-import asyncio
+# main.py
 import pygame
 import neat
 import ui
@@ -20,7 +20,7 @@ config = neat.Config(
     neat.DefaultReproduction,
     neat.DefaultSpeciesSet,
     neat.DefaultStagnation,
-    'assets/neat_config.ini'
+    'neat_config.ini'
 )
 
 manager = NEATManager(
@@ -34,11 +34,9 @@ manager = NEATManager(
 
 TRAIN_GENERATIONS = 10
 
-
 def _font(size):
     pygame.font.init()
     return pygame.font.Font(None, size)
-
 
 def _build_winner_net():
     best = None
@@ -68,43 +66,10 @@ def _build_winner_net():
 
     return neat.nn.FeedForwardNetwork.create(best, config)
 
-
-async def main():
+def run():
     # --------------------------------------------------
-    # Initial setup (module-level asset init is OK)
+    # Initial setup
     # --------------------------------------------------
-    player_car = create_player_car()
-    computer_car = create_computer_car()
-    GBFS_car = create_GBFS_car()
-    neat_car = create_neat_car()
-    dijkstra_car = create_dijkstra_car()
-
-    # Tuning (unchanged)
-    Result_gbfs, MoneyLeft_gbfs = resources.SetCarTuning(
-        GBFS_car,
-        [[1, 5, 3], [0.0, 0.2, 0.1], [2, 6, 4], [0.2, 1.0, 0.6],
-         [16, 48, 32], [20, 80, 50], [0.1, 0.7, 0.4], [0.2, 0.8, 0.5],
-         [20000, 80000, 50000], [15, 45, 30], [0, 1, 0]]
-    )
-    result_neat, moneyleft_neat = resources.SetCarTuning(
-        neat_car,
-        [
-            [1, 5, 3],          # 0  (handled elsewhere)
-            [0.0, 0.2, 0.1],    # 1  (handled elsewhere)
-            [2, 6, 4],          # 2  (handled elsewhere)
-            [0.2, 1.0, 0.6],    # 3  (handled elsewhere)
-
-            # --- NEAT tunables used here ---
-            [0.2, 0.9, 0.6],     # 4  weight_mutate_rate
-            [0.05, 1.0, 0.3],    # 5  weight_mutate_power
-            [0.005, 0.1, 0.03],  # 6  node_add_prob
-            [0.02, 0.2, 0.05],   # 7  conn_add_prob
-            [0.1, 0.5, 0.2],     # 8  survival_threshold
-            [5, 30, 15],         # 9  max_stagnation
-            [20, 150, 2],        # 10 pop_size
-        ]
-    )
-
     game_info = GameInfo()
     
     # Cars will be created when level starts
@@ -122,31 +87,17 @@ async def main():
     menu = ui.Menu()
     menu.drawMain(WIN)
 
-    # Modes:
-    # - setup == True  → menu page(s)
-    # - not setup and not started:
-    #       * either training (if do_training True)
-    #       * or countdown to race (pending_countdown True)
-    # - game_info.started == True → racing
-    setup = True
-    do_training = False
-    trained_net = None
-    training_done = False
-    pending_countdown = False
-    countdown_time = 0.0  # seconds remaining (visual "3,2,1")
-    clock = pygame.time.Clock()
-    running = True
     while running:
         dt = clock.tick(FPS) / 1000.0
 
         # -------------------------------
-        # Handle events (common)
+        # Draw Menu (before racing)
         # -------------------------------
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
 
-            if setup:
+            if setup:                                          # <---
                 action = menu.handle_event(event)
                 if action == "play":
                     resources.click_sound.play()
@@ -159,9 +110,12 @@ async def main():
                     neat_car = create_neat_car()
                     dijkstra_car = create_dijkstra_car()
                     setup = False
-                    do_training = False
-                    pending_countdown = True
-                    countdown_time = 2.1  # ~ "3,2,1"
+                    for n in ["3", "2", "1"]:
+                        WIN.fill((0, 0, 0))
+                        blit_text_center(WIN, _font(48), n)
+                        pygame.display.update()
+                        pygame.time.delay(700)
+                    game_info.start_level()
                 elif action == "train":
                     game_info.next_level()  # Start at level 1
                     load_track_for_level(game_info.get_level())
@@ -172,8 +126,6 @@ async def main():
                     neat_car = create_neat_car()
                     dijkstra_car = create_dijkstra_car()
                     setup = False
-                    do_training = True
-                    training_done = False
                 elif action == "page1":
                     resources.click_sound.play()
                     menu.drawPage1(WIN)
@@ -191,46 +143,37 @@ async def main():
                     running = False
 
                 if event.type == pygame.KEYDOWN and event.key in (pygame.K_RETURN, pygame.K_SPACE):
-                    # Keyboard shortcut from menu → start race directly
                     setup = False
-                    do_training = False
-                    pending_countdown = True
-                    countdown_time = 2.1
-
-            else:
-                # Non-menu key shortcuts
-                if event.type == pygame.KEYDOWN:
-                    if event.key in (pygame.K_RETURN, pygame.K_SPACE):
-                        # During training, allow early exit to race
-                        if not game_info.started and do_training:
-                            training_done = True
-                            setup = False
-                            do_training = False
-                            pending_countdown = True
-                            countdown_time = 2.1
+                    game_info.started = True
 
 
         # -------------------------------
         # Draw (when racing)
         # -------------------------------
         if game_info.started and player_car is not None:
-            ui.draw(WIN, images, player_car, computer_car, GBFS_car, neat_car, dijkstra_car)               
+            ui.draw(WIN, images, player_car, computer_car, GBFS_car, neat_car, dijkstra_car)
 
         # -------------------------------
-        # TRAINING (non-blocking)
+        # TRAINING PHASE
         # -------------------------------
-        if (not game_info.started) and do_training and (not training_done):
-            # Advance NEAT multiple steps per frame
-            gen = idx = total = 0
+        while not game_info.started and not setup:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    break
+                if event.type == pygame.KEYDOWN:
+                    if event.key in (pygame.K_RETURN, pygame.K_SPACE):
+                        training_done = True
+
             for i in range(5):
                 gen, idx, total = manager.update(dt)
                 if gen >= TRAIN_GENERATIONS:
                     training_done = True
                     break
 
-            # Draw training HUD
             WIN.fill((25, 25, 25))
             manager.draw(WIN, images)
+
             hud_font = _font(24)
             WIN.blit(
                 hud_font.render(
@@ -248,10 +191,7 @@ async def main():
             )
 
             
-            summary_text = manager.get_generation_summary()
-            WIN.blit(hud_font.render(summary_text, True, (200, 200, 200)), (10, 70))
 
-            # If training finished or user requested to start:
             if training_done:
                 net = _build_winner_net()
                 if net is not None:
@@ -269,7 +209,7 @@ async def main():
             pygame.display.update()
 
         # -------------------------------
-        # COUNTDOWN (non-blocking)
+        # Events (racing)
         # -------------------------------
         if (not game_info.started) and pending_countdown:
             WIN.fill((0, 0, 0))
@@ -282,6 +222,7 @@ async def main():
 
             blit_text_center(WIN, _font(48), n)
             pygame.display.flip()
+
             countdown_time -= dt
             if countdown_time <= 0:
                 game_info.next_level()  # start at level 1
@@ -290,17 +231,14 @@ async def main():
 
 
         # -------------------------------
-        # RACING
+        # Update cars
         # -------------------------------
         if game_info.started and player_car is not None:
-            ui.draw(WIN, images, player_car, computer_car, GBFS_car, neat_car, dijkstra_car)
 
-            # Update cars + agents
             neat_car.move()
             neat_car.sense(neat_car.track_mask, raycast_mask)
             neat_car.think()
             neat_car.apply_controls()
-
             ui.move_player(player_car)
             computer_car.move()
             GBFS_car.move()
@@ -334,9 +272,7 @@ async def main():
                 game_info.start_level()
 
         pygame.display.flip()
-        await asyncio.sleep(0)
 
-
-# --- Required pygbag entry point: nothing after asyncio.run(main()) ---
 if __name__ == "__main__":
-    asyncio.run(main())
+    run()
+    pygame.quit()

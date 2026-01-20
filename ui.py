@@ -181,7 +181,7 @@ def format_time(seconds):
 
 
 def log_result(winner, elapsed):
-    with open("assets/results.csv", "a", newline="") as f:
+    with open("results.csv", "a", newline="") as f:
         writer = csv.writer(f)
         writer.writerow([
             datetime.now().isoformat(),
@@ -379,10 +379,10 @@ class Button():
 
 def load_leaderboard(limit=5):
     rows = []
-    if not os.path.exists("asset/results.csv"):
+    if not os.path.exists("results.csv"):
         return rows
 
-    with open("assets/results.csv", "r", newline="") as f:
+    with open("results.csv", "r", newline="") as f:
         reader = csv.reader(f)
         for r in reader:
             try:

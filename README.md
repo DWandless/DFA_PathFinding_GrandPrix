@@ -13,8 +13,3 @@
 ## Algorithms we aim to implement support for include: Depth, breath, dijktra, A*, JPS (Jump Point Search)
 
 ## The users can design their own carshere: https://www.pixilart.com/draw and by downloading the template 
-
-# Instructions for running in the browser
-In the terminal, run: python -m pip install pygbag
-Then run: python -m pygbag .
-In the browser, go to http://localhost:8000
