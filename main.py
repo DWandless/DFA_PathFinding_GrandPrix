@@ -83,6 +83,7 @@ def run():
     running = True
     clock = pygame.time.Clock()
     training_done = False
+    trained_net = None 
 
     menu = ui.Menu()
     menu.drawMain(WIN)
@@ -196,6 +197,7 @@ def run():
                 net = _build_winner_net()
                 if net is not None:
                     neat_car.set_net(net)
+                    trained_net = net  # Save the network
 
                 for n in ["3", "2", "1"]:
                     WIN.fill((0, 0, 0))
@@ -211,24 +213,13 @@ def run():
         # -------------------------------
         # Events (racing)
         # -------------------------------
-        if (not game_info.started) and pending_countdown:
-            WIN.fill((0, 0, 0))
-            # Visual "3,2,1" based on remaining time
-            n = "3"
-            if countdown_time < 1.4:
-                n = "2"
-            if countdown_time < 0.7:
-                n = "1"
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+                break
 
-            blit_text_center(WIN, _font(48), n)
-            pygame.display.flip()
-
-            countdown_time -= dt
-            if countdown_time <= 0:
-                game_info.next_level()  # start at level 1
-                game_info.start_level()
-                pending_countdown = False
-
+        if not running:
+            break
 
         # -------------------------------
         # Update cars
@@ -262,13 +253,17 @@ def run():
                 # 2️⃣ Update NEAT manager mask
                 manager.track_mask = resources.TRACK_BORDER_MASK
 
-                # 3️⃣ Recreate all cars cleanly (they auto-pull RACING_LINE)
+                # 3️⃣ Recreate all cars cleanly
                 player_car = create_player_car()
                 computer_car = create_computer_car()
                 GBFS_car = create_GBFS_car()
                 neat_car = create_neat_car()
                 dijkstra_car = create_dijkstra_car()
-
+                
+                # Restore the trained network
+                if trained_net is not None:
+                    neat_car.set_net(trained_net)
+                
                 game_info.start_level()
 
         pygame.display.flip()
