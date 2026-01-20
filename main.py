@@ -114,7 +114,11 @@ async def main():
     neat_car = None
     dijkstra_car = None
 
-    # UI / state
+    setup = True
+    running = True
+    clock = pygame.time.Clock()
+    training_done = False
+
     menu = ui.Menu()
     menu.drawMain(WIN)
 
@@ -252,12 +256,18 @@ async def main():
                 net = _build_winner_net()
                 if net is not None:
                     neat_car.set_net(net)
-                    trained_net = net
-                pending_countdown = True
-                countdown_time = 2.1
-                do_training = False
-                setup = False
-            
+
+                for n in ["3", "2", "1"]:
+                    WIN.fill((0, 0, 0))
+                    blit_text_center(WIN, _font(48), n)
+                    pygame.display.update()
+                    pygame.time.delay(700)
+
+                game_info.start_level()
+                break
+
+            pygame.display.update()
+
         # -------------------------------
         # COUNTDOWN (non-blocking)
         # -------------------------------
@@ -314,17 +324,13 @@ async def main():
                 # 2️⃣ Update NEAT manager mask
                 manager.track_mask = resources.TRACK_BORDER_MASK
 
-                # 3️⃣ Recreate all cars cleanly
+                # 3️⃣ Recreate all cars cleanly (they auto-pull RACING_LINE)
                 player_car = create_player_car()
                 computer_car = create_computer_car()
                 GBFS_car = create_GBFS_car()
                 neat_car = create_neat_car()
                 dijkstra_car = create_dijkstra_car()
-                
-                # Restore the trained network
-                if trained_net is not None:
-                    neat_car.set_net(trained_net)
-                
+
                 game_info.start_level()
 
         pygame.display.flip()

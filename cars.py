@@ -755,11 +755,15 @@ class GBFSDetourCar(AbstractCar):
         
     def set_level(self, level):
         import resources
-        self.checkpoints = resources.RACING_LINE[:]
-        self.grid = resources.GRID
-        self.track_mask = resources.TRACK_BORDER_MASK
-        
-        self.next_checkpoint = 0
+        self.checkpoints = resources.get_path_for_level(level)
+        self.current_checkpoint = 0
+        self.path = []
+        self.current_point = 0
+        self.GRID = resources.GRID
+        self.TRACK_BORDER_MASK = resources.TRACK_BORDER_MASK
+
+        self.current_checkpoint = 0
+        self.path = []
         self.reset()
 
 
