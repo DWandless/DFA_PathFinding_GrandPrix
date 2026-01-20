@@ -235,7 +235,6 @@ async def main():
 
             blit_text_center(WIN, _font(48), n)
             pygame.display.flip()
-
             countdown_time -= dt
             if countdown_time <= 0:
                 game_info.next_level()  # start at level 1
