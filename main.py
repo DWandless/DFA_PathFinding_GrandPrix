@@ -126,6 +126,7 @@ async def main():
     # - game_info.started == True → racing
     setup = True
     do_training = False
+    trained_net = None
     training_done = False
     pending_countdown = False
     countdown_time = 0.0  # seconds remaining (visual "3,2,1")
