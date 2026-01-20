@@ -83,6 +83,7 @@ def run():
     running = True
     clock = pygame.time.Clock()
     training_done = False
+    trained_net = None 
 
     menu = ui.Menu()
     menu.drawMain(WIN)
@@ -196,6 +197,7 @@ def run():
                 net = _build_winner_net()
                 if net is not None:
                     neat_car.set_net(net)
+                    trained_net = net  # Save the network
 
                 for n in ["3", "2", "1"]:
                     WIN.fill((0, 0, 0))
@@ -251,13 +253,17 @@ def run():
                 # 2️⃣ Update NEAT manager mask
                 manager.track_mask = resources.TRACK_BORDER_MASK
 
-                # 3️⃣ Recreate all cars cleanly (they auto-pull RACING_LINE)
+                # 3️⃣ Recreate all cars cleanly
                 player_car = create_player_car()
                 computer_car = create_computer_car()
                 GBFS_car = create_GBFS_car()
                 neat_car = create_neat_car()
                 dijkstra_car = create_dijkstra_car()
-
+                
+                # Restore the trained network
+                if trained_net is not None:
+                    neat_car.set_net(trained_net)
+                
                 game_info.start_level()
 
         pygame.display.flip()
