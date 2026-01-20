@@ -83,7 +83,7 @@ RACING_LINE = []
 # --------------------------------------------------
 # Results CSV
 # --------------------------------------------------
-RESULTS_CSV = "results.csv"
+RESULTS_CSV = "assets/results.csv"
 if not os.path.exists(RESULTS_CSV):
     with open(RESULTS_CSV, "w", newline="") as f:
         writer = csv.writer(f)
