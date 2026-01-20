@@ -130,8 +130,8 @@ async def main():
     pending_countdown = False
     countdown_time = 0.0  # seconds remaining (visual "3,2,1")
     clock = pygame.time.Clock()
-
-    while True:
+    running = True
+    while running:
         dt = clock.tick(FPS) / 1000.0
 
         # -------------------------------
@@ -139,7 +139,7 @@ async def main():
         # -------------------------------
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                return  # exit cleanly (do NOT call pygame.quit() after asyncio.run)
+                running = False
 
             if setup:
                 action = menu.handle_event(event)
@@ -251,6 +251,7 @@ async def main():
                 net = _build_winner_net()
                 if net is not None:
                     neat_car.set_net(net)
+                    trained_net = net
                 pending_countdown = True
                 countdown_time = 2.1
                 do_training = False
@@ -312,13 +313,17 @@ async def main():
                 # 2️⃣ Update NEAT manager mask
                 manager.track_mask = resources.TRACK_BORDER_MASK
 
-                # 3️⃣ Recreate all cars cleanly (they auto-pull RACING_LINE)
+                # 3️⃣ Recreate all cars cleanly
                 player_car = create_player_car()
                 computer_car = create_computer_car()
                 GBFS_car = create_GBFS_car()
                 neat_car = create_neat_car()
                 dijkstra_car = create_dijkstra_car()
-
+                
+                # Restore the trained network
+                if trained_net is not None:
+                    neat_car.set_net(trained_net)
+                
                 game_info.start_level()
 
         pygame.display.flip()
