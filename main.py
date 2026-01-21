@@ -14,6 +14,18 @@ from resources import (
     load_track_for_level, create_dijkstra_car
 )
 
+import sys
+try:
+    from js import console  # Access the browser's console object
+except ImportError:
+    console = None  # Not in a JS environment
+
+def js_console_log(*args):
+    """
+    Directly call JavaScript's console.log from Python.
+    Works only in pygbag/Pyodide environment.
+    """
+    console.log(*args)  # Pass arguments directly to JS console.log
 # -----------------------------
 # NEAT setup
 # -----------------------------
@@ -93,6 +105,7 @@ async def main():
     menu.drawMain(WIN)
 
     while running:
+        js_console_log("Hello from pygbag to both console and page!")
         dt = clock.tick(FPS) / 1000.0
 
         # -------------------------------
