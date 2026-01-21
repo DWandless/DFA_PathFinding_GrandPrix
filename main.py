@@ -15,17 +15,17 @@ from resources import (
 )
 
 import sys
-try:
-    from js import console  # Access the browser's console object
-except ImportError:
-    console = None  # Not in a JS environment
+#try:
+#    from js import console  # Access the browser's console object
+#except ImportError:
+#    console = None  # Not in a JS environment
 
-def js_console_log(*args):
-    """
-    Directly call JavaScript's console.log from Python.
-    Works only in pygbag/Pyodide environment.
-    """
-    console.log(*args)  # Pass arguments directly to JS console.log
+#def js_console_log(*args):
+#    """
+#    Directly call JavaScript's console.log from Python.
+#    Works only in pygbag/Pyodide environment.
+#    """
+#    console.log(*args)  # Pass arguments directly to JS console.log
 # -----------------------------
 # NEAT setup
 # -----------------------------
@@ -105,7 +105,7 @@ async def main():
     menu.drawMain(WIN)
 
     while running:
-        js_console_log("Hello from pygbag to both console and page!")
+        
         dt = clock.tick(FPS) / 1000.0
 
         # -------------------------------
@@ -118,6 +118,7 @@ async def main():
             if setup:                                          # <---
                 action = menu.handle_event(event)
                 if action == "play":
+                    #js_console_log("clicked play")  # Log to browser console
                     resources.click_sound.play()
                     game_info.next_level()  # Start at level 1
                     load_track_for_level(game_info.get_level())

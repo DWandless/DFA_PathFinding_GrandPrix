@@ -93,16 +93,16 @@ if not os.path.exists(RESULTS_CSV):
 # SOUNDS
 # -------------------------------
 
-#pygame.mixer.pre_init(44100, -16, 2, 512)
+pygame.mixer.pre_init(44100, -16, 2, 512)
 pygame.init()
 
-#pygame.mixer.music.load("assets/menu-music.ogg")
-#pygame.mixer.music.set_volume(0.1)   # 0.0 → 1.0 # maybe make this adjustable in settings
+pygame.mixer.music.load("assets/menu-music.ogg")
+pygame.mixer.music.set_volume(0.1)   # 0.0 → 1.0 # maybe make this adjustable in settings
 
-#pygame.mixer.music.play(-1)          # loop forever
-#click_sound = pygame.mixer.Sound("assets/select-sound.mp3")
-#click_sound.set_volume(0.7)
-# click_sound.play() TO PLAY CLICK SOUND
+pygame.mixer.music.play(-1)          # loop forever
+click_sound = pygame.mixer.Sound("assets/select-sound.ogg")
+click_sound.set_volume(0.7)
+#click_sound.play() TO PLAY CLICK SOUND
 
 # --------------------------------------------------
 # Grid
