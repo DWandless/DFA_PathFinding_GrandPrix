@@ -1,12 +1,12 @@
 # AI Car Racing Game (Pygame)
 
 This project is based on the following repository:  
-https://github.com/eugene-ats/Pygame-Car-Racing/tree/main
+<https://github.com/eugene-ats/Pygame-Car-Racing/tree/main>
 
 ## Learning Resources
 
 Currently following video tutorials:  
-https://youtu.be/V_B5ZCli-rA?si=h6fmWZTDtIat0Kqe
+<https://youtu.be/V_B5ZCli-rA?si=h6fmWZTDtIat0Kqe>
 
 ---
 
@@ -59,7 +59,7 @@ Algorithms we aim to support include:
 
 ---
 
-## The users can design their own carshere: https://www.pixilart.com/draw and by downloading the template 
+## The users can design their own carshere: <https://www.pixilart.com/draw> and by downloading the template
 
 ---
 
