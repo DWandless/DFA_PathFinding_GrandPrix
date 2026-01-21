@@ -1,99 +1,200 @@
-"""
-# UI helpers: drawing, leaderboard, input and collision handling
+# ui.py
 import pygame
 import time
 import csv
-import os
 from datetime import datetime
 import resources
+from resources import MENU, MENU2
+
+# --------------------------------------------------
+# Utilities
+# --------------------------------------------------
+
+WHITE = (255, 255, 255)
+BLUE = (0, 120, 215)
+GRAY = (200, 200, 200)
 
 
 def format_time(seconds):
     return f"{seconds:.2f}s"
 
 
-def log_result(winner, elapsed):
-    with open(resources.RESULTS_CSV, "a", newline="") as f:
+def log_result(winner, elapsed, level):
+    with open("results.csv", "a", newline="") as f:
         writer = csv.writer(f)
         writer.writerow([
             datetime.now().isoformat(),
             winner,
             f"{elapsed:.3f}",
-            resources.GameInfo().level
+            level
         ])
 
+# --------------------------------------------------
+# Menu UI
+# --------------------------------------------------
 
-def load_leaderboard(limit=5):
-    rows = []
-    if not os.path.exists(resources.RESULTS_CSV):
-        return rows
+class Menu:
+    def __init__(self, width=500, height=500):
+        self.width = width
+        self.height = height
 
-    with open(resources.RESULTS_CSV, "r", newline="") as f:
-        reader = csv.DictReader(f)
-        for r in reader:
-            try:
-                rows.append((r["timestamp"], r["winner"], float(r["time_seconds"])))
-            except Exception:
-                continue
+        # MAIN MENU
+        self.playButton = Button((width, height//2 + 25, 200, 50), "Play", BLUE, WHITE)
+        self.trainButton = Button((width, height//2 + 150, 200, 50), "Train NEAT", GRAY, WHITE)
+        self.page1Button = Button((width, height//2 + 275, 200, 50), "Page 1", GRAY, WHITE)
+        self.page2Button = Button((width, height//2 + 400, 200, 50), "Page 2", GRAY, WHITE)
+        self.quitButton = Button((width, height//2 + 525, 200, 50), "Quit", GRAY, WHITE)
 
-    rows.sort(key=lambda x: x[2])
-    return rows[:limit]
+        # LEVEL SELECT
+        self.level1Button = Button((width, height//2 + 25, 200, 50), "Level 1", BLUE, WHITE)
+        self.level2Button = Button((width, height//2 + 150, 200, 50), "Level 2", GRAY, WHITE)
+        self.level3Button = Button((width, height//2 + 275, 200, 50), "Level 3", GRAY, WHITE)
+        self.level4Button = Button((width, height//2 + 400, 200, 50), "Level 4", GRAY, WHITE)
+        self.level5Button = Button((width, height//2 + 525, 200, 50), "Level 5", GRAY, WHITE)
+
+        # BACK BUTTON (used by Page1 / Page2)
+        self.backButton = Button((width/2 + 100, height//2 + 425, 200, 50), "Back", GRAY, WHITE)
+
+    def disable_all_buttons(self):
+        for btn in [
+            self.playButton, self.trainButton,
+            self.page1Button, self.page2Button, self.quitButton,
+            self.level1Button, self.level2Button,
+            self.level3Button, self.level4Button, self.level5Button,
+            self.backButton
+        ]:
+            btn.enabled = False
+
+    # ---------------- MAIN MENU ----------------
+    def drawMain(self, surface):
+        self.disable_all_buttons()
+        surface.blit(MENU, (0, 0))
+
+        for btn in [
+            self.playButton, self.trainButton,
+            self.page1Button, self.page2Button,
+            self.quitButton
+        ]:
+            btn.enabled = True
+            btn.draw(surface)
+
+    # ---------------- LEVEL SELECT ----------------
+    def drawLevels(self, surface):
+        self.disable_all_buttons()
+        surface.blit(MENU, (0, 0))
+
+        for btn in [
+            self.level1Button, self.level2Button,
+            self.level3Button, self.level4Button,
+            self.level5Button
+        ]:
+            btn.enabled = True
+            btn.draw(surface)
+
+    # ---------------- PAGE 1 ----------------
+    def drawPage1(self, surface):
+        self.disable_all_buttons()
+        surface.blit(MENU2, (0, 0))
+
+        self.backButton.enabled = True
+        self.backButton.draw(surface)
+
+    # ---------------- PAGE 2 ----------------
+    def drawPage2(self, surface):
+        self.disable_all_buttons()
+        surface.blit(MENU2, (0, 0))
+
+        self.backButton.enabled = True
+        self.backButton.draw(surface)
+
+    # ---------------- EVENTS ----------------
+    def handle_event(self, event):
+        if self.playButton.handle_event(event):
+            return "play"
+        if self.trainButton.handle_event(event):
+            return "train"
+        if self.page1Button.handle_event(event):
+            return "page1"
+        if self.page2Button.handle_event(event):
+            return "page2"
+        if self.quitButton.handle_event(event):
+            return "quit"
+
+        if self.level1Button.handle_event(event):
+            return "level1"
+        if self.level2Button.handle_event(event):
+            return "level2"
+        if self.level3Button.handle_event(event):
+            return "level3"
+        if self.level4Button.handle_event(event):
+            return "level4"
+        if self.level5Button.handle_event(event):
+            return "level5"
+
+        if self.backButton.handle_event(event):
+            return "back"
+
+        return None
 
 
-def draw(win, images, player_car, computer_car, GBFS_car, neat_car):
+
+class Button:
+    def __init__(self, rect, label, bg_color, text_color):
+        self.rect = pygame.Rect(rect)
+        self.label = label
+        self.bg_color = bg_color
+        self.text_color = text_color
+        self.font = pygame.font.Font(None, 50)
+        self.enabled = True
+
+    def draw(self, surface):
+        if not self.enabled:
+            return
+        text = self.font.render(self.label, True, self.text_color)
+        surface.blit(text, text.get_rect(center=self.rect.center))
+
+    def handle_event(self, event):
+        return (
+            self.enabled
+            and event.type == pygame.MOUSEBUTTONDOWN
+            and event.button == 1
+            and self.rect.collidepoint(event.pos)
+        )
+
+# --------------------------------------------------
+# Level End Screen
+# --------------------------------------------------
+
+def draw_level_end(win, result, level, time_sec, font):
+    win.fill((0, 0, 0))
+
+    title = "YOU WIN!" if result == "win" else "YOU LOSE"
+    color = (0, 200, 0) if result == "win" else (200, 0, 0)
+
+    win.blit(font.render(title, True, color),
+             font.render(title, True, color).get_rect(center=(win.get_width()//2, 200)))
+
+    info = pygame.font.Font(None, 32)
+    win.blit(info.render(f"Level: {level}", True, WHITE), (win.get_width()//2 - 80, 300))
+    win.blit(info.render(f"Time: {time_sec:.2f}s", True, WHITE), (win.get_width()//2 - 80, 340))
+    win.blit(info.render("Press ENTER to continue", True, (180,180,180)),
+             (win.get_width()//2 - 140, 420))
+
+# --------------------------------------------------
+# Gameplay helpers
+# --------------------------------------------------
+
+def draw(win, images, player_car, computer_car, gbfs_car, neat_car, dijkstra_car):
     for img, pos in images:
         win.blit(img, pos)
 
     player_car.draw(win)
-    GBFS_car.draw(win)
+    gbfs_car.draw(win)
     computer_car.draw(win)
     neat_car.draw(win)
+    dijkstra_car.draw(win)
 
-    draw_timer_leaderboard_level(win)
     pygame.display.update()
-
-
-def draw_timer_leaderboard_level(win):
-    font = pygame.font.SysFont(None, 24)
-    elapsed = time.time() - resources.start_time
-
-    level_text = font.render(
-        f"Level: {resources.GameInfo().level}",
-        True,
-        (255, 255, 255)
-    )
-    win.blit(level_text, (10, resources.HEIGHT - 160))
-
-    timer_surf = font.render(
-        f"Time: {format_time(elapsed)}",
-        True,
-        (255, 255, 255)
-    )
-    win.blit(timer_surf, (10, resources.HEIGHT - 140))
-
-    if resources.last_winner is not None:
-        last_surf = font.render(
-            f"Last: {resources.last_winner} {format_time(resources.last_time)}",
-            True,
-            (255, 255, 0)
-        )
-        win.blit(last_surf, (10, resources.HEIGHT - 120))
-
-    lb = load_leaderboard(5)
-    x, y = 10, win.get_height() - 10
-
-    title = font.render("Leaderboard (best times)", True, (255, 255, 255))
-    y -= title.get_height()
-    win.blit(title, (x, y))
-
-    for i, (_, winner, t) in enumerate(lb, start=1):
-        entry = font.render(
-            f"{i}. {winner}: {format_time(t)}",
-            True,
-            (255, 255, 255)
-        )
-        y -= entry.get_height()
-        win.blit(entry, (x, y))
 
 
 def move_player(player_car):
@@ -110,323 +211,36 @@ def move_player(player_car):
     if keys[pygame.K_s]:
         moved = True
         player_car.move_backward()
-
     if not moved:
         player_car.reduce_speed()
+        #print(player_car.position()) #  DEBUGGING prints cars current stopped position.
 
 
-def handle_collision(player_car, computer_car, gbfs_car, neat_car):
-    # Prevent multiple winners in one race
-    if getattr(resources, "race_finished", False):
-        return
-
+def handle_collision(player_car, computer_car, gbfs_car, neat_car, dijkstra_car):
     if player_car.collide(resources.TRACK_BORDER_MASK):
         player_car.bounce()
 
-    winner = None
+    cars = [
+        ("player", player_car),
+        ("computer", computer_car),
+        ("gbfs", gbfs_car),
+        ("neat", neat_car),
+        ("dijkstra", dijkstra_car),
+    ]
 
-    if computer_car.collide(resources.FINISH_MASK, *resources.FINISH_POSITION):
-        winner = "Computer"
-
-    elif gbfs_car.collide(resources.FINISH_MASK, *resources.FINISH_POSITION):
-        winner = "GBFS Car"
-
-    elif neat_car.collide(resources.FINISH_MASK, *resources.FINISH_POSITION):
-        neat_finish = neat_car.collide(resources.FINISH_MASK, *resources.FINISH_POSITION)
-        if neat_finish[1] == 0:
-            neat_car.bounce()
-        else:
-            winner = "NEAT Car"
-    else:
-        player_finish = player_car.collide(
-            resources.FINISH_MASK,
-            *resources.FINISH_POSITION
-        )
-        if player_finish:
-            if player_finish[1] == 0:
-                player_car.bounce()
+    for name, car in cars:
+        hit = car.collide(resources.FINISH_MASK, *resources.FINISH_POSITION)
+        if hit:
+            if hit[1] == 0:
+                car.bounce()
             else:
-                winner = "Player"
+                return name
 
-    if winner:
-        resources.race_finished = True
-
-        elapsed = time.time() - resources.start_time
-        resources.last_winner = winner
-        resources.last_time = elapsed
-        log_result(winner, elapsed)
-
-        player_car.reset()
-        computer_car.reset()
-        gbfs_car.reset()
-        neat_car.reset()
-
-        resources.start_time = time.time()
-        resources.race_finished = False
-"""
-
-"""UI helpers: drawing, leaderboard, input and collision handling."""
-from pydoc import text
-import pygame
-import time
-import csv
-import os
-from datetime import datetime
-import resources
-from resources import MENU, MENU2
-
-
-def format_time(seconds):
-    return f"{seconds:.2f}s"
-
-
-def log_result(winner, elapsed):
-    with open("results.csv", "a", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow([
-            datetime.now().isoformat(),
-            winner,
-            f"{elapsed:.3f}",
-            resources.GameInfo().get_level()
-        ])
-
-# --------------------------------------------------
-# GAME MENU
-# --------------------------------------------------
-
-WHITE = (255, 255, 255)
-BLUE = (0, 120, 215)
-GRAY = (200, 200, 200)
-
-class Menu():
-    
-    def __init__(self, width=500, height=500, page = 0):
-        self.width = width
-        self.height = height
-        self.bg = (0, 0, 0)
-        self.page = page
-
-        # Main Menu Buttons
-        self.playButton = Button((width, height//2 + 25, 200, 50), "Play", BLUE, WHITE)
-        self.level1Button = Button((width, height//2 + 25, 200, 50), "Level 1", BLUE, WHITE)
-
-        self.trainButton = Button((width, height//2 + 150, 200, 50), "Train NEAT", GRAY, WHITE)
-        self.level2Button = Button((width, height//2 + 150, 200, 50), "Level 2", GRAY, WHITE)
-
-        self.page1Button = Button((width, height//2 + 275, 200, 50), "Page 1", GRAY, WHITE)
-        self.level3Button = Button((width, height//2 + 275, 200, 50), "Level 3", GRAY, WHITE)
-
-        self.page2Button = Button((width, height//2 + 400, 200, 50), "Page 2", GRAY, WHITE)
-        self.level4Button = Button((width, height//2 + 400, 200, 50), "Level 4", GRAY, WHITE)
-
-        self.quitButton = Button((width, height//2 + 525, 200, 50), "Quit", GRAY, WHITE)
-        self.level5Button = Button((width, height//2 + 525, 200, 50), "Level 5", GRAY, WHITE)
-
-        # Page 1 Buttons                    <---1
-        self.page1BackButton = Button((width/2 + 100, height//2 + 425, 200, 50), "Back Page 1", GRAY, WHITE)
-        # Page 2 Buttons                    <---2
-        self.page2BackButton = Button((width/2 + 100, height//2 + 425, 200, 50), "Back Page 2", GRAY, WHITE)
-    
-    def enable_main_buttons(self):
-        self.playButton.enabled = True
-        self.trainButton.enabled = True
-        self.page1Button.enabled = True
-        self.page2Button.enabled = True
-        self.quitButton.enabled = True
-
-           
-    def drawMain(self, surface):
-        surface.blit(MENU, (0, 0))
-        # Make sure page back buttons are off on main
-        self.page1BackButton.enabled = False
-        self.page2BackButton.enabled = False
-
-        self.playButton.enabled = True
-        self.trainButton.enabled = True
-        self.page1Button.enabled = True
-        self.page2Button.enabled = True
-        self.quitButton.enabled = True
-
-        self.playButton.draw(surface)
-        self.trainButton.draw(surface)
-        self.page1Button.draw(surface)
-        self.page2Button.draw(surface)
-        self.quitButton.draw(surface)
-        pygame.display.flip()
-    
-    def drawPage(self, surface):
-        surface.blit(MENU, (0, 0))
-
-        # disable unrelated buttons
-        self.page1BackButton.enabled = False
-        self.page2BackButton.enabled = False
-
-        self.playButton.enabled = False
-        self.trainButton.enabled = False
-        self.page1Button.enabled = False
-        self.page2Button.enabled = False
-        self.quitButton.enabled = False
-        
-
-        self.level1Button.enabled = True
-        self.level2Button.enabled = True
-        self.level3Button.enabled = True
-        self.level4Button.enabled = True
-        self.level5Button.enabled = True
-
-        self.level1Button.draw(surface)
-        self.level2Button.draw(surface)
-        self.level3Button.draw(surface)
-        self.level4Button.draw(surface)
-        self.level5Button.draw(surface)
-
-        pygame.display.flip()
+    return None
 
 
 
-    def drawPage1(self, surface):
-        surface.blit(MENU2, (0, 0))
-        # Disable main menu buttons
-        self.playButton.enabled = False
-        self.trainButton.enabled = False
-        self.page1Button.enabled = False
-        self.page2Button.enabled = False
-        self.quitButton.enabled = False
-        # Re‑enable the Page 1 back button
-        self.page1BackButton.enabled = True
-        self.page1BackButton.draw(surface)
-        pygame.display.flip()
-
-    def drawPage2(self, surface):
-        surface.blit(MENU2, (0, 0))
-        # Disable main menu buttons
-        self.playButton.enabled = False
-        self.trainButton.enabled = False
-        self.page1Button.enabled = False
-        self.page2Button.enabled = False
-        self.quitButton.enabled = False
-        # Re‑enable the Page 2 back button
-        self.page2BackButton.enabled = True
-        self.page2BackButton.draw(surface)
-        pygame.display.flip()
-
-
-    
-    
-    
-    def backPage1(self, surface):
-        self.enable_main_buttons()
-        self.drawMain(surface)
-
-    def backPage2(self, surface):
-        self.enable_main_buttons()
-        self.drawMain(surface)
-
-
-    # Button triggers                       <---
-    def handle_event(self, event):
-        if self.playButton.handle_event(event):
-            return "play"
-        if self.trainButton.handle_event(event):
-            return "train"
-        if self.page1Button.handle_event(event):
-            return "page1"
-        if self.page1BackButton.handle_event(event):
-            return "page1Back"
-        if self.page2Button.handle_event(event):
-            return "page2"
-        if self.page2BackButton.handle_event(event):
-            return "page2Back"
-        if self.quitButton.handle_event(event):
-            return "quit"
-        if self.level1Button.handle_event(event):
-            return "level1"
-        if self.level2Button.handle_event(event):
-            return "level2"
-        if self.level3Button.handle_event(event):
-            return "level3"
-        if self.level4Button.handle_event(event):
-            return "level4"
-        if self.level5Button.handle_event(event):
-            return "level5"
-        return None
-    
-class Button():
-
-    def __init__(self, rect, label, bg_color, text_color):
-        self.page = "main"  # "main", "page1", "page2"
-        self.rect = pygame.Rect(rect)
-        self.label = label
-        self.bg_color = bg_color
-        self.text_color = text_color
-        self.font = pygame.font.Font(None, 50)
-        self.enabled = True
-
-    def draw(self, surface):
-        if not self.enabled:
-            return
-
-        # Create a transparent surface
-        button_surf = pygame.Surface(
-            (self.rect.width, self.rect.height),
-            pygame.SRCALPHA
-        )
-        # RGBA color (A = transparency)
-        # 0 = fully transparent, 255 = solid
-        button_color = (*self.bg_color, 0)  # <-- adjust alpha here
-
-        button_surf.fill(button_color)
-
-        # Blit transparent box
-        surface.blit(button_surf, self.rect.topleft)
-
-        # Draw text on top
-        text = self.font.render(self.label, True, self.text_color)
-        text_rect = text.get_rect(center=self.rect.center)
-        surface.blit(text, text_rect)
-
-
-    def handle_event(self, event):
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self.enabled == True:
-            if self.rect.collidepoint(event.pos):
-                return True
-        return False
-
-
-
-
-# Possibly redundant
-# def loadMenu(win):
-#     win.fill((0, 0, 0))
-#     font_large = pygame.font.SysFont(None, 48)
-#     font_small = pygame.font.SysFont(None, 24)
-
-    
-#     WHITE = (255, 255, 255)
-#     BLUE = (0, 120, 215)
-#     GRAY = (200, 200, 200)
-
-#     # Font
-#     font = pygame.font.Font(None, 50)
-
-#     # Button setup
-#     play_button = pygame.Rect(500//2 - 100, 500//2 - 60, 200, 50)
-#     quit_button = pygame.Rect(500//2 - 100, 500//2 + 10, 200, 50)
-
-
-    
-#     pygame.draw.rect(win, BLUE, play_button)
-#     pygame.draw.rect(win, GRAY, quit_button)
-#     # Draw text
-#     play_text = font.render("Play", True, WHITE)
-#     quit_text = font.render("Quit", True, (50, 50, 50))
-#     win.blit(play_text, (play_button.x + 60, play_button.y + 5))
-#     win.blit(quit_text, (quit_button.x + 60, quit_button.y + 5))
-#     pygame.display.flip()
-
-    
-
-
+""" TODO: Currently unused removed leaderboard functions for time being - reimplement this at a later date
 def load_leaderboard(limit=5):
     rows = []
     if not os.path.exists("results.csv"):
@@ -442,21 +256,6 @@ def load_leaderboard(limit=5):
 
     rows.sort(key=lambda x: x[2])
     return rows[:limit]
-
-
-def draw(win, images, player_car, computer_car, GBFS_car, neat_car, dijkstra_car):
-    for img, pos in images:
-        win.blit(img, pos)
-
-    player_car.draw(win)
-    GBFS_car.draw(win)
-    computer_car.draw(win)
-    neat_car.draw(win)
-    dijkstra_car.draw(win)
-
-    draw_timer_leaderboard_level(win)
-    pygame.display.update()
-
 
 def draw_timer_leaderboard_level(win):
     font = pygame.font.SysFont(None, 24)
@@ -495,116 +294,4 @@ def draw_timer_leaderboard_level(win):
         )
         y -= entry.get_height()
         win.blit(entry, (x, y))
-
-
-def move_player(player_car):
-    keys = pygame.key.get_pressed()
-    moved = False
-
-    if keys[pygame.K_a]:
-        player_car.rotate(left=True)
-    if keys[pygame.K_d]:
-        player_car.rotate(right=True)
-    if keys[pygame.K_w]:
-        moved = True
-        player_car.move_forward()
-    if keys[pygame.K_s]:
-        moved = True
-        player_car.move_backward()
-    if not moved:
-        player_car.reduce_speed()
-        #print(player_car.position()) #  DEBUGGING prints cars current stopped position.
-
-
-def handle_collision(player_car, computer_car, gbfs_car, neat_car, dijkstra_car):
-    """
-    Returns True exactly once when a car legally finishes the race.
-    Cars bounce if they cross the finish line in the wrong direction.
-    """
-
-    # Track border collision
-    if player_car.collide(resources.TRACK_BORDER_MASK):
-        player_car.bounce()
-
-    winner = None
-
-    # -----------------------
-    # COMPUTER CAR
-    # -----------------------
-    comp_finish = computer_car.collide(
-        resources.FINISH_MASK, *resources.FINISH_POSITION
-    )
-    if comp_finish:
-        if comp_finish[1] == 0:
-            computer_car.bounce()
-        else:
-            winner = "Computer"
-
-    # -----------------------
-    # GBFS CAR
-    # -----------------------
-    gbfs_finish = gbfs_car.collide(
-        resources.FINISH_MASK, *resources.FINISH_POSITION
-    )
-    if gbfs_finish and winner is None:
-        if gbfs_finish[1] == 0:
-            gbfs_car.bounce()
-        else:
-            winner = "GBFS"
-
-    # -----------------------
-    # NEAT CAR
-    # -----------------------
-    neat_finish = neat_car.collide(
-        resources.FINISH_MASK, *resources.FINISH_POSITION
-    )
-    if neat_finish and winner is None:
-        if neat_finish[1] == 0:
-            neat_car.bounce()
-        else:
-            winner = "NEAT"
-
-    # -----------------------
-    # PLAYER CAR
-    # -----------------------
-    player_finish = player_car.collide(
-        resources.FINISH_MASK, *resources.FINISH_POSITION
-    )
-    if player_finish and winner is None:
-        if player_finish[1] == 0:
-            player_car.bounce()
-        else:
-            winner = "Player"
-
-    # -----------------------
-    # DIJKSTRA CAR
-    # -----------------------            
-    dijkstra_finish = dijkstra_car.collide(
-        resources.FINISH_MASK, *resources.FINISH_POSITION
-    )
-    if dijkstra_finish and winner is None:
-        if dijkstra_finish[1] == 0:
-            dijkstra_car.bounce()
-        else:
-            winner = "DIJKSTRA"
-    if winner is None:
-        return False
-
-    # -----------------------
-    # RACE FINISHED
-    # -----------------------
-    elapsed = time.time() - resources.start_time
-    resources.last_winner = winner
-    resources.last_time = elapsed
-    log_result(winner, elapsed)
-
-    # Reset cars for next level
-    player_car.reset()
-    computer_car.reset()
-    gbfs_car.reset()
-    neat_car.reset()
-
-    resources.start_time = time.time()
-
-    return True
-
+"""

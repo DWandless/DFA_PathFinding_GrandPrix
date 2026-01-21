@@ -4,8 +4,10 @@ import pygame
 import neat
 import ui
 import math
+import time
 from neatmanager import NEATManager
 import resources
+import sys
 from resources import (
     GameInfo, WIN, FPS, images,
     create_player_car, create_computer_car, create_GBFS_car,
@@ -14,18 +16,18 @@ from resources import (
     load_track_for_level, create_dijkstra_car
 )
 
-import sys
-#try:
-#    from js import console  # Access the browser's console object
-#except ImportError:
-#    console = None  # Not in a JS environment
+# -----------------------------
+# Game States
+# -----------------------------
+STATE_MENU = "menu"
+STATE_LEVEL_SELECT = "level_select"
+STATE_COUNTDOWN = "countdown"
+STATE_RACING = "racing"
+STATE_LEVEL_END = "level_end"
+STATE_PAGE1 = "page1"
+STATE_PAGE2 = "page2"
+STATE_TRAINING = "training"
 
-#def js_console_log(*args):
-#    """
-#    Directly call JavaScript's console.log from Python.
-#    Works only in pygbag/Pyodide environment.
-#    """
-#    console.log(*args)  # Pass arguments directly to JS console.log
 # -----------------------------
 # NEAT setup
 # -----------------------------
@@ -48,256 +50,212 @@ manager = NEATManager(
 
 TRAIN_GENERATIONS = 10
 
+
 def _font(size):
-    pygame.font.init()
     return pygame.font.Font(None, size)
 
-def _build_winner_net():
-    best = None
-
-    if getattr(manager, 'winner', None) is not None:
-        best = manager.winner
-
-    if best is None and hasattr(manager, 'stats'):
-        try:
-            best = manager.stats.best_genome()
-        except Exception:
-            best = None
-
-    if best is None and hasattr(manager, 'pop'):
-        try:
-            scored = [
-                g for g in manager.pop.population.values()
-                if hasattr(g, 'fitness')
-            ]
-            if scored:
-                best = max(scored, key=lambda g: g.fitness)
-        except Exception:
-            best = None
-
-    if best is None:
-        return None
-
-    return neat.nn.FeedForwardNetwork.create(best, config)
 
 async def main():
-    # --------------------------------------------------
-    # Initial setup
-    # --------------------------------------------------
-    game_info = GameInfo()
-    
-    # Cars will be created when level starts
-    player_car = None
-    computer_car = None
-    GBFS_car = None
-    neat_car = None
-    dijkstra_car = None
+    pygame.init()
 
-    countdown = False
-    countdown_timer = 3
-    setup = True
-    running = True
+    game_info = GameInfo()
+    game_state = STATE_MENU
+
+    player_car = computer_car = GBFS_car = neat_car = dijkstra_car = None
+
+    level_result = None
+    level_time = 0.0
+    countdown_timer = 3.0
+
+    trained_net = None
     clock = pygame.time.Clock()
-    training_done = False
-    trained_net = None 
+    running = True
 
     menu = ui.Menu()
     menu.drawMain(WIN)
 
+    # -----------------------------
+    # MAIN LOOP
+    # -----------------------------
     while running:
-        
         dt = clock.tick(FPS) / 1000.0
 
-        # -------------------------------
-        # Draw Menu (before racing)
-        # -------------------------------
+        # -----------------------------
+        # EVENTS
+        # -----------------------------
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
 
-            if setup:                                          # <---
+            # -------- MENU / UI STATES --------
+            if game_state in (STATE_MENU, STATE_LEVEL_SELECT, STATE_PAGE1, STATE_PAGE2):
                 action = menu.handle_event(event)
-                if action == "play": # user clicked Play
-                    resources.click_sound.play()
-                    menu.drawPage(WIN)
 
-                elif action == "level1": # user clicked Level 1
+                if action == "play":
                     resources.click_sound.play()
-                    game_info.next_level()  # Start at level 1
-                    load_track_for_level(game_info.get_level())
-                    # Create fresh cars for this level
-                    player_car = create_player_car()
-                    computer_car = create_computer_car()
-                    GBFS_car = create_GBFS_car()
-                    neat_car = create_neat_car()
-                    dijkstra_car = create_dijkstra_car()
-                    setup = False
-                    countdown = True
-                    game_info.start_level()
-                
-                elif action == "level2": # user clicked Level 2
-                    print("Level 2 selected")
-                
-                elif action == "level3": # user clicked Level 2
-                    print("Level 3 selected")
-                
-                elif action == "level4": # user clicked Level 2
-                    print("Level 4 selected")
-                
-                elif action == "level5": # user clicked Level 2
-                    print("Level 5 selected")
+                    game_state = STATE_LEVEL_SELECT
+                    menu.drawLevels(WIN)
 
                 elif action == "train":
-                    game_info.next_level()  # Start at level 1
-                    load_track_for_level(game_info.get_level())
-                    # Create fresh cars for training
-                    player_car = create_player_car()
-                    computer_car = create_computer_car()
-                    GBFS_car = create_GBFS_car()
-                    neat_car = create_neat_car()
-                    dijkstra_car = create_dijkstra_car()
-                    setup = False
+                    resources.click_sound.play()
+                    game_state = STATE_TRAINING
+                
+
                 elif action == "page1":
                     resources.click_sound.play()
                     menu.drawPage1(WIN)
-                elif action == "page1Back":
-                    resources.click_sound.play()
-                    menu.backPage1(WIN)
+                    game_state = STATE_PAGE1
+
                 elif action == "page2":
                     resources.click_sound.play()
                     menu.drawPage2(WIN)
-                elif action == "page2Back":
+                    game_state = STATE_PAGE2
+                
+                elif action == "back":
                     resources.click_sound.play()
-                    menu.backPage2(WIN)
+                    game_state = STATE_MENU
+                    menu.drawMain(WIN)
+
                 elif action == "quit":
                     resources.click_sound.play()
                     running = False
 
-                if event.type == pygame.KEYDOWN and event.key in (pygame.K_RETURN, pygame.K_SPACE):
-                    setup = False
-                    game_info.started = True
-            if not game_info.started and not setup:
-                print("reached")
-                if event.type == pygame.QUIT:
-                    running = False
-                    break
-                if event.type == pygame.KEYDOWN:
-                    if event.key in (pygame.K_RETURN, pygame.K_SPACE):
-                        training_done = True
+                # -------- LEVEL SELECTION --------
+                elif action and action.startswith("level"):
+                    resources.click_sound.play()
 
+                    level_num = int(action[-1]) - 1
+                    game_info.level = level_num
+                    game_info.next_level()
 
-
-        if countdown == True:
-            countdown_timer -= dt
-            WIN.fill((0, 0, 0))
-
-            blit_text_center(WIN, _font(48), str(math.ceil(countdown_timer)))
-            if countdown_timer <= 0:
-                countdown = False
-                game_info.start_level()
-        else:
-            # -------------------------------
-            # Draw (when racing)
-            # -------------------------------
-            if game_info.started and player_car is not None:
-                ui.draw(WIN, images, player_car, computer_car, GBFS_car, neat_car, dijkstra_car)
-
-            # -------------------------------
-            # TRAINING PHASE
-            # -------------------------------
-            
-            if not game_info.started and not setup:
-                for i in range(5):
-                    gen, idx, total = manager.update(dt)
-                    if gen >= TRAIN_GENERATIONS:
-                        training_done = True
-                        break
-
-                WIN.fill((25, 25, 25))
-                manager.draw(WIN, images)
-
-                hud_font = _font(24)
-                WIN.blit(
-                    hud_font.render(
-                        f"Training NEAT: Gen {gen} | Genome {idx}/{total}",
-                        True, (255, 255, 255)
-                    ),
-                    (10, 10)
-                )
-                WIN.blit(
-                    hud_font.render(
-                        "Press ENTER/SPACE to start race now",
-                        True, (200, 200, 200)
-                    ),
-                    (10, 40)
-                )
-
-                
-                if training_done:
-                    net = _build_winner_net()
-                    if net is not None:
-                        neat_car.set_net(net)
-                        trained_net = net  # Save the network
-                    countdown = True
-
-            
-
-            #print(training_done)
-            # -------------------------------
-            # Events (racing)
-            # -------------------------------
-
-            if not running:
-                break
-
-            # -------------------------------
-            # Update cars
-            # -------------------------------
-            if game_info.started and player_car is not None:
-
-                neat_car.move()
-                neat_car.sense(neat_car.track_mask, raycast_mask)
-                neat_car.think()
-                neat_car.apply_controls()
-                ui.move_player(player_car)
-                computer_car.move()
-                GBFS_car.move()
-                dijkstra_car.move()
-
-            # -------------------------------
-            # Collisions & LEVEL SWITCH
-            # -------------------------------
-            level_finished = False
-            if player_car is not None:
-                level_finished = ui.handle_collision(
-                    player_car, computer_car, GBFS_car, neat_car, dijkstra_car)
-            
-
-            if level_finished:
-                if game_info.next_level():
-
-                    # 1️⃣ Load new track + racing line
                     load_track_for_level(game_info.get_level())
 
-                    # 2️⃣ Update NEAT manager mask
-                    manager.track_mask = resources.TRACK_BORDER_MASK
-
-                    # 3️⃣ Recreate all cars cleanly
                     player_car = create_player_car()
                     computer_car = create_computer_car()
                     GBFS_car = create_GBFS_car()
                     neat_car = create_neat_car()
                     dijkstra_car = create_dijkstra_car()
-                    
-                    # Restore the trained network
-                    if trained_net is not None:
+
+                    if trained_net:
                         neat_car.set_net(trained_net)
-                    
-                    game_info.start_level()
+
+                    countdown_timer = 3.0
+                    game_state = STATE_COUNTDOWN
+
+            # -------- LEVEL END --------
+            elif game_state == STATE_LEVEL_END:
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+                    if level_result == "win" and game_info.next_level():
+                        load_track_for_level(game_info.get_level())
+
+                        player_car = create_player_car()
+                        computer_car = create_computer_car()
+                        GBFS_car = create_GBFS_car()
+                        neat_car = create_neat_car()
+                        dijkstra_car = create_dijkstra_car()
+
+                        if trained_net:
+                            neat_car.set_net(trained_net)
+
+                        countdown_timer = 3.0
+                        game_state = STATE_COUNTDOWN
+                    else:
+                        menu.drawMain(WIN)
+                        game_state = STATE_MENU
+
+        # -----------------------------
+        # UPDATE / DRAW
+        # -----------------------------
+        if game_state == STATE_COUNTDOWN:
+            countdown_timer -= dt
+            WIN.fill((0, 0, 0))
+            blit_text_center(WIN, _font(48), str(max(1, math.ceil(countdown_timer))))
+
+            if countdown_timer <= 0:
+                game_info.start_level()
+                game_state = STATE_RACING
+
+        elif game_state == STATE_RACING:
+            ui.draw(
+                WIN,
+                images,
+                player_car,
+                computer_car,
+                GBFS_car,
+                neat_car,
+                dijkstra_car
+            )
+
+            # AI logic
+            neat_car.move()
+            neat_car.sense(neat_car.track_mask, raycast_mask)
+            neat_car.think()
+            neat_car.apply_controls()
+
+            # Other cars
+            ui.move_player(player_car)
+            computer_car.move()
+            GBFS_car.move()
+            dijkstra_car.move()
+
+            winner = ui.handle_collision(
+                player_car,
+                computer_car,
+                GBFS_car,
+                neat_car,
+                dijkstra_car
+            )
+
+            if winner:
+                level_time = time.time() - game_info.level_start_time
+                level_result = "win" if winner == "player" else "lose"
+                game_state = STATE_LEVEL_END
         
-        await asyncio.sleep(0)
+        elif game_state == STATE_TRAINING:
+            # Run multiple NEAT updates per frame for speed
+            for _ in range(5):
+                gen, finished, total = manager.update(dt)
+
+                if gen >= TRAIN_GENERATIONS:
+                    # Extract best genome and build trained network
+                    if manager.winner is not None:
+                        trained_net = neat.nn.FeedForwardNetwork.create(
+                            manager.winner,
+                            config
+                        )   
+                    # Return to menu
+                    menu.drawMain(WIN)
+                    game_state = STATE_MENU
+                    break
+
+            # Draw training visuals
+            WIN.fill((20, 20, 20))
+            manager.draw(WIN, images)
+
+            font = pygame.font.Font(None, 26)
+            WIN.blit(
+                font.render(
+                    f"Training NEAT | Generation {manager.generation}/{TRAIN_GENERATIONS}",
+                    True,
+                    (255, 255, 255)
+                ),
+                (10, 10)
+            )
+
+        elif game_state == STATE_LEVEL_END:
+            ui.draw_level_end(
+                WIN,
+                level_result,
+                game_info.get_level(),
+                level_time,
+                _font(48)
+            )
+
         pygame.display.flip()
+        await asyncio.sleep(0)
+
+    pygame.quit()
+
 
 if __name__ == "__main__":
     asyncio.run(main())
-    pygame.quit()

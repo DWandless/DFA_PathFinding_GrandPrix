@@ -1,23 +1,18 @@
 # resources.py
 
-# TODO:
-# Add countdown page between levels
-# Add audio effects
-# Add pause/play button
-# Improve paths for later levels
-# Add more levels
-# Add menu system
-# Add car loader
-# Fix leaderboard for multi-level support
-
 import pygame
 import time
 import math
 import os
 import csv
 
+# --------------------------------------------------
+# Pygame Init (ONCE)
+# --------------------------------------------------
 pygame.init()
 pygame.font.init()
+pygame.mixer.pre_init(44100, -16, 2, 512)
+pygame.mixer.init()
 
 # --------------------------------------------------
 # Helpers
@@ -26,8 +21,8 @@ def scale_image(img, factor):
     size = round(img.get_width() * factor), round(img.get_height() * factor)
     return pygame.transform.scale(img, size)
 
-def blit_text_center(win, font, text):
-    render = font.render(text, True, (255, 0, 0))
+def blit_text_center(win, font, text, color=(255, 0, 0)):
+    render = font.render(text, True, color)
     win.blit(
         render,
         (
@@ -44,26 +39,27 @@ def blit_rotate_center(win, image, top_left, angle):
     win.blit(rotated_image, new_rect.topleft)
 
 # --------------------------------------------------
+# Constants
+# --------------------------------------------------
+FPS = 60
+GRID_SIZE = 4
+CHECKPOINT_RADIUS = 30
+
+# --------------------------------------------------
 # Static assets
 # --------------------------------------------------
 MENU = scale_image(pygame.image.load("assets/Menu.png"), 0.90)
 MENU2 = scale_image(pygame.image.load("assets/Menu2.png"), 0.90)
 GRASS = scale_image(pygame.image.load("assets/grass.jpg"), 1.5)
+
 RED_CAR = scale_image(pygame.image.load("assets/red-car.png"), 0.55)
 GREEN_CAR = scale_image(pygame.image.load("assets/green-car.png"), 0.55)
 PURPLE_CAR = scale_image(pygame.image.load("assets/purple-car.png"), 0.55)
-TEMPLATE_CAR = scale_image(pygame.image.load("assets/car_template.png"), 0.55)
 WHITE_CAR = scale_image(pygame.image.load("assets/white-car.png"), 0.55)
-
-level_active = False
-FPS = 60
-GRID_SIZE = 4
-CHECKPOINT_RADIUS = 30
-start_time = time.time()
-last_winner = None
+TEMPLATE_CAR = scale_image(pygame.image.load("assets/car_template.png"), 0.55)
 
 # --------------------------------------------------
-# DEFAULT TRACK (LEVEL 1)
+# Default Track (Level 1)
 # --------------------------------------------------
 TRACK = scale_image(pygame.image.load("assets/track.png"), 1)
 TRACK_BORDER = scale_image(pygame.image.load("assets/track-border.png"), 1)
@@ -71,38 +67,24 @@ TRACK_BORDER_MASK = pygame.mask.from_surface(TRACK_BORDER)
 
 FINISH = pygame.image.load("assets/finish.png")
 FINISH_MASK = pygame.mask.from_surface(FINISH)
-FINISH_POSITION = (135, 250)
 
-# ✅ NEW: start position owned by track
+FINISH_POSITION = (135, 250)
 START_POSITION = (200, 200)
 
 HEIGHT, WIDTH = TRACK.get_size()
+WIN = pygame.display.set_mode((WIDTH, HEIGHT))
 
 RACING_LINE = []
 
 # --------------------------------------------------
-# Results CSV
+# Sounds
 # --------------------------------------------------
-RESULTS_CSV = "results.csv"
-if not os.path.exists(RESULTS_CSV):
-    with open(RESULTS_CSV, "w", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(["timestamp", "winner", "time_seconds", "level"])
-
-# -------------------------------
-# SOUNDS
-# -------------------------------
-
-pygame.mixer.pre_init(44100, -16, 2, 512)
-pygame.init()
-
 pygame.mixer.music.load("assets/menu-music.ogg")
-pygame.mixer.music.set_volume(0.1)   # 0.0 → 1.0 # maybe make this adjustable in settings
+pygame.mixer.music.set_volume(0.1)
+pygame.mixer.music.play(-1)
 
-pygame.mixer.music.play(-1)          # loop forever
 click_sound = pygame.mixer.Sound("assets/select-sound.ogg")
 click_sound.set_volume(0.7)
-#click_sound.play() TO PLAY CLICK SOUND
 
 # --------------------------------------------------
 # Grid
@@ -120,7 +102,7 @@ def build_grid(mask):
 GRID = build_grid(TRACK_BORDER_MASK)
 
 # --------------------------------------------------
-# Rendering setup
+# Rendering stack
 # --------------------------------------------------
 images = [
     (GRASS, (0, 0)),
@@ -129,26 +111,21 @@ images = [
     (TRACK_BORDER, (0, 0)),
 ]
 
-WIN = pygame.display.set_mode(TRACK.get_size())
-
 # --------------------------------------------------
-# TRACK SWITCHER
+# Track Loader
 # --------------------------------------------------
 def load_track_for_level(level):
     global TRACK, TRACK_BORDER, TRACK_BORDER_MASK
-    global RACING_LINE, GRID, images, WIN
     global FINISH_POSITION, START_POSITION
-    global level_active
+    global RACING_LINE, GRID, images
 
     if level == 1:
-        level_active = True
         track_img = "assets/track.png"
         border_img = "assets/track-border.png"
 
         FINISH_POSITION = (135, 250)
         START_POSITION = (200, 200)
 
-        
         RACING_LINE = [
             (191,131),(138,80),(70,135),(70,514),(317,785),(397,811),
             (450,753),(457,586),(559,532),(663,596),(669,753),
@@ -159,14 +136,13 @@ def load_track_for_level(level):
         ]
 
     elif level == 2:
-        level_active = True
-        track_img = "assets/track2.png"
         track_img = "assets/track4.png"
         border_img = "assets/track4-border.png"
 
         FINISH_POSITION = (20, 380)
         START_POSITION = (60, 288)
 
+        
         # Two possible paths after checkpoint (830, 660)
         path_to_junction = [
             (60, 287), (60, 150), (160, 80), (455, 80), (750, 80),
@@ -213,8 +189,6 @@ def load_track_for_level(level):
         (TRACK_BORDER, (0, 0)),
     ]
 
-    WIN = pygame.display.set_mode(TRACK.get_size())
-
 # --------------------------------------------------
 # GameInfo
 # --------------------------------------------------
@@ -241,10 +215,8 @@ class GameInfo:
         self.started = True
         self.level_start_time = time.time()
 
-    
-
 # --------------------------------------------------
-# Car factories (UNCHANGED API)
+# Car factories
 # --------------------------------------------------
 def create_player_car():
     from cars import PlayerCar
@@ -252,14 +224,13 @@ def create_player_car():
 
 def create_computer_car():
     from cars import ComputerCar
-    path_with_finish = RACING_LINE + [FINISH_POSITION]
-    return ComputerCar(TEMPLATE_CAR, START_POSITION, 2, 4, path_with_finish)
+    return ComputerCar(TEMPLATE_CAR, START_POSITION, 2, 4, RACING_LINE + [FINISH_POSITION])
 
 def create_GBFS_car():
     from cars import GBFSDetourCar
-    path_with_finish = RACING_LINE + [FINISH_POSITION]
     car = GBFSDetourCar(
-        path_with_finish, GRID_SIZE, 30,
+        RACING_LINE + [FINISH_POSITION],
+        GRID_SIZE, 30,
         CHECKPOINT_RADIUS, GRID, TRACK_BORDER_MASK,
         GREEN_CAR
     )
@@ -274,29 +245,35 @@ def create_neat_car():
         3, 4,
         RACING_LINE, TRACK_BORDER_MASK, GRID_SIZE, GRID
     )
+
 def create_dijkstra_car(max_vel=3, rotation_vel=4):
-    WAYPOINT_REACH = 50 # radius to consider a waypoint reached
     from cars import DijkstraCar
-    path_with_finish = RACING_LINE + [FINISH_POSITION]
-    return DijkstraCar(WHITE_CAR, START_POSITION, max_vel, 
-                       rotation_vel, path_with_finish, GRID_SIZE, WAYPOINT_REACH, 
-                       CHECKPOINT_RADIUS, GRID, TRACK_BORDER_MASK)
+    return DijkstraCar(
+        WHITE_CAR,
+        START_POSITION,
+        max_vel,
+        rotation_vel,
+        RACING_LINE + [FINISH_POSITION],
+        GRID_SIZE,
+        50,
+        CHECKPOINT_RADIUS,
+        GRID,
+        TRACK_BORDER_MASK
+    )
 
 # --------------------------------------------------
 # Raycast
 # --------------------------------------------------
 def raycast_mask(mask, origin, angle, max_distance=800, step=3):
-    width, height = mask.get_size()
     ox, oy = origin
-    dx = math.cos(angle)
-    dy = math.sin(angle)
+    dx, dy = math.cos(angle), math.sin(angle)
 
     dist = 0.0
     while dist < max_distance:
         px = int(ox + dx * dist)
         py = int(oy + dy * dist)
 
-        if px < 0 or py < 0 or px >= width or py >= height:
+        if not (0 <= px < mask.get_size()[0] and 0 <= py < mask.get_size()[1]):
             break
 
         if mask.get_at((px, py)) != 0:
@@ -305,6 +282,7 @@ def raycast_mask(mask, origin, angle, max_distance=800, step=3):
         dist += step
 
     return {"hit": False, "distance": max_distance, "point": None}
+
 # --------------------------------------------------
 # Money Systems
 # --------------------------------------------------
