@@ -117,8 +117,11 @@ async def main():
 
             if setup:                                          # <---
                 action = menu.handle_event(event)
-                if action == "play":
-                    #js_console_log("clicked play")  # Log to browser console
+                if action == "play": # user clicked Play
+                    resources.click_sound.play()
+                    menu.drawPage(WIN)
+
+                elif action == "level1": # user clicked Level 1
                     resources.click_sound.play()
                     game_info.next_level()  # Start at level 1
                     load_track_for_level(game_info.get_level())
@@ -131,6 +134,19 @@ async def main():
                     setup = False
                     countdown = True
                     game_info.start_level()
+                
+                elif action == "level2": # user clicked Level 2
+                    print("Level 2 selected")
+                
+                elif action == "level3": # user clicked Level 2
+                    print("Level 3 selected")
+                
+                elif action == "level4": # user clicked Level 2
+                    print("Level 4 selected")
+                
+                elif action == "level5": # user clicked Level 2
+                    print("Level 5 selected")
+
                 elif action == "train":
                     game_info.next_level()  # Start at level 1
                     load_track_for_level(game_info.get_level())

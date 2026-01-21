@@ -208,10 +208,20 @@ class Menu():
 
         # Main Menu Buttons
         self.playButton = Button((width, height//2 + 25, 200, 50), "Play", BLUE, WHITE)
+        self.level1Button = Button((width, height//2 + 25, 200, 50), "Level 1", BLUE, WHITE)
+
         self.trainButton = Button((width, height//2 + 150, 200, 50), "Train NEAT", GRAY, WHITE)
+        self.level2Button = Button((width, height//2 + 150, 200, 50), "Level 2", GRAY, WHITE)
+
         self.page1Button = Button((width, height//2 + 275, 200, 50), "Page 1", GRAY, WHITE)
+        self.level3Button = Button((width, height//2 + 275, 200, 50), "Level 3", GRAY, WHITE)
+
         self.page2Button = Button((width, height//2 + 400, 200, 50), "Page 2", GRAY, WHITE)
+        self.level4Button = Button((width, height//2 + 400, 200, 50), "Level 4", GRAY, WHITE)
+
         self.quitButton = Button((width, height//2 + 525, 200, 50), "Quit", GRAY, WHITE)
+        self.level5Button = Button((width, height//2 + 525, 200, 50), "Level 5", GRAY, WHITE)
+
         # Page 1 Buttons                    <---1
         self.page1BackButton = Button((width/2 + 100, height//2 + 425, 200, 50), "Back Page 1", GRAY, WHITE)
         # Page 2 Buttons                    <---2
@@ -243,6 +253,36 @@ class Menu():
         self.page2Button.draw(surface)
         self.quitButton.draw(surface)
         pygame.display.flip()
+    
+    def drawPage(self, surface):
+        surface.blit(MENU, (0, 0))
+
+        # disable unrelated buttons
+        self.page1BackButton.enabled = False
+        self.page2BackButton.enabled = False
+
+        self.playButton.enabled = False
+        self.trainButton.enabled = False
+        self.page1Button.enabled = False
+        self.page2Button.enabled = False
+        self.quitButton.enabled = False
+        
+
+        self.level1Button.enabled = True
+        self.level2Button.enabled = True
+        self.level3Button.enabled = True
+        self.level4Button.enabled = True
+        self.level5Button.enabled = True
+
+        self.level1Button.draw(surface)
+        self.level2Button.draw(surface)
+        self.level3Button.draw(surface)
+        self.level4Button.draw(surface)
+        self.level5Button.draw(surface)
+
+        pygame.display.flip()
+
+
 
     def drawPage1(self, surface):
         surface.blit(MENU2, (0, 0))
@@ -299,6 +339,16 @@ class Menu():
             return "page2Back"
         if self.quitButton.handle_event(event):
             return "quit"
+        if self.level1Button.handle_event(event):
+            return "level1"
+        if self.level2Button.handle_event(event):
+            return "level2"
+        if self.level3Button.handle_event(event):
+            return "level3"
+        if self.level4Button.handle_event(event):
+            return "level4"
+        if self.level5Button.handle_event(event):
+            return "level5"
         return None
     
 class Button():
