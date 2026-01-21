@@ -50,6 +50,7 @@ CHECKPOINT_RADIUS = 30
 # --------------------------------------------------
 MENU = scale_image(pygame.image.load("assets/Menu.png"), 0.90)
 MENU2 = scale_image(pygame.image.load("assets/Menu2.png"), 0.90)
+MENU3 = scale_image(pygame.image.load("assets/Menu3.png"), 0.90)
 GRASS = scale_image(pygame.image.load("assets/grass.jpg"), 1.5)
 
 RED_CAR = scale_image(pygame.image.load("assets/red-car.png"), 0.55)

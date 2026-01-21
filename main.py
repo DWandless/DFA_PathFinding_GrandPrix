@@ -13,7 +13,7 @@ from resources import (
     create_player_car, create_computer_car, create_GBFS_car,
     create_neat_car, blit_text_center,
     raycast_mask,
-    load_track_for_level, create_dijkstra_car
+    load_track_for_level, create_dijkstra_car, MENU3
 )
 
 # -----------------------------
@@ -168,7 +168,7 @@ async def main():
         # -----------------------------
         if game_state == STATE_COUNTDOWN:
             countdown_timer -= dt
-            WIN.fill((0, 0, 0))
+            WIN.blit(MENU3, (0, 0))
             blit_text_center(WIN, _font(48), str(max(1, math.ceil(countdown_timer))))
 
             if countdown_timer <= 0:

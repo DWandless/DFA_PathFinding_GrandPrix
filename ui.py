@@ -4,7 +4,7 @@ import time
 import csv
 from datetime import datetime
 import resources
-from resources import MENU, MENU2
+from resources import MENU, MENU2, MENU3
 
 # --------------------------------------------------
 # Utilities
@@ -164,9 +164,9 @@ class Button:
 # --------------------------------------------------
 # Level End Screen
 # --------------------------------------------------
-
+# TODO: Enhance level end screen with more details / options (restart level, main menu, etc.)
 def draw_level_end(win, result, level, time_sec, font):
-    win.fill((0, 0, 0))
+    win.blit(MENU3, (0, 0))
 
     title = "YOU WIN!" if result == "win" else "YOU LOSE"
     color = (0, 200, 0) if result == "win" else (200, 0, 0)
