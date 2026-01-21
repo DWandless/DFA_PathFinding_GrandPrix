@@ -174,6 +174,9 @@ async def main():
             if countdown_timer <= 0:
                 game_info.start_level()
                 game_state = STATE_RACING
+        
+        if game_state == STATE_LEVEL_SELECT:
+            menu.drawLevels(WIN)
 
         elif game_state == STATE_RACING:
             ui.draw(

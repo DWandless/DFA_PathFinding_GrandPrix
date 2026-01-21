@@ -81,14 +81,30 @@ class Menu:
     # ---------------- LEVEL SELECT ----------------
     def drawLevels(self, surface):
         self.disable_all_buttons()
-        surface.blit(MENU, (0, 0))
+        surface.blit(MENU, (0, 0)) # TODO: Change to level select background if available to one to accomodate for the level preview on the left hand side of the screen
 
-        for btn in [
-            self.level1Button, self.level2Button,
-            self.level3Button, self.level4Button,
-            self.level5Button
-        ]:
+        hovered_level = None
+
+        level_buttons = [
+            (1, self.level1Button),
+            (2, self.level2Button),
+            (3, self.level3Button),
+            (4, self.level4Button),
+            (5, self.level5Button),
+        ]
+
+        for level, btn in level_buttons:
             btn.enabled = True
+            if btn.is_hovered():
+                hovered_level = level
+
+        # Draw preview FIRST (so buttons stay on top)
+        if hovered_level:
+            preview = resources.LEVEL_PREVIEWS.get(hovered_level)
+            if preview:
+                surface.blit(preview, (20, 350))  # left side
+        # Draw buttons
+        for _, btn in level_buttons:
             btn.draw(surface)
 
     # ---------------- PAGE 1 ----------------
@@ -152,6 +168,9 @@ class Button:
             return
         text = self.font.render(self.label, True, self.text_color)
         surface.blit(text, text.get_rect(center=self.rect.center))
+    
+    def is_hovered(self):
+        return self.enabled and self.rect.collidepoint(pygame.mouse.get_pos())
 
     def handle_event(self, event):
         return (
