@@ -36,11 +36,10 @@ def blit_text_center(win, font, text):
         ),
     )
 
-def blit_rotate_center(win, image, top_left, angle):
+def blit_rotate_center(win, image, center, angle):
+    """Blit rotated image centered at the given center position."""
     rotated_image = pygame.transform.rotate(image, angle)
-    new_rect = rotated_image.get_rect(
-        center=image.get_rect(topleft=top_left).center
-    )
+    new_rect = rotated_image.get_rect(center=center)
     win.blit(rotated_image, new_rect.topleft)
 
 # --------------------------------------------------

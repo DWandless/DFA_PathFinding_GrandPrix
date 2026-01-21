@@ -57,10 +57,9 @@ class AbstractCar:
         car_mask = car_mask.scale(
             (int(car_mask.get_size()[0] * 0.85), int(car_mask.get_size()[1] * 0.85))
         )
-        offset = (
-            int(self.x - x + self.img.get_width() * 0.075),
-            int(self.y - y + self.img.get_height() * 0.075),
-        )
+        # Calculate the offset from the mask's top-left to the car's center
+        car_rect = car_mask.get_rect(center=(self.x - x, self.y - y))
+        offset = (car_rect.left, car_rect.top)
         return mask.overlap(car_mask, offset)
 
     def set_start_pos(self, pos):
@@ -227,95 +226,6 @@ class GBFSDetourCar(AbstractCar):
         self.allow_diag = bool(TuningData[10]) # Either 0 or 1 to represent true or false
 
     # ------------------ HELPERS ------------------
-    def greedy_best_first(self, start, goal, allow_diag=True, clearance_weight=0.4, max_expansions=50000):
-        """
-        Pure Greedy Best-First Search (no path cost), biased by local clearance.
-
-        Priority = h(n, goal) - clearance_weight * clearance(n)
-
-        Returns: list of (row, col) nodes from start(exclusive) -> goal(inclusive), or None.
-        """
-        rows, cols = len(self.GRID), len(self.GRID[0])
-
-        def grid_to_world(rc):
-            r, c = rc
-            x = c * self.GRIDSIZE + self.GRIDSIZE / 2
-            y = r * self.GRIDSIZE + self.GRIDSIZE / 2
-            return x, y
-
-        def local_clearance(rc, radius=6, step=2):
-            x, y = grid_to_world(rc)
-            width, height = self.TRACK_BORDER_MASK.get_size()
-            hits, samples = 0, 0
-            ix, iy = int(x), int(y)
-            for dx in range(-radius, radius+1, step):
-                for dy in range(-radius, radius+1, step):
-                    sx, sy = ix + dx, iy + dy
-                    if 0 <= sx < width and 0 <= sy < height:
-                        samples += 1
-                        if self.TRACK_BORDER_MASK.get_at((sx, sy)) != 0:
-                            hits += 1
-            return 0.0 if samples == 0 else (1.0 - hits / samples)
-
-        def neighbors4(r, c):
-            return [(r+1,c), (r-1,c), (r,c+1), (r,c-1)]
-
-        def neighbors8_safe(r, c):
-            """
-            Diagonals allowed only if both adjacent orthogonals are open (prevents corner cutting).
-            """
-            cand = [(r+1,c), (r-1,c), (r,c+1), (r,c-1)]
-            diags = [
-                (r+1,c+1, (r+1,c), (r,c+1)),
-                (r+1,c-1, (r+1,c), (r,c-1)),
-                (r-1,c+1, (r-1,c), (r,c+1)),
-                (r-1,c-1, (r-1,c), (r,c-1)),
-            ]
-            res = []
-            for nr, nc in cand:
-                if 0 <= nr < rows and 0 <= nc < cols and self.GRID[nr][nc]:
-                    res.append((nr, nc))
-            for (nr, nc, o1, o2) in diags:
-                if (0 <= nr < rows and 0 <= nc < cols and
-                    self.GRID[nr][nc] and
-                    0 <= o1[0] < rows and 0 <= o1[1] < cols and self.GRID[o1[0]][o1[1]] and
-                    0 <= o2[0] < rows and 0 <= o2[1] < cols and self.GRID[o2[0]][o2[1]]):
-                    res.append((nr, nc))
-            return res
-
-        neigh_fn = neighbors8_safe if allow_diag else neighbors4
-
-        open_set = []
-        visited = set([start])
-        h0 = abs(start[0] - goal[0]) + abs(start[1] - goal[1])
-        p0 = h0 - clearance_weight * local_clearance(start)
-        heapq.heappush(open_set, (p0, start))
-        came_from = {}
-
-        expansions = 0
-        while open_set and expansions < max_expansions:
-            _, current = heapq.heappop(open_set)
-            expansions += 1
-
-            if current == goal:
-                path = []
-                while current in came_from:
-                    path.append(current)
-                    current = came_from[current]
-                path.reverse()
-                return path
-
-            r, c = current
-            for nr, nc in neigh_fn(r, c):
-                if (nr, nc) not in visited:
-                    visited.add((nr, nc))
-                    h = abs(nr - goal[0]) + abs(nc - goal[1])
-                    p = h - clearance_weight * local_clearance((nr, nc))
-                    heapq.heappush(open_set, (p, (nr, nc)))
-                    came_from[(nr, nc)] = current
-
-        return None
-
     def nearest_walkable(self, start_rc, max_radius=80):
         rows, cols = len(self.GRID), len(self.GRID[0])
         sr, sc = start_rc
@@ -415,7 +325,7 @@ class GBFSDetourCar(AbstractCar):
         # Search a window to avoid scanning whole path
         # Start closer to current point to avoid jumping too far ahead
         start_i = max(0, self.current_point - 3)
-        end_i = min(len(self.path), self.current_point + 20)  # Reduced from 50 to 20
+        end_i = min(len(self.path), self.current_point + 5)  # Reduced from 50 to 20
 
         for i in range(start_i, end_i):
             px, py = self.path[i]
@@ -695,8 +605,10 @@ class GBFSDetourCar(AbstractCar):
         else:
             self.angle -= min(self.rotation_vel, -angle_diff)
 
+        # More aggressive braking for sharp angles
         if abs(angle_diff) > self.Align_Angle:
-            self.vel = max(self.vel - self.acceleration * self.brake_factor, 0)
+            brake_amount = self.acceleration * (self.brake_factor + 0.2)  # Extra braking
+            self.vel = max(self.vel - brake_amount, 0)
         else:
             self.vel = min(self.vel + self.acceleration, self.max_vel)
         if self.vel <= 0.01:
@@ -710,9 +622,8 @@ class GBFSDetourCar(AbstractCar):
         predicted_x = self.x - horizontal
 
         
-        orig_rect = self.img.get_rect(topleft=(predicted_x, predicted_y))
         rotated_img = pygame.transform.rotate(self.img, self.angle)
-        rotated_rect = rotated_img.get_rect(center=orig_rect.center)
+        rotated_rect = rotated_img.get_rect(center=(predicted_x, predicted_y))
         car_mask = pygame.mask.from_surface(rotated_img)
 
         # Border collision predicted -> detour or replan (GBFS-only)
