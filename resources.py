@@ -193,6 +193,86 @@ def load_track_for_level(level):
             return total
         
         RACING_LINE = path_a if compute_path_length(path_a) <= compute_path_length(path_b) else path_b
+            
+    elif level == 3:
+        track_img = "assets/track3.png"
+        border_img = "assets/track3-border.png"
+
+        FINISH_POSITION = (30, 260)
+        START_POSITION = (30, 200)
+
+        zero_to_oneA =   [(40, 125), (115, 40)]
+        zero_to_oneB =   [(115,210), (193, 125)]
+        one_to_two =     [(292, 40)]
+        two_to_three =   [(523, 40)]
+        two_to_four =    [(415, 92), (380, 156), (320, 221), (321, 291)]
+        three_to_five =  [(648, 115), (620, 163), (545, 163), (522, 295)]
+        three_to_six =   [(746, 40), (841, 101)]
+        six_to_five =    [(762, 169), (743, 271), (522, 295)]
+        five_to_four =   [(331, 291)]
+        six_to_seven =   [(841, 238), (841, 523)]
+        seven_to_eight = [(841, 777), (795, 822), (594, 828), (554, 816), (579, 758), (677, 759), (696, 636), (702, 502), (674, 400), (566, 396), (462, 423), 
+                          (477, 518), (562, 527), (586, 596), (534, 633), (375, 622)]
+        four_to_eight =  [(340, 434), (332, 560)]
+        eight_to_zero =  [(332, 560), (154, 576), (159, 505), (200, 435), (214, 376), (198, 296), (119, 298), (30, 260)]
+        eight_to_nine =  [(356, 698), (376, 746), (423, 771), (390, 822), (240, 825)]
+        nine_to_zeroA =  [(92, 825), (36, 787), (36, 697), (36, 529), (36, 326), (30, 260)]
+        nine_to_zeroB =  [(193, 717), (123, 718), (36, 697), (36, 529), (36, 326), (30, 260)]
+        
+
+        def compute_path_length(path):
+            total = 0.0
+            for i in range(len(path) - 1):
+                x1, y1 = path[i]
+                x2, y2 = path[i + 1]
+                total += math.hypot(x2 - x1, y2 - y1)
+            return total
+        
+        #shortest route to 1
+        zero_to_one = zero_to_oneA if compute_path_length(zero_to_oneA) <= compute_path_length(zero_to_oneB) else zero_to_oneB
+
+        #shortest route to 2
+        zero_to_two = zero_to_one + one_to_two
+
+        #shortest route to 3
+        zero_to_three = zero_to_two + two_to_three
+
+        #shortest route to 4
+        zero_to_fourA = zero_to_two + two_to_four
+        zero_to_fourB = zero_to_three + three_to_five + five_to_four
+        zero_to_fourC = zero_to_three + three_to_six + six_to_five + five_to_four
+        zero_to_four = zero_to_fourA if compute_path_length(zero_to_fourA) <= compute_path_length(zero_to_fourB) and compute_path_length(zero_to_fourA) <= compute_path_length(zero_to_fourC) else (zero_to_fourB if compute_path_length(zero_to_fourB) <= compute_path_length(zero_to_fourC) else zero_to_fourC)
+
+        #shortest route to 5
+        zero_to_fiveA = zero_to_three + three_to_five
+        zero_to_fiveB = zero_to_three + three_to_six + six_to_five
+        zero_to_five = zero_to_fiveA if compute_path_length(zero_to_fiveA) <= compute_path_length(zero_to_fiveB) else zero_to_fiveB
+
+        #shortest route to 6
+        zero_to_six = zero_to_three + three_to_six
+
+        #shortest route to 7
+        zero_to_seven = zero_to_six + six_to_seven
+
+        #shortest route to 8
+        zero_to_eightA = zero_to_seven + seven_to_eight
+        zero_to_eightB = zero_to_four + four_to_eight   
+        zero_to_eight = zero_to_eightA if compute_path_length(zero_to_eightA) <= compute_path_length(zero_to_eightB) else zero_to_eightB
+
+        #shortest route to 9
+        zero_to_nine = zero_to_eight + eight_to_nine
+
+        #shortest route to 0
+        zero_to_zero = zero_to_eight + eight_to_zero
+        zero_to_zeroA = zero_to_nine + nine_to_zeroA
+        zero_to_zeroB = zero_to_nine + nine_to_zeroB
+        zero_to_zero = zero_to_zero if compute_path_length(zero_to_zero) <= compute_path_length(zero_to_zeroA) and compute_path_length(zero_to_zero) <= compute_path_length(zero_to_zeroB) else (zero_to_zeroA if compute_path_length(zero_to_zeroA) <= compute_path_length(zero_to_zeroB) else zero_to_zeroB)
+
+        RACING_LINE = zero_to_zero
+
+        
+
+
 
     TRACK = scale_image(pygame.image.load(track_img), 1)
     TRACK_BORDER = scale_image(pygame.image.load(border_img), 1)
