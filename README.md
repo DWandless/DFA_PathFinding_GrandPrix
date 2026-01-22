@@ -63,7 +63,17 @@ Algorithms we aim to support include:
 
 ---
 
-## Running the game via a browser
+## Running the game via a browser (online)
+
+1. Navigate to the link below:
+
+    ```bash
+        https://dwandless.github.io/DFA_PathFinding_GrandPrix/
+    ```
+
+---
+
+## Running the game via a browser (Locally)
 
 1. Install pygbag:
 

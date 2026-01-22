@@ -208,7 +208,10 @@ def load_track_for_level(level):
         RACING_LINE = path_a if compute_path_length(path_a) <= compute_path_length(path_b) else path_b
             
     elif level == 3:
-        background_img = "assets/desert.png"
+        
+        background_img = "assets/grass.jpg"
+        background_img = scale_image(pygame.image.load(background_img), 1.5)
+        
         track_img = "assets/track3.png"
         border_img = "assets/track3-border.png"
 
