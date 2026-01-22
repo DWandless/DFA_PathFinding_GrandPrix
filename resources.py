@@ -52,7 +52,7 @@ MENU = scale_image(pygame.image.load("assets/Menu.png"), 0.90)
 MENU2 = scale_image(pygame.image.load("assets/Menu2.png"), 0.90)
 MENU3 = scale_image(pygame.image.load("assets/Menu3.png"), 0.90)
 MENU4 = scale_image(pygame.image.load("assets/Menu4.png"), 0.90)
-GRASS = scale_image(pygame.image.load("assets/grass.jpg"), 1.5)
+GRASS= scale_image(pygame.image.load("assets/grass.jpg"), 1.5)
 
 RED_CAR = scale_image(pygame.image.load("assets/red-car.png"), 0.55)
 GREEN_CAR = scale_image(pygame.image.load("assets/green-car.png"), 0.55)
@@ -63,6 +63,7 @@ TEMPLATE_CAR = scale_image(pygame.image.load("assets/car_template.png"), 0.55)
 # --------------------------------------------------
 # Default Track (Level 1)
 # --------------------------------------------------
+BACKGROUND = scale_image(pygame.image.load("assets/grass.jpg"), 1.5)
 TRACK = scale_image(pygame.image.load("assets/track.png"), 1)
 TRACK_BORDER = scale_image(pygame.image.load("assets/track-border.png"), 1)
 TRACK_BORDER_MASK = pygame.mask.from_surface(TRACK_BORDER)
@@ -124,7 +125,7 @@ GRID = build_grid(TRACK_BORDER_MASK)
 # Rendering stack
 # --------------------------------------------------
 images = [
-    (GRASS, (0, 0)),
+    (BACKGROUND, (0, 0)),
     (TRACK, (0, 0)),
     (FINISH, FINISH_POSITION),
     (TRACK_BORDER, (0, 0)),
@@ -139,6 +140,7 @@ def load_track_for_level(level):
     global RACING_LINE, GRID, images
 
     if level == 1:
+        background_img = "assets/grass.jpg"
         track_img = "assets/track.png"
         border_img = "assets/track-border.png"
 
@@ -274,7 +276,7 @@ def load_track_for_level(level):
         
 
 
-
+    BACKGROUND = scale_image(pygame.image.load(background_img), 1.5)
     TRACK = scale_image(pygame.image.load(track_img), 1)
     TRACK_BORDER = scale_image(pygame.image.load(border_img), 1)
     TRACK_BORDER_MASK = pygame.mask.from_surface(TRACK_BORDER)
@@ -282,7 +284,7 @@ def load_track_for_level(level):
     GRID = build_grid(TRACK_BORDER_MASK)
 
     images[:] = [
-        (GRASS, (0, 0)),
+        (BACKGROUND, (0, 0)),
         (TRACK, (0, 0)),
         (FINISH, FINISH_POSITION),
         (TRACK_BORDER, (0, 0)),
