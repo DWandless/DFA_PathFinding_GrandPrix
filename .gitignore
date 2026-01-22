@@ -6,3 +6,4 @@ build/
 
 !build/web/
 !build/web/**
+!build/web/dfa_pathfinding_grandprix.apk
