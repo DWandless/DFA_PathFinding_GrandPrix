@@ -2,9 +2,9 @@ venv
 __pycache__/
 results.csv
 
-#build/
-build/web-cache/
-build/version.txt
+build/
+#build/web-cache/
+#build/version.txt
 #!build/web/
 #!build/web/*
 #!build/web/dfa_pathfinding_grandprix.apk
