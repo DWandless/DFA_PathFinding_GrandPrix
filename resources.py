@@ -47,6 +47,7 @@ def blit_rotate_center(win, image, top_left, angle):
 # Static assets
 # --------------------------------------------------
 MENU = scale_image(pygame.image.load("assets/Menu.png"), 0.90)
+MARKET_BG = pygame.image.load("assets/Menu2.png")
 GRASS = scale_image(pygame.image.load("assets/grass.jpg"), 2.5)
 RED_CAR = scale_image(pygame.image.load("assets/red-car.png"), 0.55)
 GREEN_CAR = scale_image(pygame.image.load("assets/green-car.png"), 0.55)
