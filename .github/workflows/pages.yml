@@ -1,0 +1,51 @@
+
+name: Deploy pygbag Web to Pages
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'   # pygbag supports 3.11 well; adjust if needed
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # If you have requirements.txt, install it first (pygame, etc.)
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+          # Ensure pygbag is available
+          pip install pygbag
+
+      - name: Build web with pygbag
+        run: |
+          # Replace main.py with your entry point .py
+          python -m pygbag --build main.py
+          # pygbag outputs to build/web by default
+
+      - name: Verify publish directory exists
+        run: |
+          test -d build/web && ls -la build/web || (echo "build/web not found"; exit 1)
+
+      - name: Deploy build/web to gh-pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: build/web
