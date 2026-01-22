@@ -52,7 +52,10 @@ MENU = scale_image(pygame.image.load("assets/Menu.png"), 0.90)
 MENU2 = scale_image(pygame.image.load("assets/Menu2.png"), 0.90)
 MENU3 = scale_image(pygame.image.load("assets/Menu3.png"), 0.90)
 MENU4 = scale_image(pygame.image.load("assets/Menu4.png"), 0.90)
+
+# BACKGROUND IMAGES
 GRASS= scale_image(pygame.image.load("assets/grass.jpg"), 1.5)
+DESERT = scale_image(pygame.image.load("assets/desert.png"), 0.75)
 
 RED_CAR = scale_image(pygame.image.load("assets/red-car.png"), 0.55)
 GREEN_CAR = scale_image(pygame.image.load("assets/green-car.png"), 0.55)
@@ -135,12 +138,16 @@ images = [
 # Track Loader
 # --------------------------------------------------
 def load_track_for_level(level):
+    global BACKGROUND
     global TRACK, TRACK_BORDER, TRACK_BORDER_MASK
     global FINISH_POSITION, START_POSITION
     global RACING_LINE, GRID, images
 
     if level == 1:
+
         background_img = "assets/grass.jpg"
+        background_img = scale_image(pygame.image.load(background_img), 1.5)
+        
         track_img = "assets/track.png"
         border_img = "assets/track-border.png"
 
@@ -157,6 +164,9 @@ def load_track_for_level(level):
         ]
 
     elif level == 2:
+        background_img = "assets/desert.png"
+        background_img = scale_image(pygame.image.load(background_img), 1)
+
         track_img = "assets/track4.png"
         border_img = "assets/track4-border.png"
 
@@ -198,6 +208,7 @@ def load_track_for_level(level):
         RACING_LINE = path_a if compute_path_length(path_a) <= compute_path_length(path_b) else path_b
             
     elif level == 3:
+        background_img = "assets/desert.png"
         track_img = "assets/track3.png"
         border_img = "assets/track3-border.png"
 
@@ -276,7 +287,7 @@ def load_track_for_level(level):
         
 
 
-    BACKGROUND = scale_image(pygame.image.load(background_img), 1.5)
+    BACKGROUND = background_img
     TRACK = scale_image(pygame.image.load(track_img), 1)
     TRACK_BORDER = scale_image(pygame.image.load(border_img), 1)
     TRACK_BORDER_MASK = pygame.mask.from_surface(TRACK_BORDER)
