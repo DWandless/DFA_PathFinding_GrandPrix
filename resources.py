@@ -51,6 +51,7 @@ CHECKPOINT_RADIUS = 30
 MENU = scale_image(pygame.image.load("assets/Menu.png"), 0.90)
 MENU2 = scale_image(pygame.image.load("assets/Menu2.png"), 0.90)
 MENU3 = scale_image(pygame.image.load("assets/Menu3.png"), 0.90)
+MENU4 = scale_image(pygame.image.load("assets/Menu4.png"), 0.90)
 GRASS = scale_image(pygame.image.load("assets/grass.jpg"), 1.5)
 
 RED_CAR = scale_image(pygame.image.load("assets/red-car.png"), 0.55)
@@ -91,7 +92,7 @@ LEVEL_PREVIEWS = {
 }
 
 for k, img in LEVEL_PREVIEWS.items():
-    LEVEL_PREVIEWS[k] = pygame.transform.smoothscale(img, (350, 350))
+    LEVEL_PREVIEWS[k] = pygame.transform.smoothscale(img, (290, 290))
 
 
 # --------------------------------------------------

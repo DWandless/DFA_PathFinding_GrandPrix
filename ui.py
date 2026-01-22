@@ -4,7 +4,7 @@ import time
 import csv
 from datetime import datetime
 import resources
-from resources import MENU, MENU2, MENU3
+from resources import MENU, MENU2, MENU3, MENU4
 
 # --------------------------------------------------
 # Utilities
@@ -81,7 +81,7 @@ class Menu:
     # ---------------- LEVEL SELECT ----------------
     def drawLevels(self, surface):
         self.disable_all_buttons()
-        surface.blit(MENU, (0, 0)) # TODO: Change to level select background if available to one to accomodate for the level preview on the left hand side of the screen
+        surface.blit(MENU4, (0, 0)) # TODO: Change to level select background if available to one to accomodate for the level preview on the left hand side of the screen
 
         hovered_level = None
 
@@ -102,7 +102,7 @@ class Menu:
         if hovered_level:
             preview = resources.LEVEL_PREVIEWS.get(hovered_level)
             if preview:
-                surface.blit(preview, (20, 350))  # left side
+                surface.blit(preview, (48, 425))  # left side
         # Draw buttons
         for _, btn in level_buttons:
             btn.draw(surface)
