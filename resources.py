@@ -58,10 +58,10 @@ CHECKPOINT_RADIUS = 30
 # --------------------------------------------------
 # Static assets
 # --------------------------------------------------
-MENU = scale_image(pygame.image.load("assets\Menu.png"), 0.90)
-MENU2 = scale_image(pygame.image.load("assets\Menu2.png"), 0.90)
-MENU3 = scale_image(pygame.image.load("assets\Menu3.png"), 0.90)
-MENU4 = scale_image(pygame.image.load("assets\Menu4.png"), 0.90)
+MENU = scale_image(pygame.image.load("assets/Menu.png"), 0.90)
+MENU2 = scale_image(pygame.image.load("assets/Menu2.png"), 0.90)
+MENU3 = scale_image(pygame.image.load("assets/Menu3.png"), 0.90)
+MENU4 = scale_image(pygame.image.load("assets/Menu4.png"), 0.90)
 
 # BACKGROUND IMAGES
 GRASS= scale_image(pygame.image.load("assets/grass.jpg"), 1.5)

@@ -1,8 +1,7 @@
 import math
 import pygame
-from resources import blit_rotate_center
 import heapq
-from resources import raycast_mask, CHECKPOINT_RADIUS
+from resources import raycast_mask, CHECKPOINT_RADIUS,blit_rotate_center
 
 class AbstractCar:
     """Base car providing position, movement, rotation and collisions.

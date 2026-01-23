@@ -27,7 +27,7 @@ MODEL_TO_IMAGE = {
 }
 
 FALLBACK_IMAGE = "car_template.png"
-SELECT_SOUND   = "select-sound.mp3"
+SELECT_SOUND   = "select-sound.ogg"
 BG_FILE        = "Menu3.png"          # ← NEW: use Menu4 for background
 
 class PillButton:
@@ -123,7 +123,7 @@ class ModelSelectScreen:
         self._load_assets()
 
     def _resolve_path(self, filename):
-        return f"assets\{filename}"
+        return os.path.join(self.assets_path, filename)
 
     def _load_assets(self):
         # Sound (optional)
