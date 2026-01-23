@@ -19,16 +19,16 @@ import pygame
 MODELS = ["Player", "Computer", "GBFS", "Dijkstra", "NEAT"]
 
 MODEL_TO_IMAGE = {
-    "Player":   "red-car.png",
-    "Computer": "grey-car.png",
-    "GBFS":     "green-car.png",
-    "Dijkstra": "purple-car.png",
-    "NEAT":     "white-car.png",
+    "Player":   "assets/red-car.png",
+    "Computer": "assets/grey-car.png",
+    "GBFS":     "assets/green-car.png",
+    "Dijkstra": "assets/purple-car.png",
+    "NEAT":     "assets/white-car.png",
 }
 
-FALLBACK_IMAGE = "car_template.png"
-SELECT_SOUND   = "select-sound.ogg"
-BG_FILE        = "Menu3.png"          # ← NEW: use Menu4 for background
+FALLBACK_IMAGE = "assets/car_template.png"
+SELECT_SOUND   = "assets/select-sound.ogg"
+BG_FILE        = "assets/Menu3.png"          # ← NEW: use Menu4 for background
 
 class PillButton:
     def __init__(self, rect, text, selected=False, font_size=24):
@@ -122,12 +122,9 @@ class ModelSelectScreen:
 
         self._load_assets()
 
-    def _resolve_path(self, filename):
-        return os.path.join(self.assets_path, filename)
-
     def _load_assets(self):
         # Sound (optional)
-        sel_path = self._resolve_path(SELECT_SOUND)
+        sel_path = SELECT_SOUND
         if os.path.exists(sel_path):
             try:
                 self._select_sound = pygame.mixer.Sound(sel_path)
@@ -135,7 +132,7 @@ class ModelSelectScreen:
                 self._select_sound = None
 
         # Background: Menu4.png (scaled)
-        bg_path = self._resolve_path(BG_FILE)
+        bg_path = BG_FILE
         try:
             bg = pygame.image.load(bg_path).convert()
             self._bg = pygame.transform.smoothscale(bg, (self.W, self.H))
@@ -143,10 +140,10 @@ class ModelSelectScreen:
             self._bg = None
 
         # Car previews & thumbnails
-        fallback = load_image_safe(self._resolve_path(FALLBACK_IMAGE))
+        fallback = load_image_safe(FALLBACK_IMAGE)
         for m in self.models:
             fname = MODEL_TO_IMAGE.get(m, FALLBACK_IMAGE)
-            img = load_image_safe(self._resolve_path(fname)) or fallback
+            img = load_image_safe(fname) or fallback
             if img is None:
                 img = pygame.Surface((120, 60), pygame.SRCALPHA); img.fill((90, 90, 90))
             prev = scale_to_fit(img, self.preview_area.width - 40, self.preview_area.height - 40)
