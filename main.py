@@ -15,7 +15,12 @@ from resources import (
     raycast_mask,
     load_track_for_level, create_dijkstra_car, MENU3
 )
+# NEW: tuning marketplace helpers
+from tuning_registry import build_registry, apply_registry
+from pricing import price_build, TRACK_MULT
 
+# NEW: model selection screen
+from model_select import ModelSelectScreen
 # -----------------------------
 # Game States
 # -----------------------------
@@ -27,7 +32,8 @@ STATE_LEVEL_END = "level_end"
 STATE_PAGE1 = "page1"
 STATE_PAGE2 = "page2"
 STATE_TRAINING = "training"
-
+ASSETS_DIR = r"C:\Users\lelliottjack\Documents\DFA AI Racecar game\DFA_PathFinding_GrandPrix\assets"
+GAME_BUDGET = 100_000.00
 # -----------------------------
 # NEAT setup
 # -----------------------------
@@ -67,6 +73,12 @@ async def main():
     level_time = 0.0
     countdown_timer = 3.0
 
+    # Marketplace state (persist across levels)
+    last_model = None
+    last_track_key = None
+    last_reg = None
+    last_total_price = 0.0
+
     trained_net = None
     clock = pygame.time.Clock()
     running = True
@@ -74,6 +86,8 @@ async def main():
     menu = ui.Menu()
     menu.drawMain(WIN)
 
+    # Build screen object (lazy-create)
+    build_screen = None
     # -----------------------------
     # MAIN LOOP
     # -----------------------------
@@ -119,8 +133,8 @@ async def main():
                 elif action == "quit":
                     resources.click_sound.play()
                     running = False
-
-                # -------- LEVEL SELECTION --------
+            
+                # -------- LEVEL SELECTION and MODEL SELECT / COUNTDOWN --------
                 elif action and action.startswith("level"):
                     resources.click_sound.play()
 
@@ -139,9 +153,68 @@ async def main():
                     if trained_net:
                         neat_car.set_net(trained_net)
 
+                    # Model selection screen and tuning
+                    # ──────────────────────────────────────────────
+                    # 1) FIRST: Model selection (with preview)
+                    # ──────────────────────────────────────────────
+                    selector = ModelSelectScreen(WIN, assets_path=ASSETS_DIR)
+                    chosen_model = selector.open(initial_model=last_model or "NEAT")
+                    if not chosen_model:
+                        # Backed out → remain on main menu
+                        continue
+
+                    # ──────────────────────────────────────────────
+                    # 2) Build/Tuning screen (dial-only now)
+                    #    We keep the tuning flow so the user can
+                    #    tweak car.common before starting.
+                    # ──────────────────────────────────────────────
+
+                    # Create temp cars (registry can read current defaults)
+                    tmp_player = create_player_car()
+                    tmp_computer = create_computer_car()
+                    tmp_gbfs = create_GBFS_car()
+                    tmp_neat = create_neat_car()
+                    tmp_dijk = create_dijkstra_car()
+                    base_reg = build_registry(manager, [tmp_player, tmp_computer, tmp_gbfs, tmp_neat, tmp_dijk])
+
+                    if build_screen is None:
+                        build_screen = ui.BuildScreen(WIN, GAME_BUDGET)
+
+                    # Open Build UI (mouse dials) — returns a tuple, but we'll
+                    # override the model with `chosen_model` from the selector.
+                    selection = build_screen.open(base_reg, manager, lock_model=chosen_model)
+                    if selection is None:
+                        # Cancelled → stay on menu
+                        continue
+
+                    _model_from_ui, track_key, overrides, total_price = selection
+
+                    # Use the chosen model from the new ModelSelect step
+                    model_name = chosen_model
+
+                    # Create fresh cars for this level
+                    player_car = create_player_car()
+                    computer_car = create_computer_car()
+                    GBFS_car = create_GBFS_car()
+                    neat_car = create_neat_car()
+                    dijkstra_car = create_dijkstra_car()
+
+                    # Merge overrides + apply registry everywhere
+                    # (Budget already enforced in BuildScreen)
+                    base_reg = build_registry(manager, [player_car, computer_car, GBFS_car, neat_car, dijkstra_car])
+                    # Shallow merge overrides
+                    for grp, kv in (overrides or {}).items():
+                        base_reg.setdefault(grp, {})
+                        base_reg[grp].update(kv)
+
+                    apply_registry(base_reg, manager, [player_car, computer_car, GBFS_car, neat_car, dijkstra_car])
+
+                    # Persist build info
+                    last_model, last_track_key, last_reg, last_total_price = model_name, track_key, base_reg, total_price
+                    
+                    # Countdown to start
                     countdown_timer = 3.0
                     game_state = STATE_COUNTDOWN
-
             # -------- LEVEL END --------
             elif game_state == STATE_LEVEL_END:
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:

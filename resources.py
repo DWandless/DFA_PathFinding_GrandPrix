@@ -21,6 +21,16 @@ def scale_image(img, factor):
     size = round(img.get_width() * factor), round(img.get_height() * factor)
     return pygame.transform.scale(img, size)
 
+def blit_text_center(win, font, text):
+    render = font.render(text, True, (255, 0, 0))
+    win.blit(
+        render,
+        (
+            win.get_width() // 2 - render.get_width() // 2,
+            win.get_height() // 2 - render.get_height() // 2,
+        ),
+    )
+
 def blit_text_center(win, font, text, color=(255, 0, 0)):
     render = font.render(text, True, color)
     win.blit(
@@ -48,10 +58,10 @@ CHECKPOINT_RADIUS = 30
 # --------------------------------------------------
 # Static assets
 # --------------------------------------------------
-MENU = scale_image(pygame.image.load("assets/Menu.png"), 0.90)
-MENU2 = scale_image(pygame.image.load("assets/Menu2.png"), 0.90)
-MENU3 = scale_image(pygame.image.load("assets/Menu3.png"), 0.90)
-MENU4 = scale_image(pygame.image.load("assets/Menu4.png"), 0.90)
+MENU = scale_image(pygame.image.load("assets\Menu.png"), 0.90)
+MENU2 = scale_image(pygame.image.load("assets\Menu2.png"), 0.90)
+MENU3 = scale_image(pygame.image.load("assets\Menu3.png"), 0.90)
+MENU4 = scale_image(pygame.image.load("assets\Menu4.png"), 0.90)
 
 # BACKGROUND IMAGES
 GRASS= scale_image(pygame.image.load("assets/grass.jpg"), 1.5)
@@ -398,49 +408,46 @@ def raycast_mask(mask, origin, angle, max_distance=800, step=3):
 
     return {"hit": False, "distance": max_distance, "point": None}
 
-# --------------------------------------------------
-# Money Systems
-# --------------------------------------------------
-def CalculateMoney(TuningData: list):
-    #TuningData Format looks like this:
-    # a list of lists, each list inside tuning data should be like: [MINVAL, MAXVAL, CURRENTVAL]
-    # If all values equate to 50% then money will return 0 
-    # If the tunable is a toggle set min to 0 and max to 1
+# def CalculateMoney(TuningData: list):
+#     #TuningData Format looks like this:
+#     # a list of lists, each list inside tuning data should be like: [MINVAL, MAXVAL, CURRENTVAL]
+#     # If all values equate to 50% then money will return 0 
+#     # If the tunable is a toggle set min to 0 and max to 1
 
-    # Definitions
-    TotalMoney = 1000
+#     # Definitions
+#     TotalMoney = 1000
 
-    # Converting values into decimal percentages
-    Percentages = []
-    for Entry in TuningData:
-        if Entry[0] == 0 and Entry[1] == 1:
-            Percentages.append(str(Entry[2]))
-        else:
-            Percentages.append((Entry[2] - Entry[0]) / (Entry[1] - Entry[0]))
-    # Calculate remaining money
-    Costs = []
-    for Percentage in Percentages:
-        if isinstance(Percentage, str):
-            if int(Percentage) == 0:
-                Costs.append(0)
-            else:
-                Costs.append((TotalMoney / len(Percentages)))
-        else:
-            Costs.append(((TotalMoney / len(Percentages)) * 2) * Percentage)
+#     # Converting values into decimal percentages
+#     Percentages = []
+#     for Entry in TuningData:
+#         if Entry[0] == 0 and Entry[1] == 1:
+#             Percentages.append(str(Entry[2]))
+#         else:
+#             Percentages.append((Entry[2] - Entry[0]) / (Entry[1] - Entry[0]))
+#     # Calculate remaining money
+#     Costs = []
+#     for Percentage in Percentages:
+#         if isinstance(Percentage, str):
+#             if int(Percentage) == 0:
+#                 Costs.append(0)
+#             else:
+#                 Costs.append((TotalMoney / len(Percentages)))
+#         else:
+#             Costs.append(((TotalMoney / len(Percentages)) * 2) * Percentage)
     
-    # Combine Costs
-    FinalCost = sum(Costs)
-    return TotalMoney - FinalCost
+#     # Combine Costs
+#     FinalCost = sum(Costs)
+#     return TotalMoney - FinalCost
 
-def SetCarTuning(CarObj, TuningData: list):
-    # Tuning data should be in the same order as the car object's tuning options
-    # a list of lists, each list inside tuning data should be like: [MINVAL, MAXVAL, CURRENTVAL]
+# def SetCarTuning(CarObj, TuningData: list):
+#     # Tuning data should be in the same order as the car object's tuning options
+#     # a list of lists, each list inside tuning data should be like: [MINVAL, MAXVAL, CURRENTVAL]
 
-    # Performing Checks
-    MoneyLeft = CalculateMoney(TuningData)
-    if MoneyLeft < 0: return False, MoneyLeft
+#     # Performing Checks
+#     MoneyLeft = CalculateMoney(TuningData)
+#     if MoneyLeft < 0: return False, MoneyLeft
 
-    # Applying Changes
-    TunablesToApply = lambda lst: list(map(lambda x: x[2], lst))
-    CarObj.SetTunables(TunablesToApply(TuningData))
-    return True, MoneyLeft
+#     # Applying Changes
+#     TunablesToApply = lambda lst: list(map(lambda x: x[2], lst))
+#     CarObj.SetTunables(TunablesToApply(TuningData))
+#     return True, MoneyLeft
