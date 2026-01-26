@@ -8,6 +8,17 @@ import time
 from neatmanager import NEATManager
 import resources
 import sys
+# try:
+#    from js import console  # Access the browser's console object
+# except ImportError:
+#    console = None  # Not in a JS environment
+
+# def js_console_log(*args):
+#    """
+#    Directly call JavaScript's console.log from Python.
+#    Works only in pygbag/Pyodide environment.
+#    """
+#    console.log(*args)  # Pass arguments directly to JS console.log
 from resources import (
     GameInfo, WIN, FPS, images,
     create_player_car, create_computer_car, create_GBFS_car,
@@ -66,6 +77,7 @@ def _font(size):
 
 async def main():
     pygame.init()
+    #js_console_log("Game started")
 
     game_info = GameInfo()
     game_state = STATE_MENU
@@ -171,6 +183,7 @@ async def main():
                 chosen_model = selector.open(event)
             elif game_state == BUILD_SCREEN:
                 selection = build_screen.open(base_reg, manager,event, lock_model=chosen_model)
+                #js_console_log("Reaching build screen event handling")
 
                     # -------- LEVEL END --------
             if game_state == STATE_LEVEL_END:
@@ -213,43 +226,43 @@ async def main():
                 # override the model with `chosen_model` from the selector.
                 build_screen.setup_open(base_reg, manager, lock_model=chosen_model)
                 game_state = BUILD_SCREEN
+                #js_console_log("Model chosen and now entering build screen")
                 
                 
                 #pygame.time.delay(300)  # Small delay to avoid immediate input carry-over
         elif game_state == BUILD_SCREEN:
             #selection = build_screen.open(base_reg, manager, lock_model=chosen_model)
-            if selection is None:
-                # Cancelled → stay on menu
-                continue
+            #js_console_log("in build screen")
+            if selection is not None:
 
-            _model_from_ui, track_key, overrides, total_price = selection
+                _model_from_ui, track_key, overrides, total_price = selection
 
-            # Use the chosen model from the new ModelSelect step
-            model_name = chosen_model
+                # Use the chosen model from the new ModelSelect step
+                model_name = chosen_model
 
-            # Create fresh cars for this level
-            player_car = create_player_car()
-            computer_car = create_computer_car()
-            GBFS_car = create_GBFS_car()
-            neat_car = create_neat_car()
-            dijkstra_car = create_dijkstra_car()
+                # Create fresh cars for this level
+                player_car = create_player_car()
+                computer_car = create_computer_car()
+                GBFS_car = create_GBFS_car()
+                neat_car = create_neat_car()
+                dijkstra_car = create_dijkstra_car()
 
-            # Merge overrides + apply registry everywhere
-            # (Budget already enforced in BuildScreen)
-            base_reg = build_registry(manager, [player_car, computer_car, GBFS_car, neat_car, dijkstra_car])
-            # Shallow merge overrides
-            for grp, kv in (overrides or {}).items():
-                base_reg.setdefault(grp, {})
-                base_reg[grp].update(kv)
+                # Merge overrides + apply registry everywhere
+                # (Budget already enforced in BuildScreen)
+                base_reg = build_registry(manager, [player_car, computer_car, GBFS_car, neat_car, dijkstra_car])
+                # Shallow merge overrides
+                for grp, kv in (overrides or {}).items():
+                    base_reg.setdefault(grp, {})
+                    base_reg[grp].update(kv)
 
-            apply_registry(base_reg, manager, [player_car, computer_car, GBFS_car, neat_car, dijkstra_car])
+                apply_registry(base_reg, manager, [player_car, computer_car, GBFS_car, neat_car, dijkstra_car])
 
-            # Persist build info
-            last_model, last_track_key, last_reg, last_total_price = model_name, track_key, base_reg, total_price
-            
-            # Countdown to start
-            countdown_timer = 3.0
-            game_state = STATE_COUNTDOWN
+                # Persist build info
+                last_model, last_track_key, last_reg, last_total_price = model_name, track_key, base_reg, total_price
+                
+                # Countdown to start
+                countdown_timer = 3.0
+                game_state = STATE_COUNTDOWN
         # -----------------------------
         # UPDATE / DRAW
         # -----------------------------
@@ -342,6 +355,7 @@ async def main():
                 _font(48)
             )
         print(countdown_timer)
+        #js_console_log("Main loop running")
         pygame.display.flip()
         await asyncio.sleep(0)
 

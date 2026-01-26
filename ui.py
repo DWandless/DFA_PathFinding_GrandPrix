@@ -212,8 +212,6 @@ def draw(win, images, player_car, computer_car, gbfs_car, neat_car, dijkstra_car
     neat_car.draw(win)
     dijkstra_car.draw(win)
 
-    pygame.display.update()
-
 
 def move_player(player_car):
     keys = pygame.key.get_pressed()
@@ -925,7 +923,6 @@ class BuildScreen:
         self._draw_first4_dials()
         self._draw_model_section()
         self._draw_bottom_bar()
-        pygame.display.flip()
 
 
 
