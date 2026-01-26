@@ -81,6 +81,7 @@ async def main():
     last_track_key = None
     last_reg = None
     last_total_price = 0.0
+    selection = None
 
     trained_net = None
     clock = pygame.time.Clock()
@@ -168,6 +169,8 @@ async def main():
            
             if game_state == MODEL_SELECT:
                 chosen_model = selector.open(event)
+            elif game_state == BUILD_SCREEN:
+                selection = build_screen.open(base_reg, manager,event, lock_model=chosen_model)
 
                     # -------- LEVEL END --------
             if game_state == STATE_LEVEL_END:
@@ -214,7 +217,7 @@ async def main():
                 
                 #pygame.time.delay(300)  # Small delay to avoid immediate input carry-over
         elif game_state == BUILD_SCREEN:
-            selection = build_screen.open(base_reg, manager, lock_model=chosen_model)
+            #selection = build_screen.open(base_reg, manager, lock_model=chosen_model)
             if selection is None:
                 # Cancelled → stay on menu
                 continue
