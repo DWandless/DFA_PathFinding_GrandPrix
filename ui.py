@@ -54,7 +54,7 @@ class Menu:
         self.level5Button = Button((width, height//2 + 525, 200, 50), "Level 5", GRAY, WHITE)
 
         # BACK BUTTON (used by Page1 / Page2)
-        self.backButton = Button((width/2 + 100, height//2 + 425, 200, 50), "Back", GRAY, WHITE)
+        self.backButton = Button((width/2 + 100, height//2 + 410, 200, 50), "Back", GRAY, WHITE)
 
     def disable_all_buttons(self):
         for btn in [
@@ -103,7 +103,7 @@ class Menu:
         if hovered_level:
             preview = resources.LEVEL_PREVIEWS.get(hovered_level)
             if preview:
-                surface.blit(preview, (48, 425))  # left side
+                surface.blit(preview, (48, 434))  # left side
         # Draw buttons
         for _, btn in level_buttons:
             btn.draw(surface)
@@ -255,6 +255,24 @@ def handle_collision(player_car, computer_car, gbfs_car, neat_car, dijkstra_car)
                 return name
 
     return None
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # ──────────────────────────────────────────────────────────────────────────────

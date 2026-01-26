@@ -99,7 +99,7 @@ RACING_LINE = []
 
 LEVEL_PREVIEWS = {
     1: pygame.image.load("assets/track.png").convert_alpha(),
-    # 2: pygame.image.load("assets/level2.png").convert_alpha(),
+    2: pygame.image.load("assets/track4.png").convert_alpha(),
     # 3: pygame.image.load("assets/level3.png").convert_alpha(),
     # 4: pygame.image.load("assets/level4.png").convert_alpha(),
     # 5: pygame.image.load("assets/level5.png"),
