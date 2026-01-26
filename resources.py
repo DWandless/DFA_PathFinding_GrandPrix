@@ -77,8 +77,8 @@ TEMPLATE_CAR = scale_image(pygame.image.load("assets/car_template.png"), 0.55)
 # Default Track (Level 1)
 # --------------------------------------------------
 BACKGROUND = scale_image(pygame.image.load("assets/grass.jpg"), 1.5)
-TRACK = scale_image(pygame.image.load("assets/track.png"), 1)
-TRACK_BORDER = scale_image(pygame.image.load("assets/track-border.png"), 1)
+TRACK = scale_image(pygame.image.load("assets/track1.png"), 1)
+TRACK_BORDER = scale_image(pygame.image.load("assets/track_border1.png"), 1)
 TRACK_BORDER_MASK = pygame.mask.from_surface(TRACK_BORDER)
 
 FINISH = pygame.image.load("assets/finish.png")
@@ -102,8 +102,8 @@ RACING_LINE = []
 # TODO: Ensure these images exist and are up to date
 
 LEVEL_PREVIEWS = {
-    1: pygame.image.load("assets/track.png").convert_alpha(),
-    2: pygame.image.load("assets/track4.png").convert_alpha(),
+    1: pygame.image.load("assets/track1.png").convert_alpha(),
+    2: pygame.image.load("assets/track2.png").convert_alpha(),
     # 3: pygame.image.load("assets/level3.png").convert_alpha(),
     # 4: pygame.image.load("assets/level4.png").convert_alpha(),
     # 5: pygame.image.load("assets/level5.png"),
@@ -162,8 +162,8 @@ def load_track_for_level(level):
         background_img = "assets/grass.jpg"
         background_img = scale_image(pygame.image.load(background_img), 1.5)
         
-        track_img = "assets/track.png"
-        border_img = "assets/track-border.png"
+        track_img = "assets/track1.png"
+        border_img = "assets/track_border1.png"
 
         FINISH_POSITION = (135, 250)
         START_POSITION = (200, 200)
@@ -181,8 +181,8 @@ def load_track_for_level(level):
         background_img = "assets/desert.png"
         background_img = scale_image(pygame.image.load(background_img), 1)
 
-        track_img = "assets/track4.png"
-        border_img = "assets/track4-border.png"
+        track_img = "assets/track2.png"
+        border_img = "assets/track_border2.png"
 
         FINISH_POSITION = (20, 380)
         START_POSITION = (60, 288)
@@ -220,14 +220,24 @@ def load_track_for_level(level):
             return total
         
         RACING_LINE = path_a if compute_path_length(path_a) <= compute_path_length(path_b) else path_b
-            
+    
     elif level == 3:
+        print("Loading level 3")
+
+
+
+    elif level == 4:
+        print("Loading level 4")
+
+
+
+    elif level == 5:
         
         background_img = "assets/grass.jpg"
         background_img = scale_image(pygame.image.load(background_img), 1.5)
         
-        track_img = "assets/track3.png"
-        border_img = "assets/track3-border.png"
+        track_img = "assets/track5.png"
+        border_img = "assets/track_border5.png"
 
         FINISH_POSITION = (18, 260)
         START_POSITION = (30, 200)
