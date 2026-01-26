@@ -32,6 +32,8 @@ STATE_LEVEL_END = "level_end"
 STATE_PAGE1 = "page1"
 STATE_PAGE2 = "page2"
 STATE_TRAINING = "training"
+MODEL_SELECT = "model_select"
+MODEL_SELECTED = "model_selected"
 ASSETS_DIR = r"C:\Users\lelliottjack\Documents\DFA AI Racecar game\DFA_PathFinding_GrandPrix\assets"
 GAME_BUDGET = 100_000.00
 # -----------------------------
@@ -158,18 +160,34 @@ async def main():
                     # 1) FIRST: Model selection (with preview)
                     # ──────────────────────────────────────────────
                     selector = ModelSelectScreen(WIN, assets_path=ASSETS_DIR)
-                    chosen_model = selector.open(initial_model=last_model or "NEAT")
-                    if not chosen_model:
-                        # Backed out → remain on main menu
-                        continue
+                    game_state = MODEL_SELECT
+                    #chosen_model = selector.open(initial_model=last_model or "NEAT")
+                   
+            # -------- LEVEL END --------
+            elif game_state == STATE_LEVEL_END:
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+                    if level_result == "win" and game_info.next_level():
+                        load_track_for_level(game_info.get_level())
 
-                    # ──────────────────────────────────────────────
-                    # 2) Build/Tuning screen (dial-only now)
-                    #    We keep the tuning flow so the user can
-                    #    tweak car.common before starting.
-                    # ──────────────────────────────────────────────
+                        player_car = create_player_car()
+                        computer_car = create_computer_car()
+                        GBFS_car = create_GBFS_car()
+                        neat_car = create_neat_car()
+                        dijkstra_car = create_dijkstra_car()
 
-                    # Create temp cars (registry can read current defaults)
+                        if trained_net:
+                            neat_car.set_net(trained_net)
+
+                        countdown_timer = 3.0
+                        game_state = STATE_COUNTDOWN
+                    else:
+                        menu.drawMain(WIN)
+                        game_state = STATE_MENU
+            elif game_state == MODEL_SELECT:
+                #chosen_model = selector.open(initial_model=last_model or "NEAT")
+                chosen_model = "CONTINUE"
+                if chosen_model != "CONTINUE":
+                        # Create temp cars (registry can read current defaults)
                     tmp_player = create_player_car()
                     tmp_computer = create_computer_car()
                     tmp_gbfs = create_GBFS_car()
@@ -215,26 +233,6 @@ async def main():
                     # Countdown to start
                     countdown_timer = 3.0
                     game_state = STATE_COUNTDOWN
-            # -------- LEVEL END --------
-            elif game_state == STATE_LEVEL_END:
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-                    if level_result == "win" and game_info.next_level():
-                        load_track_for_level(game_info.get_level())
-
-                        player_car = create_player_car()
-                        computer_car = create_computer_car()
-                        GBFS_car = create_GBFS_car()
-                        neat_car = create_neat_car()
-                        dijkstra_car = create_dijkstra_car()
-
-                        if trained_net:
-                            neat_car.set_net(trained_net)
-
-                        countdown_timer = 3.0
-                        game_state = STATE_COUNTDOWN
-                    else:
-                        menu.drawMain(WIN)
-                        game_state = STATE_MENU
 
         # -----------------------------
         # UPDATE / DRAW
