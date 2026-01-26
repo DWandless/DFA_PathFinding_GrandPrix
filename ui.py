@@ -212,8 +212,6 @@ def draw(win, images, player_car, computer_car, gbfs_car, neat_car, dijkstra_car
     neat_car.draw(win)
     dijkstra_car.draw(win)
 
-    pygame.display.update()
-
 
 def move_player(player_car):
     keys = pygame.key.get_pressed()
@@ -681,7 +679,7 @@ class BuildScreen:
 
     # ── public entry ─────────────────────────────────────────────────
     # lock_model: if provided, hides tabs & restricts sliders to that model.
-    def open(self, base_reg, manager, lock_model=None):
+    def setup_open(self, base_reg, manager, lock_model=None):
         if lock_model:
             self.selected_model = lock_model
             self._locked_model = True
@@ -698,98 +696,94 @@ class BuildScreen:
         self._build_model_sliders(base_reg)
         self._layout_model_sliders()
         self._guard_right_scroll_offset()  # ensure initial offset obeys guard
+    def open(self, base_reg, manager, event, lock_model=None):
 
-        while True:
-            _ = clock.tick(60)
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    raise SystemExit
+        # ---------- Global wheel routing ----------
+        if event.type == pygame.MOUSEWHEEL:
+            if self._dial_focus is not None:
+                # Focused dial receives wheel
+                self._dial_focus.nudge_wheel(event.y)
+            else:
+                # Otherwise, wheel always scrolls the right panel
+                if self._right_scroll:
+                    self._right_scroll.handle_wheel(event)
+                    self._guard_right_scroll_offset()
+            #continue  # consume wheel
 
-                # ---------- Global wheel routing ----------
-                if event.type == pygame.MOUSEWHEEL:
-                    if self._dial_focus is not None:
-                        # Focused dial receives wheel
-                        self._dial_focus.nudge_wheel(event.y)
-                    else:
-                        # Otherwise, wheel always scrolls the right panel
-                        if self._right_scroll:
-                            self._right_scroll.handle_wheel(event)
-                            self._guard_right_scroll_offset()
-                    continue  # consume wheel
+        # ---------- Tabs (skip if locked) ----------
+        if not self._locked_model:
+            for b in self.model_buttons:
+                if b.handle_event(event):
+                    self.selected_model = b.text
+                    for bb in self.model_buttons:
+                        bb.selected = (bb is b)
+                    self._layout_model_sliders()
+                    self._guard_right_scroll_offset()
 
-                # ---------- Tabs (skip if locked) ----------
-                if not self._locked_model:
-                    for b in self.model_buttons:
-                        if b.handle_event(event):
-                            self.selected_model = b.text
-                            for bb in self.model_buttons:
-                                bb.selected = (bb is b)
-                            self._layout_model_sliders()
-                            self._guard_right_scroll_offset()
-
-                # ---------- Dials ----------
-                dial_consumed = False
-                for d in self.dials:
-                    if d.handle_event(event):
-                        dial_consumed = True
-                        # If user clicked on this dial, focus it; else keep current focus
-                        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                            # Clear previous, set new
-                            if self._dial_focus and self._dial_focus is not d:
-                                self._dial_focus.focused = False
-                            self._dial_focus = d
-                        break
-
-                # If mouse down didn't hit any dial, clear focus so wheel returns to panel
-                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and not dial_consumed:
-                    if self._dial_focus:
+        # ---------- Dials ----------
+        dial_consumed = False
+        for d in self.dials:
+            if d.handle_event(event):
+                dial_consumed = True
+                # If user clicked on this dial, focus it; else keep current focus
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    # Clear previous, set new
+                    if self._dial_focus and self._dial_focus is not d:
                         self._dial_focus.focused = False
-                    self._dial_focus = None
+                    self._dial_focus = d
+                break
 
-                # ---------- Right sliders (translate for scroll offset) ----------
-                def handle_slider_list(sliders, toggle=None):
-                    if not self._right_scroll:
-                        return
-                    mouse_pos = pygame.mouse.get_pos()
-                    if event.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP, pygame.MOUSEMOTION):
-                        if not self._right_scroll.rect.collidepoint(mouse_pos):
-                            return
-                    oy = self._right_scroll.offset_y
-                    for s in sliders:
-                        orig = s.rect.copy()
-                        s.rect.y = orig.y + oy
-                        s.handle_event(event)
-                        s.rect = orig
-                    if toggle:
-                        orig_t = toggle.rect.copy()
-                        toggle.rect.y = orig_t.y + oy
-                        toggle.handle_event(event)
-                        toggle.rect = orig_t
+        # If mouse down didn't hit any dial, clear focus so wheel returns to panel
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and not dial_consumed:
+            if self._dial_focus:
+                self._dial_focus.focused = False
+            self._dial_focus = None
 
-                if self.selected_model == "GBFS":
-                    handle_slider_list(self.sliders_gbfs, toggle=self.toggle_gbfs_diag)
-                elif self.selected_model == "Dijkstra":
-                    handle_slider_list(self.sliders_dij)
-                elif self.selected_model == "NEAT":
-                    handle_slider_list(self.sliders_neat)
-                # Player/Computer: no right-side sliders (shared dials only)
-
-                # ---------- Buttons ----------
-                if self.btn_buy.handle_event(event):
-                    if self.total_price <= self.budget:
-                        overrides = self._compose_overrides()
-                        return (self.selected_model, self.selected_track_key, overrides, self.total_price)
-
-                if self.btn_cancel.handle_event(event):
+        # ---------- Right sliders (translate for scroll offset) ----------
+        def handle_slider_list(sliders, toggle=None):
+            if not self._right_scroll:
+                return None
+            mouse_pos = pygame.mouse.get_pos()
+            if event.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP, pygame.MOUSEMOTION):
+                if not self._right_scroll.rect.collidepoint(mouse_pos):
                     return None
+            oy = self._right_scroll.offset_y
+            for s in sliders:
+                orig = s.rect.copy()
+                s.rect.y = orig.y + oy
+                s.handle_event(event)
+                s.rect = orig
+            if toggle:
+                orig_t = toggle.rect.copy()
+                toggle.rect.y = orig_t.y + oy
+                toggle.handle_event(event)
+                toggle.rect = orig_t
 
-            # recompute price and re-layout as values change
-            reg_for_price = self._compose_overrides(as_registry=True, base_reg=base_reg)
-            self.total_price = price_build(self.selected_model, self.selected_track_key, reg_for_price)
-            self._layout_model_sliders()
-            self._guard_right_scroll_offset()  # keep respecting guard even after layout/price changes
-            self._draw()
+        if self.selected_model == "GBFS":
+            handle_slider_list(self.sliders_gbfs, toggle=self.toggle_gbfs_diag)
+        elif self.selected_model == "Dijkstra":
+            handle_slider_list(self.sliders_dij)
+        elif self.selected_model == "NEAT":
+            handle_slider_list(self.sliders_neat)
+        # Player/Computer: no right-side sliders (shared dials only)
+
+        # ---------- Buttons ----------
+        if self.btn_buy.handle_event(event):
+            if self.total_price <= self.budget:
+                overrides = self._compose_overrides()
+                return (self.selected_model, self.selected_track_key, overrides, self.total_price)
+
+        if self.btn_cancel.handle_event(event):
+            return None
+    
+
+        # recompute price and re-layout as values change
+        reg_for_price = self._compose_overrides(as_registry=True, base_reg=base_reg)
+        self.total_price = price_build(self.selected_model, self.selected_track_key, reg_for_price)
+        self._layout_model_sliders()
+        self._guard_right_scroll_offset()  # keep respecting guard even after layout/price changes
+        self._draw()
+        return None
 
     # ── compose / draw ──────────────────────────────────────────────
 
@@ -947,4 +941,93 @@ class BuildScreen:
         self._draw_first4_dials()
         self._draw_model_section()
         self._draw_bottom_bar()
-        pygame.display.flip()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+""" TODO: Currently unused removed leaderboard functions for time being - reimplement this at a later date
+def load_leaderboard(limit=5):
+    rows = []
+    if not os.path.exists("results.csv"):
+        return rows
+
+    with open("results.csv", "r", newline="") as f:
+        reader = csv.reader(f)
+        for r in reader:
+            try:
+                rows.append((r[0], r[1], float(r[2])))
+            except Exception:
+                continue
+
+    rows.sort(key=lambda x: x[2])
+    return rows[:limit]
+
+def draw_timer_leaderboard_level(win):
+    font = pygame.font.SysFont(None, 24)
+    elapsed = time.time() - resources.start_time
+
+    level_text = font.render(
+        f"Level: {resources.GameInfo().get_level()}",
+        True, (255, 255, 255)
+    )
+    win.blit(level_text, (10, win.get_height() - 160))
+
+    timer_surf = font.render(
+        f"Time: {format_time(elapsed)}",
+        True, (255, 255, 255)
+    )
+    win.blit(timer_surf, (10, win.get_height() - 140))
+
+    if getattr(resources, "last_winner", None):
+        last_surf = font.render(
+            f"Last: {resources.last_winner} {format_time(resources.last_time)}",
+            True, (255, 255, 0)
+        )
+        win.blit(last_surf, (10, win.get_height() - 120))
+
+    lb = load_leaderboard(5)
+    x, y = 10, win.get_height() - 10
+
+    title = font.render("Leaderboard", True, (255, 255, 255))
+    y -= title.get_height()
+    win.blit(title, (x, y))
+
+    for i, (_, winner, t) in enumerate(lb, start=1):
+        entry = font.render(
+            f"{i}. {winner}: {format_time(t)}",
+            True, (255, 255, 255)
+        )
+        y -= entry.get_height()
+        win.blit(entry, (x, y))
+"""

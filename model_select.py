@@ -224,7 +224,6 @@ class ModelSelectScreen:
         self._draw_preview()
         self._draw_thumbnails()
         self._draw_buttons()
-        pygame.display.flip()
 
     def _handle_mouse(self, event):
         if self.left_arrow.handle_event(event):  self._move_left();  return "CONTINUE"
@@ -253,21 +252,13 @@ class ModelSelectScreen:
                 return None
         return "CONTINUE"
 
-    def open(self, initial_model="NEAT"):
-        if initial_model in self.models:
-            self.index = self.models.index(initial_model)
-
-        clock = pygame.time.Clock()
-        while True:
-            _ = clock.tick(60)
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit(); raise SystemExit
-                if event.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP):
-                    result = self._handle_mouse(event)
-                    if result is None: return None
-                    if result != "CONTINUE": return result
-                result = self._handle_keyboard(event)
-                if result is None: return None
-                if result != "CONTINUE": return result
-            self._draw()
+    def open(self, event):
+        
+        if event.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP):
+            result = self._handle_mouse(event)
+            if result is None: return None
+            if result != "CONTINUE": return result
+        result = self._handle_keyboard(event)
+        if result is None: return None
+        if result != "CONTINUE": return result
+        self._draw()
