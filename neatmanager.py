@@ -3,7 +3,7 @@ import math
 import pygame
 from collections import deque
 
-from cars import *
+from cars import NEATCar
 
 import neat
 
