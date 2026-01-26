@@ -22,8 +22,8 @@ MODEL_TO_IMAGE = {
     "Player":   "assets/red-car.png",
     "Computer": "assets/grey-car.png",
     "GBFS":     "assets/green-car.png",
-    "Dijkstra": "assets/purple-car.png",
-    "NEAT":     "assets/white-car.png",
+    "Dijkstra": "assets/white-car.png",
+    "NEAT":     "assets/purple-car.png",
 }
 
 FALLBACK_IMAGE = "assets/car_template.png"
