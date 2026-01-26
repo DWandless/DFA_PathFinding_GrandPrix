@@ -87,6 +87,10 @@ FINISH_MASK = pygame.mask.from_surface(FINISH)
 FINISH_POSITION = (135, 250)
 START_POSITION = (200, 200)
 
+# Level 3 specific finish image (cropped and positioned for left side of track)
+FINISH_LEVEL3 = None
+FINISH_MASK_LEVEL3 = None
+
 HEIGHT, WIDTH = TRACK.get_size()
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
 
@@ -225,7 +229,7 @@ def load_track_for_level(level):
         track_img = "assets/track3.png"
         border_img = "assets/track3-border.png"
 
-        FINISH_POSITION = (30, 260)
+        FINISH_POSITION = (18, 260)
         START_POSITION = (30, 200)
 
         zero_to_oneA =   [(50, 100), (115, 60)]
@@ -241,10 +245,10 @@ def load_track_for_level(level):
         seven_to_eight = [(841, 777), (795, 822), (594, 828), (554, 816), (579, 758), (677, 759), (696, 636), (702, 502), (674, 400), (566, 396), (462, 423), 
                           (477, 518), (562, 527), (586, 596), (534, 633), (375, 622)]
         four_to_eight =  [(345, 450), (345, 585)]
-        eight_to_zero =  [(345, 585), (175, 600), (170, 520), (220, 450), (220, 376), (198, 315), (119, 315), (30, 260)]
+        eight_to_zero =  [(345, 585), (175, 600), (170, 520), (220, 450), (220, 376), (198, 315), (119, 315), (18, 260)]
         eight_to_nine =  [(356, 698), (376, 746), (423, 771), (390, 822), (240, 825)]
-        nine_to_zeroA =  [(92, 825), (36, 787), (36, 697), (36, 529), (36, 326), (30, 260)]
-        nine_to_zeroB =  [(193, 717), (123, 718), (36, 697), (36, 529), (36, 326), (30, 260)]
+        nine_to_zeroA =  [(92, 825), (36, 787), (36, 697), (36, 529), (36, 326), (18, 260)]
+        nine_to_zeroB =  [(193, 717), (123, 718), (36, 697), (36, 529), (36, 326), (18, 260)]
         
 
         def compute_path_length(path):
@@ -306,6 +310,20 @@ def load_track_for_level(level):
     TRACK_BORDER_MASK = pygame.mask.from_surface(TRACK_BORDER)
 
     GRID = build_grid(TRACK_BORDER_MASK)
+
+    # For level 3, create a cropped finish image bound by the track
+    global FINISH, FINISH_MASK
+    if level == 3:
+        # Load the original finish image and crop it to be bound by the track
+        finish_original = pygame.image.load("assets/finish.png")
+        # Crop the right side to remove overflow - keep left 60 pixels
+        crop_rect = pygame.Rect(0, 0, 60, finish_original.get_height())
+        FINISH = finish_original.subsurface(crop_rect).copy()
+        FINISH_MASK = pygame.mask.from_surface(FINISH)
+    else:
+        # Use default finish image for other levels
+        FINISH = pygame.image.load("assets/finish.png")
+        FINISH_MASK = pygame.mask.from_surface(FINISH)
 
     images[:] = [
         (BACKGROUND, (0, 0)),
