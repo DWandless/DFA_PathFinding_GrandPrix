@@ -5,6 +5,7 @@ import neat
 import ui
 import math
 import time
+import pickle
 from neatmanager import NEATManager
 import resources
 import sys
@@ -207,15 +208,16 @@ async def main():
                         game_state = STATE_MENU
         if game_state == MODEL_SELECT:
            
-            print("Seeing if chose model")
+            #print("Seeing if chose model")
             #chosen_model = "CONTINUE"
             if chosen_model != None:
-                print("chose model: ", chosen_model)
+                #print("chose model: ", chosen_model)
                     # Create temp cars (registry can read current defaults)
                 tmp_player = create_player_car()
                 tmp_computer = create_computer_car()
                 tmp_gbfs = create_GBFS_car()
                 tmp_neat = create_neat_car()
+
                 tmp_dijk = create_dijkstra_car()
                 base_reg = build_registry(manager, [tmp_player, tmp_computer, tmp_gbfs, tmp_neat, tmp_dijk])
 
@@ -245,6 +247,12 @@ async def main():
                 computer_car = create_computer_car()
                 GBFS_car = create_GBFS_car()
                 neat_car = create_neat_car()
+                
+                with open("assets/winner_genome.pkl", "rb") as f:
+                    winner = pickle.load(f)
+                trained_net = neat.nn.FeedForwardNetwork.create(winner, config)
+                neat_car.net = trained_net
+
                 dijkstra_car = create_dijkstra_car()
 
                 # Merge overrides + apply registry everywhere
@@ -326,7 +334,12 @@ async def main():
                         trained_net = neat.nn.FeedForwardNetwork.create(
                             manager.winner,
                             config
-                        )   
+                        )
+                        
+                        #with open("assets/winner_genome.pkl", "wb") as f:
+                        #    pickle.dump(manager.winner, f)
+
+
                     # Return to menu
                     menu.drawMain(WIN)
                     game_state = STATE_MENU
@@ -354,7 +367,7 @@ async def main():
                 level_time,
                 _font(48)
             )
-        print(countdown_timer)
+        #print(countdown_timer)
         #js_console_log("Main loop running")
         pygame.display.flip()
         await asyncio.sleep(0)
