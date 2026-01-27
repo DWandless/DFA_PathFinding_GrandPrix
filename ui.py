@@ -95,7 +95,14 @@ class Menu:
         ]
 
         for level, btn in level_buttons:
+
+            """ TODO: Logic for level locking - comment this to implemented - currently commented for debugging purposes
+            # if the highest level unlocked is greater than or equal to the level button being drawn
+            if resources.HIGHEST_LEVEL >= level:
+                btn.enabled = True # enable the button
+            """
             btn.enabled = True
+
             if btn.is_hovered():
                 hovered_level = level
 
@@ -188,6 +195,10 @@ def draw_level_end(win, result, level, time_sec, font):
 
     title = "YOU WIN!" if result == "win" else "YOU LOSE"
     color = (0, 200, 0) if result == "win" else (200, 0, 0)
+
+    # If won, unlock next level
+    if result == "win":
+        resources.HIGHEST_LEVEL = max(resources.HIGHEST_LEVEL, level + 1)  # highest level is just a gloabal int within resources.py
 
     win.blit(font.render(title, True, color),
              font.render(title, True, color).get_rect(center=(win.get_width()//2, 200)))
@@ -941,93 +952,3 @@ class BuildScreen:
         self._draw_first4_dials()
         self._draw_model_section()
         self._draw_bottom_bar()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-""" TODO: Currently unused removed leaderboard functions for time being - reimplement this at a later date
-def load_leaderboard(limit=5):
-    rows = []
-    if not os.path.exists("results.csv"):
-        return rows
-
-    with open("results.csv", "r", newline="") as f:
-        reader = csv.reader(f)
-        for r in reader:
-            try:
-                rows.append((r[0], r[1], float(r[2])))
-            except Exception:
-                continue
-
-    rows.sort(key=lambda x: x[2])
-    return rows[:limit]
-
-def draw_timer_leaderboard_level(win):
-    font = pygame.font.SysFont(None, 24)
-    elapsed = time.time() - resources.start_time
-
-    level_text = font.render(
-        f"Level: {resources.GameInfo().get_level()}",
-        True, (255, 255, 255)
-    )
-    win.blit(level_text, (10, win.get_height() - 160))
-
-    timer_surf = font.render(
-        f"Time: {format_time(elapsed)}",
-        True, (255, 255, 255)
-    )
-    win.blit(timer_surf, (10, win.get_height() - 140))
-
-    if getattr(resources, "last_winner", None):
-        last_surf = font.render(
-            f"Last: {resources.last_winner} {format_time(resources.last_time)}",
-            True, (255, 255, 0)
-        )
-        win.blit(last_surf, (10, win.get_height() - 120))
-
-    lb = load_leaderboard(5)
-    x, y = 10, win.get_height() - 10
-
-    title = font.render("Leaderboard", True, (255, 255, 255))
-    y -= title.get_height()
-    win.blit(title, (x, y))
-
-    for i, (_, winner, t) in enumerate(lb, start=1):
-        entry = font.render(
-            f"{i}. {winner}: {format_time(t)}",
-            True, (255, 255, 255)
-        )
-        y -= entry.get_height()
-        win.blit(entry, (x, y))
-"""

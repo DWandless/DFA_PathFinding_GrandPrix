@@ -95,6 +95,7 @@ HEIGHT, WIDTH = TRACK.get_size()
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
 
 RACING_LINE = []
+HIGHEST_LEVEL = 1 # This is updated during gameplay - initially set to 1 - represents the highest level unlocked
 
 # --------------------------------------------------
 # Level Previews for hovering
