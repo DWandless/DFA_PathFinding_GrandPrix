@@ -60,8 +60,8 @@ class Menu:
         self.level4Button = Button((width, height//2 + 400, 200, 50), "Level 4", GRAY, WHITE)
         self.level5Button = Button((width, height//2 + 525, 200, 50), "Level 5", GRAY, WHITE)
 
-        # BACK BUTTON (used by Page1 / Page2)
-        self.backButton = Button((width/2 + 100, height//2 + 425, 200, 50), "Back", GRAY, WHITE)
+        # BACK BUTTON (universal, top-right for all pages)
+        self.backButton = PillButton((width - 140, 20, 120, 36), "Back", selected=False)
 
     def disable_all_buttons(self):
         for btn in [
@@ -89,7 +89,7 @@ class Menu:
     # ---------------- LEVEL SELECT ----------------
     def drawLevels(self, surface):
         self.disable_all_buttons()
-        surface.blit(MENU4, (0, 0)) # TODO: Change to level select background if available to one to accomodate for the level preview on the left hand side of the screen
+        surface.blit(MENU4, (0, 0))
 
         hovered_level = None
 
@@ -100,7 +100,7 @@ class Menu:
             (4, self.level4Button),
             (5, self.level5Button),
         ]
-
+        
         for level, btn in level_buttons:
 
             """ TODO: Logic for level locking - comment this to implemented - currently commented for debugging purposes
@@ -118,7 +118,13 @@ class Menu:
             preview = resources.LEVEL_PREVIEWS.get(hovered_level)
             if preview:
                 surface.blit(preview, (48, 434))  # left side
-        # Draw buttons
+        
+        # Enable and draw back button (top right, positioned by surface width)
+        self.backButton.rect = pygame.Rect(surface.get_width() - 140, 20, 120, 36)
+        self.backButton.enabled = True
+        self.backButton.draw(surface)
+        
+        # Draw level buttons
         for _, btn in level_buttons:
             btn.draw(surface)
 
@@ -127,6 +133,8 @@ class Menu:
         self.disable_all_buttons()
         surface.blit(MENU2, (0, 0))
 
+        # Position back button in top right based on actual surface width
+        self.backButton.rect = pygame.Rect(surface.get_width() - 140, 20, 120, 36)
         self.backButton.enabled = True
         self.backButton.draw(surface)
 
@@ -136,13 +144,13 @@ class Menu:
         surface.blit(MENU2, (0, 0))
 
         center_x = surface.get_width() // 2
-        y = 290
+        y = 300
 
         # ---- Title ----
         title = self.titleFont.render("Credits", True, WHITE)
         surface.blit(title, title.get_rect(center=(center_x, y)))
 
-        y += 50
+        y += 70
         # ---- Names ----
         credits = [
             "Game Design & Programming:",
@@ -159,7 +167,7 @@ class Menu:
             surface.blit(text, text.get_rect(center=(center_x, y)))
             y += 36
 
-        y += 20
+        y += 80
 
         # ---- GitHub Link ----
         link_text = self.linkFont.render("GitHub Repository", True, WHITE)
@@ -175,7 +183,8 @@ class Menu:
             2
         )
 
-        # ---- Back Button ----
+        # ---- Back Button (top right, positioned by surface width) ----
+        self.backButton.rect = pygame.Rect(surface.get_width() - 140, 20, 120, 36)
         self.backButton.enabled = True
         self.backButton.draw(surface)
 
