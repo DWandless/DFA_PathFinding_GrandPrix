@@ -189,7 +189,7 @@ async def main():
                     selector = ModelSelectScreen(WIN, assets_path=ASSETS_DIR)
                     game_state = MODEL_SELECT
                     selector.index = selector.models.index("NEAT")
-           
+
             if game_state == MODEL_SELECT:
                 chosen_model = selector.open(event)
                 if chosen_model == "back":
@@ -198,6 +198,10 @@ async def main():
                     chosen_model = None
             elif game_state == BUILD_SCREEN:
                 selection = build_screen.open(base_reg, manager,event, lock_model=chosen_model)
+                if selection == "back":
+                    game_state = MODEL_SELECT
+                    chosen_model = None
+                    selection = None
                 #js_console_log("Reaching build screen event handling")
 
                     # -------- LEVEL END --------
