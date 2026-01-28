@@ -45,7 +45,6 @@ STATE_PAGE1 = "page1"
 STATE_PAGE2 = "page2"
 STATE_TRAINING = "training"
 MODEL_SELECT = "model_select"
-MODEL_SELECTED = "model_selected"
 BUILD_SCREEN = "build_screen"
 ASSETS_DIR = r"C:\Users\lelliottjack\Documents\DFA AI Racecar game\DFA_PathFinding_GrandPrix\assets"
 GAME_BUDGET = 100_000.00
@@ -74,6 +73,27 @@ TRAIN_GENERATIONS = 10
 
 def _font(size):
     return pygame.font.Font(None, size)
+
+
+def create_all_cars():
+    """Factory function to create all 5 car instances."""
+    return (
+        create_player_car(),
+        create_computer_car(),
+        create_GBFS_car(),
+        create_neat_car(),
+        create_dijkstra_car()
+    )
+
+
+def load_trained_network(config):
+    """Load trained NEAT network from file. Returns None if file doesn't exist."""
+    try:
+        with open("assets/winner_genome.pkl", "rb") as f:
+            winner = pickle.load(f)
+        return neat.nn.FeedForwardNetwork.create(winner, config)
+    except FileNotFoundError:
+        return None
 
 
 async def main():
@@ -161,28 +181,21 @@ async def main():
                     game_info.next_level()
 
                     load_track_for_level(game_info.get_level())
-
-                    player_car = create_player_car()
-                    computer_car = create_computer_car()
-                    GBFS_car = create_GBFS_car()
-                    neat_car = create_neat_car()
-                    dijkstra_car = create_dijkstra_car()
+                    player_car, computer_car, GBFS_car, neat_car, dijkstra_car = create_all_cars()
 
                     if trained_net:
                         neat_car.set_net(trained_net)
 
-                    # Model selection screen and tuning
-                    # ──────────────────────────────────────────────
-                    # 1) FIRST: Model selection (with preview)
-                    # ──────────────────────────────────────────────
                     selector = ModelSelectScreen(WIN, assets_path=ASSETS_DIR)
                     game_state = MODEL_SELECT
                     selector.index = selector.models.index("NEAT")
-                    #chosen_model = selector.open(initial_model=last_model or "NEAT")
-                    #print("1")
            
             if game_state == MODEL_SELECT:
                 chosen_model = selector.open(event)
+                if chosen_model == "back":
+                    game_state = STATE_LEVEL_SELECT
+                    menu.drawLevels(WIN)
+                    chosen_model = None
             elif game_state == BUILD_SCREEN:
                 selection = build_screen.open(base_reg, manager,event, lock_model=chosen_model)
                 #js_console_log("Reaching build screen event handling")
@@ -192,12 +205,7 @@ async def main():
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
                     if level_result == "win" and game_info.next_level():
                         load_track_for_level(game_info.get_level())
-
-                        player_car = create_player_car()
-                        computer_car = create_computer_car()
-                        GBFS_car = create_GBFS_car()
-                        neat_car = create_neat_car()
-                        dijkstra_car = create_dijkstra_car()
+                        player_car, computer_car, GBFS_car, neat_car, dijkstra_car = create_all_cars()
 
                         if trained_net:
                             neat_car.set_net(trained_net)
@@ -208,58 +216,28 @@ async def main():
                         menu.drawMain(WIN)
                         game_state = STATE_MENU
         if game_state == MODEL_SELECT:
-           
-            #print("Seeing if chose model")
-            #chosen_model = "CONTINUE"
-            if chosen_model != None:
-                #print("chose model: ", chosen_model)
-                    # Create temp cars (registry can read current defaults)
-                tmp_player = create_player_car()
-                tmp_computer = create_computer_car()
-                tmp_gbfs = create_GBFS_car()
-                tmp_neat = create_neat_car()
-
-                tmp_dijk = create_dijkstra_car()
+            if chosen_model is not None:
+                # Create temp cars for registry
+                tmp_player, tmp_computer, tmp_gbfs, tmp_neat, tmp_dijk = create_all_cars()
                 base_reg = build_registry(manager, [tmp_player, tmp_computer, tmp_gbfs, tmp_neat, tmp_dijk])
 
                 if build_screen is None:
                     build_screen = ui.BuildScreen(WIN, GAME_BUDGET)
 
-                # Open Build UI (mouse dials) — returns a tuple, but we'll
-                # override the model with `chosen_model` from the selector.
                 build_screen.setup_open(base_reg, manager, lock_model=chosen_model)
                 game_state = BUILD_SCREEN
-                #js_console_log("Model chosen and now entering build screen")
-                
-                
-                #pygame.time.delay(300)  # Small delay to avoid immediate input carry-over
         elif game_state == BUILD_SCREEN:
-            #selection = build_screen.open(base_reg, manager, lock_model=chosen_model)
-            #js_console_log("in build screen")
             if selection is not None:
-
                 _model_from_ui, track_key, overrides, total_price = selection
 
-                # Use the chosen model from the new ModelSelect step
-                model_name = chosen_model
-
                 # Create fresh cars for this level
-                player_car = create_player_car()
-                computer_car = create_computer_car()
-                GBFS_car = create_GBFS_car()
-                neat_car = create_neat_car()
-                
-                with open("assets/winner_genome.pkl", "rb") as f:
-                    winner = pickle.load(f)
-                trained_net = neat.nn.FeedForwardNetwork.create(winner, config)
-                neat_car.net = trained_net
+                player_car, computer_car, GBFS_car, neat_car, dijkstra_car = create_all_cars()
+                trained_net = load_trained_network(config)
+                if trained_net:
+                    neat_car.net = trained_net
 
-                dijkstra_car = create_dijkstra_car()
-
-                # Merge overrides + apply registry everywhere
-                # (Budget already enforced in BuildScreen)
+                # Merge overrides + apply registry
                 base_reg = build_registry(manager, [player_car, computer_car, GBFS_car, neat_car, dijkstra_car])
-                # Shallow merge overrides
                 for grp, kv in (overrides or {}).items():
                     base_reg.setdefault(grp, {})
                     base_reg[grp].update(kv)
@@ -267,7 +245,7 @@ async def main():
                 apply_registry(base_reg, manager, [player_car, computer_car, GBFS_car, neat_car, dijkstra_car])
 
                 # Persist build info
-                last_model, last_track_key, last_reg, last_total_price = model_name, track_key, base_reg, total_price
+                last_model, last_track_key, last_reg, last_total_price = chosen_model, track_key, base_reg, total_price
                 
                 # Countdown to start
                 countdown_timer = 3.0
@@ -369,8 +347,7 @@ async def main():
                 level_time,
                 _font(48)
             )
-        #print(countdown_timer)
-        #js_console_log("Main loop running")
+
         pygame.display.flip()
         await asyncio.sleep(0)
 

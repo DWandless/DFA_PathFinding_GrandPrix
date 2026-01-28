@@ -11,6 +11,7 @@ Author: Benjamin + Copilot
 
 import os
 import pygame
+import resources
 
 # ---------------------------------------------------------------------
 # Configuration
@@ -170,9 +171,9 @@ class ModelSelectScreen:
             self.surface.fill((16, 18, 26))
 
     def _draw_title(self):
-        title = self.title_font.render("Choose Your Model", True, BLUE)
+        title = self.title_font.render("Pick Your Winner", True, BLUE)
         self.surface.blit(title, self.title_pos)
-        sub = self.body_font.render("Which model do you think will win the race?", True, BLUE)
+        sub = self.body_font.render("Which model will win the race?", True, BLUE)
         self.surface.blit(sub, (self.title_pos[0], self.title_pos[1] + 42))
 
     def _draw_preview(self):
@@ -229,6 +230,15 @@ class ModelSelectScreen:
         if self.left_arrow.handle_event(event):  self._move_left();  return "CONTINUE"
         if self.right_arrow.handle_event(event): self._move_right(); return "CONTINUE"
 
+        # Check buttons first (higher priority)
+        if self.btn_select.handle_event(event):
+            resources.click_sound.play()
+            return self._confirm()
+        if self.btn_back.handle_event(event):
+            resources.click_sound.play()
+            return "back"
+
+        # Then check thumbnail clicks
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             for i in range(len(self.models)):
                 rect = getattr(self, f"_thumb_rect_{i}", None)
@@ -236,10 +246,6 @@ class ModelSelectScreen:
                     self.index = i
                     return "CONTINUE"
 
-        if self.btn_select.handle_event(event):
-            return self._confirm()
-        if self.btn_back.handle_event(event):
-            return None
         return "CONTINUE"
 
     def _handle_keyboard(self, event):
