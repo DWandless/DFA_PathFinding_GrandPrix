@@ -7,6 +7,7 @@ import resources
 from resources import MENU, MENU2, MENU3, MENU4
 from pricing import price_build, RANGE, MODEL_BASE_PRICE, TRACK_MULT
 from tuning_registry import build_registry
+import webbrowser
 # --------------------------------------------------
 # Utilities
 # --------------------------------------------------
@@ -38,12 +39,18 @@ class Menu:
     def __init__(self, width=500, height=500):
         self.width = width
         self.height = height
+        self.titleFont = pygame.font.Font(None, 64)
+        self.textFont = pygame.font.Font(None, 32)
+        self.linkFont = pygame.font.Font(None, 32)
+        self.github_url = "https://github.com/DWandless/DFA_PathFinding_GrandPrix"
+        self.github_rect = None  # will store clickable area
+
 
         # MAIN MENU
         self.playButton = Button((width, height//2 + 25, 200, 50), "Play", BLUE, WHITE)
-        self.trainButton = Button((width, height//2 + 150, 200, 50), "Train NEAT", GRAY, WHITE)
-        self.page1Button = Button((width, height//2 + 275, 200, 50), "Page 1", GRAY, WHITE)
-        self.page2Button = Button((width, height//2 + 400, 200, 50), "Page 2", GRAY, WHITE)
+        self.page1Button = Button((width, height//2 + 150, 200, 50), "Page 1", GRAY, WHITE)
+        self.page2Button = Button((width, height//2 + 275, 200, 50), "Credits", GRAY, WHITE)
+        self.trainButton = Button((width, height//2 + 400, 200, 50), "Train NEAT", GRAY, WHITE)
         self.quitButton = Button((width, height//2 + 525, 200, 50), "Quit", GRAY, WHITE)
 
         # LEVEL SELECT
@@ -54,7 +61,7 @@ class Menu:
         self.level5Button = Button((width, height//2 + 525, 200, 50), "Level 5", GRAY, WHITE)
 
         # BACK BUTTON (used by Page1 / Page2)
-        self.backButton = Button((width/2 + 100, height//2 + 410, 200, 50), "Back", GRAY, WHITE)
+        self.backButton = Button((width/2 + 100, height//2 + 425, 200, 50), "Back", GRAY, WHITE)
 
     def disable_all_buttons(self):
         for btn in [
@@ -128,11 +135,56 @@ class Menu:
         self.disable_all_buttons()
         surface.blit(MENU2, (0, 0))
 
+        center_x = surface.get_width() // 2
+        y = 290
+
+        # ---- Title ----
+        title = self.titleFont.render("Credits", True, WHITE)
+        surface.blit(title, title.get_rect(center=(center_x, y)))
+
+        y += 50
+        # ---- Names ----
+        credits = [
+            "Game Design & Programming:",
+            "Drew Wandless, Ben Lopez, Nathan Miller",
+            "",
+            "AI & Pathfinding:",
+            "Harry Fox, Matthew Cartwright, Leo Elliott-Jackson",
+            "",
+            "Built with Pygame"
+        ]
+
+        for line in credits:
+            text = self.textFont.render(line, True, WHITE)
+            surface.blit(text, text.get_rect(center=(center_x, y)))
+            y += 36
+
+        y += 20
+
+        # ---- GitHub Link ----
+        link_text = self.linkFont.render("GitHub Repository", True, WHITE)
+        self.github_rect = link_text.get_rect(center=(center_x, y))
+        surface.blit(link_text, self.github_rect)
+
+        # underline to make it feel like a link
+        pygame.draw.line(
+            surface,
+            BLUE,
+            (self.github_rect.left, self.github_rect.bottom),
+            (self.github_rect.right, self.github_rect.bottom),
+            2
+        )
+
+        # ---- Back Button ----
         self.backButton.enabled = True
         self.backButton.draw(surface)
 
     # ---------------- EVENTS ----------------
     def handle_event(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if self.github_rect and self.github_rect.collidepoint(event.pos):
+                webbrowser.open(self.github_url)
+
         if self.playButton.handle_event(event):
             return "play"
         if self.trainButton.handle_event(event):
