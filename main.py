@@ -95,6 +95,7 @@ async def main():
     last_reg = None
     last_total_price = 0.0
     selection = None
+    chosen_model = None
 
     trained_net = None
     clock = pygame.time.Clock()
@@ -310,17 +311,18 @@ async def main():
             GBFS_car.move()
             dijkstra_car.move()
 
-            winner = ui.handle_collision(
+            winner = ui.handle_collision( # winner stored based on first collision
                 player_car,
                 computer_car,
                 GBFS_car,
                 neat_car,
-                dijkstra_car
+                dijkstra_car,
+                chosen_model
             )
 
-            if winner:
+            if winner: # Someone won
                 level_time = time.time() - game_info.level_start_time
-                level_result = "win" if winner == "player" else "lose"
+                level_result = "win" if winner == chosen_model else "lose" # level result set based on whether chosen model won
                 game_state = STATE_LEVEL_END
         
         elif game_state == STATE_TRAINING:

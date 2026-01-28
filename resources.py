@@ -72,6 +72,7 @@ GREEN_CAR = scale_image(pygame.image.load("assets/green-car.png"), 0.55)
 PURPLE_CAR = scale_image(pygame.image.load("assets/purple-car.png"), 0.55)
 WHITE_CAR = scale_image(pygame.image.load("assets/white-car.png"), 0.55)
 TEMPLATE_CAR = scale_image(pygame.image.load("assets/car_template.png"), 0.55)
+GREY_CAR = scale_image(pygame.image.load("assets/grey-car.png"), 0.55)
 
 # --------------------------------------------------
 # Default Track (Level 1)
@@ -378,7 +379,7 @@ def create_player_car():
 
 def create_computer_car():
     from cars import ComputerCar
-    return ComputerCar(TEMPLATE_CAR, START_POSITION, 2, 4, RACING_LINE + [FINISH_POSITION])
+    return ComputerCar(GREY_CAR, START_POSITION, 2, 4, RACING_LINE + [FINISH_POSITION])
 
 def create_GBFS_car():
     from cars import GBFSDetourCar

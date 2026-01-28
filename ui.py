@@ -295,16 +295,16 @@ def move_player(player_car):
         #print(player_car.position()) #  DEBUGGING prints cars current stopped position.
 
 
-def handle_collision(player_car, computer_car, gbfs_car, neat_car, dijkstra_car):
+def handle_collision(player_car, computer_car, gbfs_car, neat_car, dijkstra_car, chosen_model=None):
     if player_car.collide(resources.TRACK_BORDER_MASK):
         player_car.bounce()
 
     cars = [
-        ("player", player_car),
-        ("computer", computer_car),
-        ("gbfs", gbfs_car),
-        ("neat", neat_car),
-        ("dijkstra", dijkstra_car),
+        ("Player", player_car),
+        ("Computer", computer_car),
+        ("GBFS", gbfs_car),
+        ("NEAT", neat_car),
+        ("Dijkstra", dijkstra_car),
     ]
 
     for name, car in cars:

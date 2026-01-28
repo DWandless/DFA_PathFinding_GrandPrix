@@ -17,7 +17,7 @@ import pygame
 # ---------------------------------------------------------------------
 
 MODELS = ["Player", "Computer", "GBFS", "Dijkstra", "NEAT"]
-
+BLUE = (0, 120, 215)
 MODEL_TO_IMAGE = {
     "Player":   "assets/red-car.png",
     "Computer": "assets/grey-car.png",
@@ -170,9 +170,9 @@ class ModelSelectScreen:
             self.surface.fill((16, 18, 26))
 
     def _draw_title(self):
-        title = self.title_font.render("Choose Your Model", True, (240, 240, 240))
+        title = self.title_font.render("Choose Your Model", True, BLUE)
         self.surface.blit(title, self.title_pos)
-        sub = self.body_font.render("Use ←/→ to browse, Enter to select", True, (200, 200, 200))
+        sub = self.body_font.render("Which model do you think will win the race?", True, BLUE)
         self.surface.blit(sub, (self.title_pos[0], self.title_pos[1] + 42))
 
     def _draw_preview(self):
@@ -189,7 +189,7 @@ class ModelSelectScreen:
             self.surface.blit(car, r.topleft)
 
         name_font = pygame.font.Font(None, 34)
-        name = name_font.render(m, True, (235, 235, 235))
+        name = name_font.render(m, True, BLUE)
         self.surface.blit(name, (frame_rect.centerx - name.get_width() // 2, frame_rect.bottom + 10))
 
         self.left_arrow.draw(self.surface)
