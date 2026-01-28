@@ -769,7 +769,9 @@ class BuildScreen:
         self._layout_model_sliders()
         self._guard_right_scroll_offset()  # ensure initial offset obeys guard
     def open(self, base_reg, manager, event, lock_model=None):
-
+        if self.btn_cancel.handle_event(event):
+            resources.click_sound.play()
+            return "back"
         # ---------- Global wheel routing ----------
         if event.type == pygame.MOUSEWHEEL:
             if self._dial_focus is not None:
@@ -810,6 +812,7 @@ class BuildScreen:
             if self._dial_focus:
                 self._dial_focus.focused = False
             self._dial_focus = None
+        
 
         # ---------- Right sliders (translate for scroll offset) ----------
         def handle_slider_list(sliders, toggle=None):
