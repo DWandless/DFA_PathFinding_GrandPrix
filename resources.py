@@ -67,12 +67,23 @@ MENU4 = scale_image(pygame.image.load("assets/Menu4.png"), 0.90)
 GRASS= scale_image(pygame.image.load("assets/grass.jpg"), 1.5)
 DESERT = scale_image(pygame.image.load("assets/desert.png"), 0.75)
 
+BLUE_CAR = scale_image(pygame.image.load("assets/blue-car.png"), 0.55)
 RED_CAR = scale_image(pygame.image.load("assets/red-car.png"), 0.55)
 GREEN_CAR = scale_image(pygame.image.load("assets/green-car.png"), 0.55)
 PURPLE_CAR = scale_image(pygame.image.load("assets/purple-car.png"), 0.55)
 WHITE_CAR = scale_image(pygame.image.load("assets/white-car.png"), 0.55)
 TEMPLATE_CAR = scale_image(pygame.image.load("assets/car_template.png"), 0.55)
 GREY_CAR = scale_image(pygame.image.load("assets/grey-car.png"), 0.55)
+
+# Color name to car image mapping
+CAR_COLOR_MAP = {
+    "Red": RED_CAR,
+    "Blue": BLUE_CAR,
+    "Green": GREEN_CAR,
+    "Purple": PURPLE_CAR,
+    "White": WHITE_CAR,
+    "Grey": GREY_CAR,
+}
 
 # --------------------------------------------------
 # Default Track (Level 1)
@@ -373,38 +384,43 @@ class GameInfo:
 # --------------------------------------------------
 # Car factories
 # --------------------------------------------------
-def create_player_car():
+def create_player_car(color="Red"):
     from cars import PlayerCar
-    return PlayerCar(RED_CAR, START_POSITION, 4, 4)
+    car_image = CAR_COLOR_MAP.get(color, RED_CAR)
+    return PlayerCar(car_image, START_POSITION, 4, 4)
 
-def create_computer_car():
+def create_computer_car(type='DFS', color="Grey"):
     from cars import ComputerCar
-    return ComputerCar(GREY_CAR, START_POSITION, 2, 4, RACING_LINE + [FINISH_POSITION])
+    car_image = CAR_COLOR_MAP.get(color, GREY_CAR if type == 'DFS' else BLUE_CAR)
+    return ComputerCar(car_image, START_POSITION, 2, 4, RACING_LINE + [FINISH_POSITION])
 
-def create_GBFS_car():
+def create_GBFS_car(color="Green"):
     from cars import GBFSDetourCar
+    car_image = CAR_COLOR_MAP.get(color, GREEN_CAR)
     car = GBFSDetourCar(
         RACING_LINE + [FINISH_POSITION],
         GRID_SIZE, 30,
         CHECKPOINT_RADIUS, GRID, TRACK_BORDER_MASK,
-        GREEN_CAR
+        car_image
     )
     car.x, car.y = START_POSITION
     return car
 
-def create_neat_car():
+def create_neat_car(color="Purple"):
     from cars import NEATCar
+    car_image = CAR_COLOR_MAP.get(color, PURPLE_CAR)
     return NEATCar(
-        PURPLE_CAR,
+        car_image,
         START_POSITION,
         3, 4,
         RACING_LINE, TRACK_BORDER_MASK, GRID_SIZE, GRID
     )
 
-def create_dijkstra_car(max_vel=3, rotation_vel=4):
+def create_dijkstra_car(max_vel=3, rotation_vel=4, color="White"):
     from cars import DijkstraCar
+    car_image = CAR_COLOR_MAP.get(color, WHITE_CAR)
     return DijkstraCar(
-        WHITE_CAR,
+        car_image,
         START_POSITION,
         max_vel,
         rotation_vel,

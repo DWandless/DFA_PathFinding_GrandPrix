@@ -86,6 +86,24 @@ def create_all_cars():
     )
 
 
+def create_car_by_model(model_type, color="Red"):
+    """Factory function to create a specific car by model type with a custom color."""
+    if model_type == "Player":
+        return create_player_car(color)
+    elif model_type == "BFS":
+        return create_computer_car(type='BFS', color=color)
+    elif model_type == "DFS":
+        return create_computer_car(type='DFS', color=color)
+    elif model_type == "GBFS":
+        return create_GBFS_car(color)
+    elif model_type == "Dijkstra":
+        return create_dijkstra_car(color=color)
+    elif model_type == "NEAT":
+        return create_neat_car(color)
+    else:
+        return create_player_car(color)
+
+
 def load_trained_network(config):
     """Load trained NEAT network from file. Returns None if file doesn't exist."""
     try:
@@ -116,6 +134,7 @@ async def main():
     last_total_price = 0.0
     selection = None
     chosen_model = None
+    chosen_color = None
 
     trained_net = None
     clock = pygame.time.Clock()
@@ -188,19 +207,25 @@ async def main():
 
                     selector = ModelSelectScreen(WIN, assets_path=ASSETS_DIR)
                     game_state = MODEL_SELECT
-                    selector.index = selector.models.index("NEAT")
+                    selector.model_index = selector.models.index("NEAT")
+                    selector.color_index = 0  # Default to first color
 
             if game_state == MODEL_SELECT:
-                chosen_model = selector.open(event)
-                if chosen_model == "back":
+                result = selector.open(event)
+                if result == "back":
                     game_state = STATE_LEVEL_SELECT
                     menu.drawLevels(WIN)
                     chosen_model = None
+                    chosen_color = None
+                elif result is not None and isinstance(result, tuple):
+                    # Result is (model, color)
+                    chosen_model, chosen_color = result
             elif game_state == BUILD_SCREEN:
                 selection = build_screen.open(base_reg, manager,event, lock_model=chosen_model)
                 if selection == "back":
                     game_state = MODEL_SELECT
                     chosen_model = None
+                    chosen_color = None
                     selection = None
                 #js_console_log("Reaching build screen event handling")
 
@@ -234,8 +259,13 @@ async def main():
             if selection is not None:
                 _model_from_ui, track_key, overrides, total_price = selection
 
-                # Create fresh cars for this level
-                player_car, computer_car, GBFS_car, neat_car, dijkstra_car = create_all_cars()
+                # Create fresh cars for this level - apply chosen color to player car only
+                player_car = create_player_car(chosen_color if chosen_color else "Red")
+                computer_car = create_computer_car()
+                GBFS_car = create_GBFS_car()
+                neat_car = create_neat_car()
+                dijkstra_car = create_dijkstra_car()
+                
                 trained_net = load_trained_network(config)
                 if trained_net:
                     neat_car.net = trained_net
