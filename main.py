@@ -160,6 +160,11 @@ async def main():
 
             # -------- MENU / UI STATES --------
             if game_state in (STATE_MENU, STATE_LEVEL_SELECT, STATE_PAGE1, STATE_PAGE2):
+                # Handle mouse wheel for scrolling on info page
+                if event.type == pygame.MOUSEWHEEL and game_state == STATE_PAGE1:
+                    mouse_pos = pygame.mouse.get_pos()
+                    menu.info_scroll.handle_wheel(event, hover_pos=mouse_pos, step=40)
+                
                 action = menu.handle_event(event)
 
                 if action == "play":
@@ -299,6 +304,12 @@ async def main():
         
         if game_state == STATE_LEVEL_SELECT:
             menu.drawLevels(WIN)
+
+        elif game_state == STATE_PAGE1:
+            menu.drawPage1(WIN)
+
+        elif game_state == STATE_PAGE2:
+            menu.drawPage2(WIN)
 
         elif game_state == STATE_RACING:
             ui.draw(

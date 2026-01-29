@@ -48,7 +48,7 @@ class Menu:
 
         # MAIN MENU
         self.playButton = Button((width, height//2 + 25, 200, 50), "Play", BLUE, WHITE)
-        self.page1Button = Button((width, height//2 + 150, 200, 50), "Page 1", GRAY, WHITE)
+        self.page1Button = Button((width, height//2 + 150, 200, 50), "Info", GRAY, WHITE)
         self.page2Button = Button((width, height//2 + 275, 200, 50), "Credits", GRAY, WHITE)
         self.trainButton = Button((width, height//2 + 400, 200, 50), "Train NEAT", GRAY, WHITE)
         self.quitButton = Button((width, height//2 + 525, 200, 50), "Quit", GRAY, WHITE)
@@ -62,6 +62,14 @@ class Menu:
 
         # BACK BUTTON (universal, top-right for all pages)
         self.backButton = PillButton((width - 140, 20, 120, 36), "Back", selected=False)
+
+        # INFO SCROLL PANEL
+        self.info_scroll = ScrollPanel(
+            (150, 260, self.width + 120, self.height - 120),  # rect
+            content_height=1000,  # adjust based on text amount
+            bg=(15, 20, 35, 0),  # Transparent background
+            radius=12
+        )
 
     def disable_all_buttons(self):
         for btn in [
@@ -133,7 +141,79 @@ class Menu:
         self.disable_all_buttons()
         surface.blit(MENU2, (0, 0))
 
-        # Position back button in top right based on actual surface width
+        # Start scroll panel
+        panel_surf, offset_y = self.info_scroll.begin(surface)
+
+        # Draw text lines on panel_surf with offset_y
+        info_lines = [
+            "Welcome to DFA PathFinding Grand Prix!",
+            "",
+            "Race against AI pathfinding algorithms:",
+            "- A* (Computer)",
+            "- GBFS (Greedy Best-First Search)",
+            "- Dijkstra's Algorithm",
+            "- NEAT (Neural Evolution)",
+            "",
+            "Controls: W/A/S/D to move",
+            "",
+            "Complete levels to unlock the next track!",
+            "",
+            "This is extra text to test scrolling...",
+            "Line 1",
+            "Line 2",
+            "Line 3",
+            "Line 4",
+            "Line 5",
+            "Line 6",
+            "Line 7",
+            "Line 8",
+            "Line 9",
+            "Line 10",
+            "Line 11",
+            "Line 12",
+            "Line 13",
+            "Line 14",
+            "Line 15",
+            "Line 16",
+            "Line 17",
+            "Line 18",
+            "Line 19",
+            "Line 20",
+        ]
+
+        y = 20 + offset_y
+        for line in info_lines:
+            text = self.textFont.render(line, True, WHITE)
+            panel_surf.blit(text, (20, y))
+            y += 35
+
+        self.info_scroll.end(surface)
+
+        # ---- GitHub Link Box (below scroll panel) ----
+        # Calculate position below scroll panel
+        link_box_y = self.info_scroll.rect.bottom + 30
+        link_box_height = 60
+        link_box_width = 320
+        link_box_x = (surface.get_width() - link_box_width) // 2
+        
+        link_box_rect = pygame.Rect(link_box_x, link_box_y, link_box_width, link_box_height)
+        #draw_glass_panel(surface, link_box_rect, border_color=(60, 130, 250), alpha=0)
+        
+        # Render link text centered in the box
+        link_text = self.linkFont.render("GitHub Repository", True, WHITE)
+        self.github_rect = link_text.get_rect(center=link_box_rect.center)
+        surface.blit(link_text, self.github_rect)
+
+        # underline to make it feel like a link
+        pygame.draw.line(
+            surface,
+            BLUE,
+            (self.github_rect.left, self.github_rect.bottom),
+            (self.github_rect.right, self.github_rect.bottom),
+            2
+        )
+
+        # Back button
         self.backButton.rect = pygame.Rect(surface.get_width() - 140, 20, 120, 36)
         self.backButton.enabled = True
         self.backButton.draw(surface)
@@ -190,8 +270,14 @@ class Menu:
 
     # ---------------- EVENTS ----------------
     def handle_event(self, event):
+        # Handle scrolling on info page (check if currently on page1 via enabled state)
+        if event.type == pygame.MOUSEWHEEL:
+            mouse_pos = pygame.mouse.get_pos()
+            self.info_scroll.handle_wheel(event, hover_pos=mouse_pos, step=40)
+        
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if self.github_rect and self.github_rect.collidepoint(event.pos):
+                import webbrowser
                 webbrowser.open(self.github_url)
 
         if self.playButton.handle_event(event):
