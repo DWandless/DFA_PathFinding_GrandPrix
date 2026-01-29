@@ -737,7 +737,8 @@ class BuildScreen:
         max_offset = 0  # most positive
 
         # Apply guard — do not allow more negative than guard_limit
-        min_with_guard = max(min_offset, guard_limit)
+        #min_with_guard = max(min_offset, guard_limit)
+        min_with_guard = min_offset
         self._right_scroll.offset_y = max(min(self._right_scroll.offset_y, max_offset), min_with_guard)
 
     # ── public entry ─────────────────────────────────────────────────
