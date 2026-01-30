@@ -31,9 +31,9 @@ COLOR_TO_IMAGE = {
 }
 MODEL_TO_IMAGE = {
     "Player": "assets/icon_brain.png",
-    "BFS": "assets/icon_bfs.png",
-    "DFS": "assets/icon_dfs.png",
-    "GBFS": "assets/icon_gbfs.png",
+    "BFS": "assets/icon_BFS.png",
+    "DFS": "assets/icon_DFS.png",
+    "GBFS": "assets/icon_GBFS.png",
     "AStar": "assets/icon_astar.png",
     "NEAT": "assets/icon_neat.png",
 }
