@@ -117,10 +117,10 @@ HIGHEST_LEVEL = 1 # This is updated during gameplay - initially set to 1 - repre
 LEVEL_PREVIEWS = {
     1: pygame.image.load("assets/track1.png").convert_alpha(),
     2: pygame.image.load("assets/track2.png").convert_alpha(),
-    # 3: pygame.image.load("assets/level3.png").convert_alpha(),
-    # 4: pygame.image.load("assets/level4.png").convert_alpha(),
-    # 5: pygame.image.load("assets/level5.png"),
-}
+    3: pygame.image.load("assets/track3.png").convert_alpha(),
+    4: pygame.image.load("assets/track4.png").convert_alpha(),
+    5: pygame.image.load("assets/track5.png").convert_alpha(),
+}   
 
 for k, img in LEVEL_PREVIEWS.items():
     LEVEL_PREVIEWS[k] = pygame.transform.smoothscale(img, (290, 290))
@@ -164,11 +164,22 @@ images = [
 # --------------------------------------------------
 # Track Loader
 # --------------------------------------------------
+
+
+
 def load_track_for_level(level):
     global BACKGROUND
     global TRACK, TRACK_BORDER, TRACK_BORDER_MASK
     global FINISH_POSITION, START_POSITION
     global RACING_LINE, GRID, images
+
+    def compute_path_length(path):
+        total = 0.0
+        for i in range(len(path) - 1):
+            x1, y1 = path[i]
+            x2, y2 = path[i + 1]
+            total += math.hypot(x2 - x1, y2 - y1)
+        return total
 
     if level == 1:
 
@@ -224,24 +235,67 @@ def load_track_for_level(level):
         ]
         
         # Choose the shorter path to the finish
-        def compute_path_length(path):
-            total = 0.0
-            for i in range(len(path) - 1):
-                x1, y1 = path[i]
-                x2, y2 = path[i + 1]
-                total += math.hypot(x2 - x1, y2 - y1)
-            return total
+
         
         RACING_LINE = path_a if compute_path_length(path_a) <= compute_path_length(path_b) else path_b
     
     elif level == 3:
         print("Loading level 3")
+        background_img = "assets/desert.png"
+        background_img = scale_image(pygame.image.load(background_img), 1)
 
+        track_img = "assets/track3.png"
+        border_img = "assets/track_border3.png"
+
+        FINISH_POSITION = (60, 60)
+        START_POSITION = (150, 350)
+
+        RACING_LINE = []
 
 
     elif level == 4:
         print("Loading level 4")
+        background_img = "assets/grass.jpg"
+        background_img = scale_image(pygame.image.load(background_img), 1.5)
 
+        track_img = "assets/track4.png"
+        border_img = "assets/track_border4.png"
+
+        FINISH_POSITION = (317, 265)
+        START_POSITION = (317, 225)
+
+        zero_to_one = [(320, 130), (410, 130), (490, 100), (598, 63)]
+        one_to_twoA = [(794, 51), (820, 131), (787, 206), (760, 276)]
+        one_to_twoB = [(622, 145), (594, 223), (459, 245), (488, 317), (469, 377), (593, 382), (707, 370)]
+        one_to_three = [(622, 145), (594, 223), (459, 245), (488, 317), (469, 377), (423, 429), (275, 468), (282, 592), (352, 633), (469, 641), (489, 715), (489, 781)]
+        two_to_three = [(811, 468), (737, 522), (737, 597), (743, 709), (709, 799), (594, 781), (489, 781)]
+        three_to_four = [(319, 781), (157, 796), (148, 698), (148, 572), (124, 515), (61, 459), (61, 352)]
+        four_to_five = [(61, 126), (91, 58), (170, 94)]
+        four_to_zero = [(159, 337), (283, 322)]
+
+        # shortest route to 1
+        zero_to_one = zero_to_one
+
+        #shortest route to 2
+        zero_to_twoA = zero_to_one + one_to_twoA
+        zero_to_twoB = zero_to_one + one_to_twoB
+        zero_to_two = zero_to_twoA if compute_path_length(zero_to_twoA) <= compute_path_length(zero_to_twoB) else zero_to_twoB
+
+        #shortest route to 3
+        zero_to_threeA = zero_to_one + one_to_three
+        zero_to_threeB = zero_to_two + two_to_three
+        zero_to_three = zero_to_threeA if compute_path_length(zero_to_threeA) <= compute_path_length(zero_to_threeB) else zero_to_threeB
+
+        #shortest route to 4
+        zero_to_four = zero_to_three + three_to_four
+
+        #shortest route to 5
+        zero_to_five = zero_to_four + four_to_five
+
+        #shortest route to 0
+        zero_to_zero = zero_to_four + four_to_zero
+
+        RACING_LINE = zero_to_zero
 
 
     elif level == 5:
@@ -272,16 +326,7 @@ def load_track_for_level(level):
         eight_to_nine =  [(356, 698), (376, 746), (423, 771), (390, 822), (240, 825)]
         nine_to_zeroA =  [(92, 825), (36, 787), (36, 697), (36, 529), (36, 326), (18, 260)]
         nine_to_zeroB =  [(193, 717), (123, 718), (36, 697), (36, 529), (36, 326), (18, 260)]
-        
-
-        def compute_path_length(path):
-            total = 0.0
-            for i in range(len(path) - 1):
-                x1, y1 = path[i]
-                x2, y2 = path[i + 1]
-                total += math.hypot(x2 - x1, y2 - y1)
-            return total
-        
+         
         #shortest route to 1
         zero_to_one = zero_to_oneA if compute_path_length(zero_to_oneA) <= compute_path_length(zero_to_oneB) else zero_to_oneB
 
