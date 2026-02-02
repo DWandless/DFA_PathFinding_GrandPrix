@@ -247,10 +247,44 @@ def load_track_for_level(level):
         track_img = "assets/track3.png"
         border_img = "assets/track_border3.png"
 
-        FINISH_POSITION = (60, 60)
-        START_POSITION = (150, 350)
+        FINISH_POSITION = (410, 190)
+        START_POSITION = (430, 150)
 
-        RACING_LINE = []
+        zero_to_one = [(450, 110), (600, 100), (765, 100), (800, 180), (767, 250), (600, 275), (580, 390)]
+        one_to_twoA = [(450, 390), (429, 485), (482, 544), (607, 556), (624, 671)]
+        one_to_twoB = [(718, 381), (785, 442), (787,689)]
+        one_to_four = [(440, 390)]
+        two_to_three = [(573, 761), (257, 727), (83, 644), (84, 475), (157, 445), (241, 372)]
+        two_to_four = [(624, 671), (607, 556), (482, 544), (429, 485), (440, 390)]
+        three_to_four = [(440, 390)]
+        three_to_zero = [(192, 307), (101, 298), (82, 124), (170, 80), (275, 124), (296, 213), (440, 241)]
+        four_to_three = [(241, 372)]
+        four_to_zero = [(440, 241)]
+
+        # shortest route to 1
+        zero_to_one = zero_to_one   
+
+        #shortest route to 2
+        zero_to_twoA = zero_to_one + one_to_twoA
+        zero_to_twoB = zero_to_one + one_to_twoB
+        zero_to_two = zero_to_twoA if compute_path_length(zero_to_twoA) <= compute_path_length(zero_to_twoB) else zero_to_twoB
+
+        #shortest route to 3
+        zero_to_threeA = zero_to_two + two_to_three
+        zero_to_threeB = zero_to_one + one_to_twoB + two_to_four + four_to_three
+        zero_to_three = zero_to_threeA if compute_path_length(zero_to_threeA) <= compute_path_length(zero_to_threeB) else zero_to_threeB
+
+        #shortest route to 4
+        zero_to_fourA = zero_to_one + one_to_four   
+        zero_to_fourB = zero_to_three + three_to_four
+        zero_to_four = zero_to_fourA if compute_path_length(zero_to_fourA) <= compute_path_length(zero_to_fourB) else zero_to_fourB 
+
+        #shortest route to 0
+        zero_to_zeroA = zero_to_three + three_to_zero
+        zero_to_zeroB = zero_to_four + four_to_zero
+        zero_to_zero = zero_to_zeroA if compute_path_length(zero_to_zeroA) <= compute_path_length(zero_to_zeroB) else zero_to_zeroB
+
+        RACING_LINE = zero_to_zero
 
 
     elif level == 4:
