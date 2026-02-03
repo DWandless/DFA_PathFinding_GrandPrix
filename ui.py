@@ -66,7 +66,7 @@ class Menu:
         # INFO SCROLL PANEL
         self.info_scroll = ScrollPanel(
             (150, 260, self.width + 120, self.height - 120),  # rect
-            content_height=1000,  # adjust based on text amount
+            content_height=1300,  # adjust based on text amount
             bg=(15, 20, 35, 0),  # Transparent background
             radius=12
         )
@@ -148,37 +148,36 @@ class Menu:
         info_lines = [
             "Welcome to DFA PathFinding Grand Prix!",
             "",
-            "Race against AI pathfinding algorithms:",
-            "- A* (Computer)",
-            "- GBFS (Greedy Best-First Search)",
-            "- Dijkstra's Algorithm",
+            "Race using AI pathfinding algorithms:",
+            "- Depth-First Search (DFS)",
+            "- Breadth-First Search (BFS)",
+            "- A* Search Algorithm",
+            "- Greedy Best-First Search (GBFS)",
             "- NEAT (Neural Evolution)",
             "",
-            "Controls: W/A/S/D to move",
+            "Or take control of the car yourself!",
+            "(Controls: W/A/S/D to move)",
             "",
-            "Complete levels to unlock the next track!",
+            "1. Select a level.",
+            "2. Figure out the best algorithm for the job!",
+            "3. Tune your car, simpler algorithm = more money for", 
+            "upgrades!",
+            "4. Race to the finish line first!",
+            "5. If you win, move to the next level...",
+            "Or show the AI how it's done by beating them yourself!",
+            "_____________________________________________________",
+            "HINTS",
             "",
-            "This is extra text to test scrolling...",
-            "Line 1",
-            "Line 2",
-            "Line 3",
-            "Line 4",
-            "Line 5",
-            "Line 6",
-            "Line 7",
-            "Line 8",
-            "Line 9",
-            "Line 10",
-            "Line 11",
-            "Line 12",
-            "Line 13",
-            "Line 14",
-            "Line 15",
-            "Line 16",
-            "Line 17",
-            "Line 18",
-            "Line 19",
-            "Line 20",
+            "DFS: Commits to a direction one by one",
+            "can be fast, cheap",
+            "BFS: Explores a little bit every direction",
+            "can be fast, cheap",
+            "A*: Uses a heuristic to logically find the best path",
+            "balanced speed and cost",
+            "GBFS: Focuses on the most promising path",
+            "faster but can go the wrong way",
+            "NEAT: Learns to drive through trial and error",
+            "unreliable but adaptable",
         ]
 
         y = 20 + offset_y
