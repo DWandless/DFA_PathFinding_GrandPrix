@@ -367,7 +367,7 @@ def draw(win, images, player_car, computer_car, gbfs_car, neat_car, dijkstra_car
     gbfs_car.draw(win)
     computer_car.draw(win)
     neat_car.draw(win)
-    dijkstra_car.draw(win)
+    dijkstra_car.draw(win, False)
 
 
 def move_player(player_car):
