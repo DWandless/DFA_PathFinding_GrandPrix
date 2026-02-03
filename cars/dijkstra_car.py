@@ -21,6 +21,7 @@ class DijkstraCar(AbstractCar):
         self.GRID = grid
         self.GRID_SIZE = grid_size or 4
         self.loop = loop
+        self.autonomous = True  # Always autonomous
 
         self.vel = max_vel
         self.current_checkpoint = 0

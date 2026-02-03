@@ -470,21 +470,37 @@ def create_player_car(color="Red", autonomous=False):
         color: Car color (Red, Blue, Green, Purple, White, Grey)
         autonomous: If True, car follows path automatically instead of manual control
     """
-    from cars import PlayerCar
-    car_image = CAR_COLOR_MAP.get(color, RED_CAR)
-    path = (RACING_LINE + [FINISH_POSITION]) if autonomous else []
-    return PlayerCar(car_image, START_POSITION, 4, 4, path=path, autonomous=autonomous)
+    if autonomous:
+        from cars import dijkstra_car
+        car_image = CAR_COLOR_MAP.get(color, RED_CAR)
+        return dijkstra_car.DijkstraCar(
+            car_image,
+            START_POSITION,
+            3,
+            4,
+            RACING_LINE + [FINISH_POSITION],
+            GRID_SIZE,
+            50,
+            CHECKPOINT_RADIUS,
+            GRID,
+            TRACK_BORDER_MASK
+        )
+    else:
+        from cars import PlayerCar
+        car_image = CAR_COLOR_MAP.get(color, RED_CAR)
+        path = (RACING_LINE + [FINISH_POSITION]) if autonomous else [] # Legacy automated support
+        return PlayerCar(car_image, START_POSITION, 3, 4, path=path, autonomous=autonomous)
 
 def create_computer_car(type='DFS', color="Grey"):
     from cars import ComputerCar
     car_image = CAR_COLOR_MAP.get(color, GREY_CAR if type == 'DFS' else BLUE_CAR)
-    return ComputerCar(car_image, START_POSITION, 2, 4, RACING_LINE + [FINISH_POSITION])
+    return ComputerCar(car_image, START_POSITION, 2.5, 4, RACING_LINE + [FINISH_POSITION])
 
 def create_GBFS_car(color="Green"):
     from cars import GBFSDetourCar
     car_image = CAR_COLOR_MAP.get(color, GREEN_CAR)
     car = GBFSDetourCar(
-        RACING_LINE + [FINISH_POSITION],
+        RACING_LINE + [FINISH_POSITION], 2.5, 4,
         GRID_SIZE, 30,
         CHECKPOINT_RADIUS, GRID, TRACK_BORDER_MASK,
         car_image
@@ -498,11 +514,11 @@ def create_neat_car(color="Purple"):
     return NEATCar(
         car_image,
         START_POSITION,
-        3, 4,
+        2.5, 4,
         RACING_LINE, TRACK_BORDER_MASK, GRID_SIZE, GRID
     )
 
-def create_dijkstra_car(max_vel=3, rotation_vel=4, color="White"):
+def create_dijkstra_car(max_vel=2.5, rotation_vel=4, color="White"):
     from cars import DijkstraCar
     car_image = CAR_COLOR_MAP.get(color, WHITE_CAR)
     return DijkstraCar(
