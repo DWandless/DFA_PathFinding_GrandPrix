@@ -62,9 +62,12 @@ class PlayerCar(AbstractCar):
         if not self.path or self.current_point >= len(self.path):
             return
         
-        target = self.path[self.current_point]
-        rect = pygame.Rect(self.x, self.y, self.img.get_width(), self.img.get_height())
-        if rect.collidepoint(*target):
+        from resources import CHECKPOINT_RADIUS
+        
+        target_x, target_y = self.path[self.current_point]
+        distance_to_target = math.hypot(target_x - self.x, target_y - self.y)
+        
+        if distance_to_target < CHECKPOINT_RADIUS:
             self.current_point += 1
     
     def set_path(self, path):
@@ -85,6 +88,11 @@ class PlayerCar(AbstractCar):
             # Autonomous mode: follow the path
             if self.current_point >= len(self.path):
                 return
+            
+            # Maintain velocity in autonomous mode (recover from bounces)
+            if self.vel < self.max_vel:
+                self.vel = min(self.vel + self.acceleration * 2, self.max_vel)
+            
             self.calculate_angle()
             self.update_path_point()
         

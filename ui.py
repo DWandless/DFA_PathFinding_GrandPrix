@@ -390,8 +390,11 @@ def move_player(player_car):
 
 
 def handle_collision(player_car, computer_car, gbfs_car, neat_car, dijkstra_car, chosen_model=None):
-    if player_car.collide(resources.TRACK_BORDER_MASK):
-        player_car.bounce()
+    # Only apply wall collision bounce to player car when in manual mode
+    # Autonomous mode: skip wall collision to prevent getting stuck
+    if not getattr(player_car, 'autonomous', False):
+        if player_car.collide(resources.TRACK_BORDER_MASK):
+            player_car.bounce()
 
     cars = [
         ("Player", player_car),
