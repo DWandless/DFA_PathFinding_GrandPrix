@@ -463,10 +463,17 @@ class GameInfo:
 # --------------------------------------------------
 # Car factories
 # --------------------------------------------------
-def create_player_car(color="Red"):
+def create_player_car(color="Red", autonomous=False):
+    """Create a player car with optional autonomous mode.
+    
+    Args:
+        color: Car color (Red, Blue, Green, Purple, White, Grey)
+        autonomous: If True, car follows path automatically instead of manual control
+    """
     from cars import PlayerCar
     car_image = CAR_COLOR_MAP.get(color, RED_CAR)
-    return PlayerCar(car_image, START_POSITION, 4, 4)
+    path = (RACING_LINE + [FINISH_POSITION]) if autonomous else []
+    return PlayerCar(car_image, START_POSITION, 4, 4, path=path, autonomous=autonomous)
 
 def create_computer_car(type='DFS', color="Grey"):
     from cars import ComputerCar

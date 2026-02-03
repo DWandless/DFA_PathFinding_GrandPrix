@@ -135,6 +135,9 @@ async def main():
     selection = None
     chosen_model = None
     chosen_color = None
+    
+    # Track autonomous mode state for level progression
+    is_autonomous = False
 
     trained_net = None
     clock = pygame.time.Clock()
@@ -239,7 +242,17 @@ async def main():
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
                     if level_result == "win" and game_info.next_level():
                         load_track_for_level(game_info.get_level())
-                        player_car, computer_car, GBFS_car, neat_car, dijkstra_car = create_all_cars()
+                        
+                        # Recreate cars with preserved autonomous mode and color
+                        player_car = create_player_car(chosen_color if chosen_color else "Red", autonomous=is_autonomous)
+                        computer_car = create_computer_car()
+                        GBFS_car = create_GBFS_car()
+                        neat_car = create_neat_car()
+                        dijkstra_car = create_dijkstra_car()
+                        
+                        # Update paths for new level (RACING_LINE updated by load_track_for_level)
+                        if player_car.autonomous:
+                            player_car.set_path(resources.RACING_LINE + [resources.FINISH_POSITION])
 
                         if trained_net:
                             neat_car.set_net(trained_net)
@@ -264,8 +277,11 @@ async def main():
             if selection is not None:
                 _model_from_ui, track_key, overrides, total_price = selection
 
-                # Create fresh cars for this level - apply chosen color to player car only
-                player_car = create_player_car(chosen_color if chosen_color else "Red")
+                # Determine if player car should be autonomous (all non-Player models)
+                is_autonomous = (chosen_model != "Player")
+                
+                # Create fresh cars for this level - apply chosen color and mode to player car
+                player_car = create_player_car(chosen_color if chosen_color else "Red", autonomous=is_autonomous)
                 computer_car = create_computer_car()
                 GBFS_car = create_GBFS_car()
                 neat_car = create_neat_car()
@@ -328,8 +344,13 @@ async def main():
             neat_car.think()
             neat_car.apply_controls()
 
-            # Other cars
-            ui.move_player(player_car)
+            # Player car movement (manual or autonomous)
+            if player_car.autonomous:
+                player_car.move()  # Autonomous mode: follow path
+            else:
+                ui.move_player(player_car)  # Manual mode: keyboard control
+            
+            # Other AI cars
             computer_car.move()
             GBFS_car.move()
             dijkstra_car.move()
