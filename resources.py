@@ -340,7 +340,7 @@ def load_track_for_level(level):
         track_img = "assets/track5.png"
         border_img = "assets/track_border5.png"
 
-        FINISH_POSITION = (18, 260)
+        FINISH_POSITION = (18, 285)
         START_POSITION = (30, 200)
 
         zero_to_oneA =   [(50, 100), (115, 60)]
@@ -356,10 +356,10 @@ def load_track_for_level(level):
         seven_to_eight = [(841, 777), (795, 822), (594, 828), (554, 816), (579, 758), (677, 759), (696, 636), (702, 502), (674, 400), (566, 396), (462, 423), 
                           (477, 518), (562, 527), (586, 596), (534, 633), (375, 622)]
         four_to_eight =  [(345, 450), (345, 585)]
-        eight_to_zero =  [(345, 585), (175, 600), (170, 520), (220, 450), (220, 376), (198, 315), (119, 315), (18, 260)]
+        eight_to_zero =  [(175, 600), (170, 520), (220, 450), (220, 376), (198, 315), (119, 315)]
         eight_to_nine =  [(356, 698), (376, 746), (423, 771), (390, 822), (240, 825)]
-        nine_to_zeroA =  [(92, 825), (36, 787), (36, 697), (36, 529), (36, 326), (18, 260)]
-        nine_to_zeroB =  [(193, 717), (123, 718), (36, 697), (36, 529), (36, 326), (18, 260)]
+        nine_to_zeroA =  [(92, 825), (36, 787), (36, 697), (36, 529), (36, 326)]
+        nine_to_zeroB =  [(193, 717), (123, 718), (36, 697), (36, 529), (36, 326)]
          
         #shortest route to 1
         zero_to_one = zero_to_oneA if compute_path_length(zero_to_oneA) <= compute_path_length(zero_to_oneB) else zero_to_oneB
