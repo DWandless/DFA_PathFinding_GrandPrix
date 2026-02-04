@@ -207,7 +207,10 @@ async def main():
                 # -------- LEVEL SELECTION and MODEL SELECT / COUNTDOWN --------
                 elif action and action.startswith("level"):
                     resources.click_sound.play()
-
+                    game_state = STATE_LEVEL_SELECT
+                    chosen_model = None
+                    chosen_color = None
+                    
                     level_num = int(action[-1]) - 1
                     game_info.level = level_num
                     game_info.next_level()
@@ -220,7 +223,7 @@ async def main():
 
                     selector = ModelSelectScreen(WIN, assets_path=ASSETS_DIR, currentLevel=(level_num+1))
                     game_state = MODEL_SELECT
-                    selector.model_index = selector.models.index("NEAT")
+                    selector.model_index = selector.models.index("BFS")
                     selector.color_index = 0  # Default to first color
 
             if game_state == MODEL_SELECT:
