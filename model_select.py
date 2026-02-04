@@ -1,4 +1,3 @@
-
 """
 Model selection screen for DFA Grand Prix.
 
@@ -17,19 +16,31 @@ import resources
 # Configuration
 # ---------------------------------------------------------------------
 
-MODELS = ["Player", "Computer", "GBFS", "Dijkstra", "NEAT"]
+MODELS = ["Player", "BFS", "DFS", "GBFS", "AStar", "NEAT"]
+COLORS = ["Red", "Blue", "Green", "Purple", "White", "Grey"]
 BLUE = (0, 120, 215)
+
+# Map color and model names to image files
+COLOR_TO_IMAGE = {
+    "Red": "assets/red-car.png",
+    "Blue": "assets/blue-car.png",
+    "Green": "assets/green-car.png",
+    "Purple": "assets/purple-car.png",
+    "White": "assets/white-car.png",
+    "Grey": "assets/grey-car.png",
+}
 MODEL_TO_IMAGE = {
-    "Player":   "assets/red-car.png",
-    "Computer": "assets/grey-car.png",
-    "GBFS":     "assets/green-car.png",
-    "Dijkstra": "assets/white-car.png",
-    "NEAT":     "assets/purple-car.png",
+    "Player": "assets/icon_brain.png",
+    "BFS": "assets/icon_bfs.png",
+    "DFS": "assets/icon_dfs.png",
+    "GBFS": "assets/icon_gbfs.png",
+    "AStar": "assets/icon_astar.png",
+    "NEAT": "assets/icon_neat.png",
 }
 
 FALLBACK_IMAGE = "assets/car_template.png"
 SELECT_SOUND   = "assets/select-sound.ogg"
-BG_FILE        = "assets/Menu3.png"          # ← NEW: use Menu4 for background
+BG_FILE        = "assets/Menu3.png"
 
 class PillButton:
     def __init__(self, rect, text, selected=False, font_size=24):
@@ -96,28 +107,46 @@ class ModelSelectScreen:
         self.H = self.surface.get_height()
 
         self.title_font = pygame.font.Font(None, 48)
+        self.section_font = pygame.font.Font(None, 36)
         self.body_font  = pygame.font.Font(None, 26)
 
-        # Layout
-        self.title_pos = (int(self.W * 0.10), int(self.H * 0.12))
-        self.preview_area = pygame.Rect(int(self.W * 0.30), int(self.H * 0.20),
-                                        int(self.W * 0.40), int(self.H * 0.45))
-        self.thumb_row_y = int(self.H * 0.70)
+        # Layout - split screen into two sections
+        self.title_pos = (int(self.W * 0.10), int(self.H * 0.08))
+        
+        # Model type selection (top half)
+        self.model_label_pos = (int(self.W * 0.10), int(self.H * 0.18))
+        self.model_preview_area = pygame.Rect(int(self.W * 0.30), int(self.H * 0.23),
+                                              int(self.W * 0.40), int(self.H * 0.20))
+        self.model_thumb_row_y = int(self.H * 0.46)
+        
+        # Color selection (bottom half)
+        self.color_label_pos = (int(self.W * 0.10), int(self.H * 0.54))
+        self.color_preview_area = pygame.Rect(int(self.W * 0.30), int(self.H * 0.59),
+                                              int(self.W * 0.40), int(self.H * 0.20))
+        self.color_thumb_row_y = int(self.H * 0.82)
 
         # Buttons
         btn_w, btn_h = 220, 48
-        self.btn_select = PillButton((self.W // 2 - btn_w // 2, int(self.H * 0.82), btn_w, btn_h), "Select", selected=True)
+        self.btn_select = PillButton((self.W // 2 - btn_w // 2, int(self.H * 0.90), btn_w, btn_h), "Select", selected=True)
         self.btn_back   = PillButton((self.W - 120 - 20, 20, 120, 36), "Back", selected=False)
 
-        # Arrows
-        self.left_arrow  = ArrowButton((self.preview_area.left - 50, self.preview_area.centery), "left")
-        self.right_arrow = ArrowButton((self.preview_area.right + 50, self.preview_area.centery), "right")
+        # Arrows for model selection
+        self.model_left_arrow  = ArrowButton((self.model_preview_area.left - 50, self.model_preview_area.centery), "left")
+        self.model_right_arrow = ArrowButton((self.model_preview_area.right + 50, self.model_preview_area.centery), "right")
+        
+        # Arrows for color selection
+        self.color_left_arrow  = ArrowButton((self.color_preview_area.left - 50, self.color_preview_area.centery), "left")
+        self.color_right_arrow = ArrowButton((self.color_preview_area.right + 50, self.color_preview_area.centery), "right")
 
         self.models = MODELS[:]
-        self.index = 0
+        self.colors = COLORS[:]
+        self.model_index = 0
+        self.color_index = 0
 
-        self.preview_cache = {}
-        self.thumb_cache = {}
+        self.model_preview_cache = {}
+        self.model_thumb_cache = {}
+        self.color_preview_cache = {}
+        self.color_thumb_cache = {}
         self._select_sound = None
         self._bg = None
 
@@ -132,7 +161,7 @@ class ModelSelectScreen:
             except Exception:
                 self._select_sound = None
 
-        # Background: Menu4.png (scaled)
+        # Background: Menu3.png (scaled)
         bg_path = BG_FILE
         try:
             bg = pygame.image.load(bg_path).convert()
@@ -140,80 +169,151 @@ class ModelSelectScreen:
         except Exception:
             self._bg = None
 
-        # Car previews & thumbnails
+        # Model type previews & thumbnails (using MODEL_TO_IMAGE)
         fallback = load_image_safe(FALLBACK_IMAGE)
         for m in self.models:
+            # Try to load from MODEL_TO_IMAGE dict, fall back to template
             fname = MODEL_TO_IMAGE.get(m, FALLBACK_IMAGE)
             img = load_image_safe(fname) or fallback
             if img is None:
-                img = pygame.Surface((120, 60), pygame.SRCALPHA); img.fill((90, 90, 90))
-            prev = scale_to_fit(img, self.preview_area.width - 40, self.preview_area.height - 40)
-            self.preview_cache[m] = prev
-            self.thumb_cache[m] = scale_to_fit(img, 110, 58)
+                img = pygame.Surface((120, 60), pygame.SRCALPHA)
+                img.fill((90, 90, 90))
+            prev = scale_to_fit(img, self.model_preview_area.width - 40, self.model_preview_area.height - 40)
+            self.model_preview_cache[m] = prev
+            self.model_thumb_cache[m] = scale_to_fit(img, 90, 48)
+        
+        # Color previews & thumbnails (using COLOR_TO_IMAGE)
+        for c in self.colors:
+            fname = COLOR_TO_IMAGE.get(c, FALLBACK_IMAGE)
+            img = load_image_safe(fname) or fallback
+            if img is None:
+                img = pygame.Surface((120, 60), pygame.SRCALPHA)
+                img.fill((90, 90, 90))
+            prev = scale_to_fit(img, self.color_preview_area.width - 40, self.color_preview_area.height - 40)
+            self.color_preview_cache[c] = prev
+            self.color_thumb_cache[c] = scale_to_fit(img, 90, 48)
 
     def _current_model(self):
-        return self.models[self.index]
+        return self.models[self.model_index]
+    
+    def _current_color(self):
+        return self.colors[self.color_index]
 
-    def _move_left(self):  self.index = (self.index - 1) % len(self.models)
-    def _move_right(self): self.index = (self.index + 1) % len(self.models)
+    def _move_model_left(self):  
+        self.model_index = (self.model_index - 1) % len(self.models)
+    
+    def _move_model_right(self): 
+        self.model_index = (self.model_index + 1) % len(self.models)
+    
+    def _move_color_left(self):  
+        self.color_index = (self.color_index - 1) % len(self.colors)
+    
+    def _move_color_right(self): 
+        self.color_index = (self.color_index + 1) % len(self.colors)
 
     def _confirm(self):
         if self._select_sound:
             try: self._select_sound.play()
             except Exception: pass
-        return self._current_model()
+        # Return both model and color as a tuple
+        return (self._current_model(), self._current_color())
 
     def _draw_background(self):
         if self._bg is not None:
             self.surface.blit(self._bg, (0, 0))
         else:
-            # Fallback fill if Menu4.png missing
+            # Fallback fill if Menu3.png missing
             self.surface.fill((16, 18, 26))
 
     def _draw_title(self):
         title = self.title_font.render("Pick Your Winner", True, BLUE)
         self.surface.blit(title, self.title_pos)
-        sub = self.body_font.render("Which model will win the race?", True, BLUE)
-        self.surface.blit(sub, (self.title_pos[0], self.title_pos[1] + 42))
 
-    def _draw_preview(self):
-        frame_rect = self.preview_area
+    def _draw_model_section(self):
+        # Section label
+        label = self.section_font.render("Model Type", True, BLUE)
+        self.surface.blit(label, self.model_label_pos)
+        
+        # Preview panel
+        frame_rect = self.model_preview_area
         panel = pygame.Surface(frame_rect.size, pygame.SRCALPHA)
         panel.fill((10, 10, 30, 110))
         pygame.draw.rect(panel, (255, 215, 0, 180), panel.get_rect(), width=3, border_radius=12)
         self.surface.blit(panel, frame_rect.topleft)
 
         m = self._current_model()
-        car = self.preview_cache.get(m)
+        car = self.model_preview_cache.get(m)
         if car:
             r = car.get_rect(center=frame_rect.center)
             self.surface.blit(car, r.topleft)
 
-        name_font = pygame.font.Font(None, 34)
-        name = name_font.render(m, True, BLUE)
+        name = self.body_font.render(m, True, BLUE)
         self.surface.blit(name, (frame_rect.centerx - name.get_width() // 2, frame_rect.bottom + 10))
 
-        self.left_arrow.draw(self.surface)
-        self.right_arrow.draw(self.surface)
+        self.model_left_arrow.draw(self.surface)
+        self.model_right_arrow.draw(self.surface)
+    
+    def _draw_color_section(self):
+        # Section label
+        label = self.section_font.render("Car Color", True, BLUE)
+        self.surface.blit(label, self.color_label_pos)
+        
+        # Preview panel
+        frame_rect = self.color_preview_area
+        panel = pygame.Surface(frame_rect.size, pygame.SRCALPHA)
+        panel.fill((10, 10, 30, 110))
+        pygame.draw.rect(panel, (255, 215, 0, 180), panel.get_rect(), width=3, border_radius=12)
+        self.surface.blit(panel, frame_rect.topleft)
 
-    def _draw_thumbnails(self):
-        gap = 18
-        total_w = len(self.models) * 120 + (len(self.models) - 1) * gap
+        c = self._current_color()
+        car = self.color_preview_cache.get(c)
+        if car:
+            r = car.get_rect(center=frame_rect.center)
+            self.surface.blit(car, r.topleft)
+
+        name = self.body_font.render(c, True, BLUE)
+        self.surface.blit(name, (frame_rect.centerx - name.get_width() // 2, frame_rect.bottom + 10))
+
+        self.color_left_arrow.draw(self.surface)
+        self.color_right_arrow.draw(self.surface)
+
+    def _draw_model_thumbnails(self):
+        gap = 12
+        total_w = len(self.models) * 100 + (len(self.models) - 1) * gap
         x = self.W // 2 - total_w // 2
-        y = self.thumb_row_y
+        y = self.model_thumb_row_y
         for i, m in enumerate(self.models):
-            thumb = self.thumb_cache[m]
-            box = pygame.Rect(x, y, 120, 72)
-            border = (70, 130, 250) if i == self.index else (100, 100, 100)
+            thumb = self.model_thumb_cache[m]
+            box = pygame.Rect(x, y, 100, 60)
+            border = (70, 130, 250) if i == self.model_index else (100, 100, 100)
             pygame.draw.rect(self.surface, (25, 28, 40), box, border_radius=8)
             pygame.draw.rect(self.surface, border, box, width=2, border_radius=8)
             if thumb:
                 r = thumb.get_rect(center=box.center)
                 self.surface.blit(thumb, r.topleft)
-            lbl = self.body_font.render(m, True, (220, 220, 220))
-            self.surface.blit(lbl, (box.centerx - lbl.get_width() // 2, box.bottom + 6))
-            setattr(self, f"_thumb_rect_{i}", box)
-            x += 120 + gap
+            lbl = pygame.font.Font(None, 20).render(m, True, (220, 220, 220))
+            self.surface.blit(lbl, (box.centerx - lbl.get_width() // 2, box.bottom + 4))
+            setattr(self, f"_model_thumb_rect_{i}", box)
+            x += 100 + gap
+    
+    def _draw_color_thumbnails(self):
+        gap = 12
+        total_w = len(self.colors) * 100 + (len(self.colors) - 1) * gap
+        x = self.W // 2 - total_w // 2
+        y = self.color_thumb_row_y
+        for i, c in enumerate(self.colors):
+            thumb = self.color_thumb_cache[c]
+            box = pygame.Rect(x, y, 100, 60)
+            border = (70, 130, 250) if i == self.color_index else (100, 100, 100)
+            pygame.draw.rect(self.surface, (25, 28, 40), box, border_radius=8)
+            pygame.draw.rect(self.surface, border, box, width=2, border_radius=8)
+            if thumb:
+                r = thumb.get_rect(center=box.center)
+                self.surface.blit(thumb, r.topleft)
+            lbl = pygame.font.Font(None, 20).render(c, True, (220, 220, 220))
+            self.surface.blit(lbl, (box.centerx - lbl.get_width() // 2, box.bottom + 4))
+            setattr(self, f"_color_thumb_rect_{i}", box)
+            x += 100 + gap
 
     def _draw_buttons(self):
         self.btn_select.draw(self.surface)
@@ -222,13 +322,28 @@ class ModelSelectScreen:
     def _draw(self):
         self._draw_background()
         self._draw_title()
-        self._draw_preview()
-        self._draw_thumbnails()
+        self._draw_model_section()
+        self._draw_model_thumbnails()
+        self._draw_color_section()
+        self._draw_color_thumbnails()
         self._draw_buttons()
 
     def _handle_mouse(self, event):
-        if self.left_arrow.handle_event(event):  self._move_left();  return "CONTINUE"
-        if self.right_arrow.handle_event(event): self._move_right(); return "CONTINUE"
+        # Check model arrows
+        if self.model_left_arrow.handle_event(event):  
+            self._move_model_left()
+            return "CONTINUE"
+        if self.model_right_arrow.handle_event(event): 
+            self._move_model_right()
+            return "CONTINUE"
+        
+        # Check color arrows
+        if self.color_left_arrow.handle_event(event):  
+            self._move_color_left()
+            return "CONTINUE"
+        if self.color_right_arrow.handle_event(event): 
+            self._move_color_right()
+            return "CONTINUE"
 
         # Check buttons first (higher priority)
         if self.btn_select.handle_event(event):
@@ -240,18 +355,33 @@ class ModelSelectScreen:
 
         # Then check thumbnail clicks
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            # Model thumbnails
             for i in range(len(self.models)):
-                rect = getattr(self, f"_thumb_rect_{i}", None)
+                rect = getattr(self, f"_model_thumb_rect_{i}", None)
                 if rect and rect.collidepoint(event.pos):
-                    self.index = i
+                    self.model_index = i
+                    return "CONTINUE"
+            
+            # Color thumbnails
+            for i in range(len(self.colors)):
+                rect = getattr(self, f"_color_thumb_rect_{i}", None)
+                if rect and rect.collidepoint(event.pos):
+                    self.color_index = i
                     return "CONTINUE"
 
         return "CONTINUE"
 
     def _handle_keyboard(self, event):
         if event.type == pygame.KEYDOWN:
-            if event.key in (pygame.K_LEFT, pygame.K_a):   self._move_left()
-            elif event.key in (pygame.K_RIGHT, pygame.K_d): self._move_right()
+            # Use Up/Down for model selection, Left/Right for color selection
+            if event.key in (pygame.K_UP, pygame.K_w):   
+                self._move_model_left()
+            elif event.key in (pygame.K_DOWN, pygame.K_s): 
+                self._move_model_right()
+            elif event.key in (pygame.K_LEFT, pygame.K_a):   
+                self._move_color_left()
+            elif event.key in (pygame.K_RIGHT, pygame.K_d): 
+                self._move_color_right()
             elif event.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE):
                 return self._confirm()
             elif event.key in (pygame.K_ESCAPE, pygame.K_BACKSPACE):
