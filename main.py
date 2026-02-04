@@ -213,7 +213,7 @@ async def main():
                     if trained_net:
                         neat_car.set_net(trained_net)
 
-                    selector = ModelSelectScreen(WIN, assets_path=ASSETS_DIR)
+                    selector = ModelSelectScreen(WIN, assets_path=ASSETS_DIR, currentLevel=(level_num+1))
                     game_state = MODEL_SELECT
                     selector.model_index = selector.models.index("NEAT")
                     selector.color_index = 0  # Default to first color
