@@ -194,6 +194,11 @@ async def main():
                     resources.click_sound.play()
                     game_state = STATE_MENU
                     menu.drawMain(WIN)
+                
+                elif action == "toggle_sound":
+                    # State True = icon_sound_on.png, State False = icon_sound_off.png
+                    pygame.mixer.music.set_volume(0.1) if menu.toggleIconButton.state else pygame.mixer.music.set_volume(0.0)
+                    menu.toggleIconButton.draw(WIN)
 
                 elif action == "quit":
                     resources.click_sound.play()

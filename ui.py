@@ -63,6 +63,13 @@ class Menu:
         # BACK BUTTON (universal, top-right for all pages)
         self.backButton = PillButton((width - 140, 20, 120, 36), "Back", selected=False)
 
+        # TOGGLE ICON BUTTON (top-left, main menu only)
+        self.toggleIconButton = IconButton(
+            (40, 40, 64, 64),
+            "assets/icon_sound_off.png",
+            "assets/icon_sound_on.png",
+        )
+
         # INFO SCROLL PANEL
         self.info_scroll = ScrollPanel(
             (150, 260, self.width + 120, self.height - 120),  # rect
@@ -77,7 +84,7 @@ class Menu:
             self.page1Button, self.page2Button, self.quitButton,
             self.level1Button, self.level2Button,
             self.level3Button, self.level4Button, self.level5Button,
-            self.backButton
+            self.backButton, self.toggleIconButton
         ]:
             btn.enabled = False
 
@@ -89,7 +96,7 @@ class Menu:
         for btn in [
             self.playButton, self.trainButton,
             self.page1Button, self.page2Button,
-            self.quitButton
+            self.quitButton, self.toggleIconButton
         ]:
             btn.enabled = True
             btn.draw(surface)
@@ -287,6 +294,8 @@ class Menu:
             return "page1"
         if self.page2Button.handle_event(event):
             return "page2"
+        if self.toggleIconButton.handle_event(event):
+            return "toggle_sound"
         if self.quitButton.handle_event(event):
             return "quit"
 
@@ -331,6 +340,97 @@ class Button:
             and event.button == 1
             and self.rect.collidepoint(event.pos)
         )
+
+class IconButton:
+    """
+    Icon-based button that toggles between two states.
+    Each state displays a different icon image.
+    """
+    def __init__(self, rect, icon_path_state1, icon_path_state2, initial_state=True):
+        self.rect = pygame.Rect(rect)
+        self.icon_path_state1 = icon_path_state1
+        self.icon_path_state2 = icon_path_state2
+        self.state = initial_state  # False = state1, True = state2
+        self.enabled = True
+        print(self.state)
+        # Load icon images with fallback handling
+        self.image_state1 = self._load_icon(icon_path_state1)
+        self.image_state2 = self._load_icon(icon_path_state2)
+        
+    def _load_icon(self, path):
+        """
+        Load an icon from the given path.
+        Returns None if loading fails (will use fallback rendering).
+        """
+        try:
+            img = pygame.image.load(path).convert_alpha()
+            # Scale to fit button rect while maintaining aspect ratio
+            return self._scale_to_fit(img, self.rect.width - 8, self.rect.height - 8)
+        except (pygame.error, FileNotFoundError):
+            # Return None, will render fallback in draw()
+            print("Error loading icon:", path)
+            return None
+    
+    def _scale_to_fit(self, surf, max_w, max_h):
+        """
+        Scale surface to fit within max dimensions while preserving aspect ratio.
+        """
+        w, h = surf.get_size()
+        if w <= max_w and h <= max_h:
+            return surf
+        scale = min(max_w / w, max_h / h)
+        new_w = max(1, int(w * scale))
+        new_h = max(1, int(h * scale))
+        return pygame.transform.smoothscale(surf, (new_w, new_h))
+    
+    def draw(self, surface):
+        """
+        Draw the icon button. Shows current state's icon with hover effect.
+        """
+        if not self.enabled:
+            return
+        
+        # Determine colors based on hover state
+        mouse_over = self.rect.collidepoint(pygame.mouse.get_pos())
+        bg_color = (90, 90, 90) if mouse_over else (70, 70, 70)
+        border_color = (120, 120, 120) if mouse_over else (100, 100, 100)
+        
+        # Draw rounded background
+        pygame.draw.rect(surface, bg_color, self.rect, border_radius=12)
+        pygame.draw.rect(surface, border_color, self.rect, width=2, border_radius=12)
+        
+        # Select current icon based on state
+        current_icon = self.image_state2 if self.state else self.image_state1
+        
+        if current_icon:
+            # Center the icon in the button
+            icon_rect = current_icon.get_rect(center=self.rect.center)
+            surface.blit(current_icon, icon_rect)
+        else:
+            # Fallback: draw a colored square to indicate the button exists
+            fallback_color = (0, 200, 100) if self.state else (200, 100, 0)
+            fallback_rect = pygame.Rect(0, 0, self.rect.width - 16, self.rect.height - 16)
+            fallback_rect.center = self.rect.center
+            pygame.draw.rect(surface, fallback_color, fallback_rect, border_radius=6)
+    
+    def toggle(self):
+        """
+        Toggle the button state and redraws.
+        """
+        self.state = not self.state
+    
+    def handle_event(self, event):
+        """
+        Handle mouse click events. Returns True if button was clicked.
+        """
+        if not self.enabled:
+            return False
+        
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if self.rect.collidepoint(event.pos):
+                self.toggle()
+                return True
+        return False
 
 # --------------------------------------------------
 # Level End Screen
