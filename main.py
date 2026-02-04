@@ -240,28 +240,8 @@ async def main():
                     # -------- LEVEL END --------
             if game_state == STATE_LEVEL_END:
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-                    if level_result == "win" and game_info.next_level():
-                        load_track_for_level(game_info.get_level())
-                        
-                        # Recreate cars with preserved autonomous mode and color
-                        player_car = create_player_car(chosen_color if chosen_color else "Red", autonomous=is_autonomous)
-                        computer_car = create_computer_car()
-                        GBFS_car = create_GBFS_car()
-                        neat_car = create_neat_car()
-                        dijkstra_car = create_dijkstra_car()
-                        
-                        # Update paths for new level (RACING_LINE updated by load_track_for_level)
-                        #if player_car.autonomous:
-                            #player_car.set_path(resources.RACING_LINE + [resources.FINISH_POSITION])
-
-                        if trained_net:
-                            neat_car.set_net(trained_net)
-
-                        countdown_timer = 3.0
-                        game_state = STATE_COUNTDOWN
-                    else:
-                        menu.drawMain(WIN)
-                        game_state = STATE_MENU
+                    menu.drawMain(WIN)
+                    game_state = STATE_MENU
         if game_state == MODEL_SELECT:
             if chosen_model is not None:
                 # Create temp cars for registry

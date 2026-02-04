@@ -352,7 +352,7 @@ def draw_level_end(win, result, level, time_sec, font):
     info = pygame.font.Font(None, 32)
     win.blit(info.render(f"Level: {level}", True, WHITE), (win.get_width()//2 - 80, 300))
     win.blit(info.render(f"Time: {time_sec:.2f}s", True, WHITE), (win.get_width()//2 - 80, 340))
-    win.blit(info.render("Press ENTER to continue", True, (180,180,180)),
+    win.blit(info.render("Press ENTER to return to main menu", True, (180,180,180)),
              (win.get_width()//2 - 140, 420))
 
 # --------------------------------------------------
