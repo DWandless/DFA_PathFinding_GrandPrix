@@ -70,6 +70,13 @@ class Menu:
             "assets/icon_sound_on.png",
         )
 
+        # Load lock icon
+        try:
+            lock_img = pygame.image.load("assets/icon_lock.png").convert_alpha()
+            self.lock_icon = pygame.transform.smoothscale(lock_img, (48, 48))
+        except (pygame.error, FileNotFoundError):
+            self.lock_icon = None  # Fallback if icon missing
+
         # INFO SCROLL PANEL
         self.info_scroll = ScrollPanel(
             (150, 260, self.width + 120, self.height - 120),  # rect
@@ -123,7 +130,9 @@ class Menu:
             if resources.HIGHEST_LEVEL >= level:
                 btn.enabled = True # enable the button
             """
-            btn.enabled = True
+            if resources.HIGHEST_LEVEL >= level:
+                btn.enabled = True # enable the button
+            #btn.enabled = True
 
             if btn.is_hovered():
                 hovered_level = level
@@ -142,6 +151,13 @@ class Menu:
         # Draw level buttons
         for _, btn in level_buttons:
             btn.draw(surface)
+        
+        # Draw lock icons over disabled buttons
+        if self.lock_icon:
+            for level, btn in level_buttons:
+                if resources.HIGHEST_LEVEL < level:
+                    icon_rect = self.lock_icon.get_rect(center=btn.rect.center)
+                    surface.blit(self.lock_icon, icon_rect)
 
     # ---------------- PAGE 1 ----------------
     def drawPage1(self, surface):
@@ -784,7 +800,7 @@ class BuildScreen:
         self.btn_buy    = PillButton((W // 2 - buy_w // 2, bottom_bar_y - buy_h // 2, buy_w, buy_h), "BUY")
         self.btn_cancel = PillButton((W - cancel_w - 20, 20, cancel_w, 36), "Back")  # top-right
 
-        self.selected_model = "NEAT"
+        self.selected_model = "BFS"
         self.selected_track_key = "level1"  # default track (not displayed here)
         self.total_price = 0.0
 
