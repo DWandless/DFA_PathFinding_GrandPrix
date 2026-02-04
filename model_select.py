@@ -100,7 +100,7 @@ def scale_to_fit(surf, max_w, max_h):
     return pygame.transform.smoothscale(surf, (max(1, int(w*scale)), max(1, int(h*scale))))
 
 class ModelSelectScreen:
-    def __init__(self, surface, assets_path="assets"):
+    def __init__(self, surface, assets_path="assets", currentLevel = 1, completed = 0):
         self.surface = surface
         self.assets_path = assets_path
         self.W = self.surface.get_width()
@@ -138,7 +138,10 @@ class ModelSelectScreen:
         self.color_left_arrow  = ArrowButton((self.color_preview_area.left - 50, self.color_preview_area.centery), "left")
         self.color_right_arrow = ArrowButton((self.color_preview_area.right + 50, self.color_preview_area.centery), "right")
 
-        self.models = MODELS[:]
+        if resources.HIGHEST_LEVEL > currentLevel:
+            self.models = MODELS[:]
+        else:
+            self.models = MODELS[1:] # Exclude "Player" if level not completed
         self.colors = COLORS[:]
         self.model_index = 0
         self.color_index = 0
