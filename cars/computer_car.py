@@ -10,6 +10,7 @@ class ComputerCar(AbstractCar):
         self.path = path or []
         self.current_point = 0
         self.vel = max_vel
+        self.autonomous = True  # Always autonomous
 
     def SetTunables(self, TuningData):
         # Add as many tunables as you like.

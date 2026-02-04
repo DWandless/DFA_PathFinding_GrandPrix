@@ -136,6 +136,9 @@ async def main():
     chosen_model = None
     chosen_color = None
     use_locally_trained_net = False
+    
+    # Track autonomous mode state for level progression
+    is_autonomous = False
 
     trained_net = None
     clock = pygame.time.Clock()
@@ -192,6 +195,11 @@ async def main():
                     resources.click_sound.play()
                     game_state = STATE_MENU
                     menu.drawMain(WIN)
+                
+                elif action == "toggle_sound":
+                    # State True = icon_sound_on.png, State False = icon_sound_off.png
+                    pygame.mixer.music.set_volume(0.1) if menu.toggleIconButton.state else pygame.mixer.music.set_volume(0.0)
+                    menu.toggleIconButton.draw(WIN)
 
                 elif action == "quit":
                     resources.click_sound.play()
@@ -200,7 +208,10 @@ async def main():
                 # -------- LEVEL SELECTION and MODEL SELECT / COUNTDOWN --------
                 elif action and action.startswith("level"):
                     resources.click_sound.play()
-
+                    game_state = STATE_LEVEL_SELECT
+                    chosen_model = None
+                    chosen_color = None
+                    
                     level_num = int(action[-1]) - 1
                     game_info.level = level_num
                     game_info.next_level()
@@ -211,9 +222,9 @@ async def main():
                     if trained_net:
                         neat_car.set_net(trained_net)
 
-                    selector = ModelSelectScreen(WIN, assets_path=ASSETS_DIR)
+                    selector = ModelSelectScreen(WIN, assets_path=ASSETS_DIR, currentLevel=(level_num+1))
                     game_state = MODEL_SELECT
-                    selector.model_index = selector.models.index("NEAT")
+                    selector.model_index = selector.models.index("BFS")
                     selector.color_index = 0  # Default to first color
 
             if game_state == MODEL_SELECT:
@@ -269,8 +280,11 @@ async def main():
             if selection is not None:
                 _model_from_ui, track_key, overrides, total_price = selection
 
-                # Create fresh cars for this level - apply chosen color to player car only
-                player_car = create_player_car(chosen_color if chosen_color else "Red")
+                # Determine if player car should be autonomous (all non-Player models)
+                is_autonomous = (chosen_model != "Player")
+                
+                # Create fresh cars for this level - apply chosen color and mode to player car
+                player_car = create_player_car(chosen_color if chosen_color else "Red", autonomous=is_autonomous)
                 computer_car = create_computer_car()
                 GBFS_car = create_GBFS_car()
                 neat_car = create_neat_car()
@@ -335,8 +349,13 @@ async def main():
             neat_car.think()
             neat_car.apply_controls()
 
-            # Other cars
-            ui.move_player(player_car)
+            # Player car movement (manual or autonomous)
+            if player_car.autonomous:
+                player_car.move()  # Autonomous mode: follow path
+            else:
+                ui.move_player(player_car)  # Manual mode: keyboard control
+            
+            # Other AI cars
             computer_car.move()
             GBFS_car.move()
             dijkstra_car.move()
@@ -352,7 +371,7 @@ async def main():
 
             if winner: # Someone won
                 level_time = time.time() - game_info.level_start_time
-                level_result = "win" if winner == chosen_model else "lose" # level result set based on whether chosen model won
+                level_result = "win" if winner == "Player" else "lose" # level result set based on whether player car won
                 game_state = STATE_LEVEL_END
         
         elif game_state == STATE_TRAINING:

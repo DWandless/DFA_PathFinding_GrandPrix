@@ -247,10 +247,44 @@ def load_track_for_level(level):
         track_img = "assets/track3.png"
         border_img = "assets/track_border3.png"
 
-        FINISH_POSITION = (60, 60)
-        START_POSITION = (150, 350)
+        FINISH_POSITION = (410, 190)
+        START_POSITION = (430, 150)
 
-        RACING_LINE = []
+        zero_to_one = [(450, 110), (600, 100), (765, 100), (800, 180), (767, 250), (600, 275), (580, 390)]
+        one_to_twoA = [(450, 390), (429, 485), (482, 544), (607, 556), (624, 671)]
+        one_to_twoB = [(718, 381), (785, 442), (787,689)]
+        one_to_four = [(440, 390)]
+        two_to_three = [(573, 761), (257, 727), (83, 644), (84, 475), (157, 445), (241, 372)]
+        two_to_four = [(624, 671), (607, 556), (482, 544), (429, 485), (440, 390)]
+        three_to_four = [(440, 390)]
+        three_to_zero = [(192, 307), (101, 298), (82, 124), (170, 80), (275, 124), (296, 213), (440, 241)]
+        four_to_three = [(241, 372)]
+        four_to_zero = [(440, 241)]
+
+        # shortest route to 1
+        zero_to_one = zero_to_one   
+
+        #shortest route to 2
+        zero_to_twoA = zero_to_one + one_to_twoA
+        zero_to_twoB = zero_to_one + one_to_twoB
+        zero_to_two = zero_to_twoA if compute_path_length(zero_to_twoA) <= compute_path_length(zero_to_twoB) else zero_to_twoB
+
+        #shortest route to 3
+        zero_to_threeA = zero_to_two + two_to_three
+        zero_to_threeB = zero_to_one + one_to_twoB + two_to_four + four_to_three
+        zero_to_three = zero_to_threeA if compute_path_length(zero_to_threeA) <= compute_path_length(zero_to_threeB) else zero_to_threeB
+
+        #shortest route to 4
+        zero_to_fourA = zero_to_one + one_to_four   
+        zero_to_fourB = zero_to_three + three_to_four
+        zero_to_four = zero_to_fourA if compute_path_length(zero_to_fourA) <= compute_path_length(zero_to_fourB) else zero_to_fourB 
+
+        #shortest route to 0
+        zero_to_zeroA = zero_to_three + three_to_zero
+        zero_to_zeroB = zero_to_four + four_to_zero
+        zero_to_zero = zero_to_zeroA if compute_path_length(zero_to_zeroA) <= compute_path_length(zero_to_zeroB) else zero_to_zeroB
+
+        RACING_LINE = zero_to_zero
 
 
     elif level == 4:
@@ -261,17 +295,17 @@ def load_track_for_level(level):
         track_img = "assets/track4.png"
         border_img = "assets/track_border4.png"
 
-        FINISH_POSITION = (317, 265)
+        FINISH_POSITION = (270, 265)
         START_POSITION = (317, 225)
 
-        zero_to_one = [(320, 130), (410, 130), (490, 100), (598, 63)]
+        zero_to_one = [(320, 130), (410, 130), (490, 100), (635, 75)]
         one_to_twoA = [(794, 51), (820, 131), (787, 206), (760, 276)]
-        one_to_twoB = [(622, 145), (594, 223), (459, 245), (488, 317), (469, 377), (593, 382), (707, 370)]
-        one_to_three = [(622, 145), (594, 223), (459, 245), (488, 317), (469, 377), (423, 429), (275, 468), (282, 592), (352, 633), (469, 641), (489, 715), (489, 781)]
+        one_to_twoB = [(635, 145), (594, 223), (459, 245), (488, 317), (469, 377), (593, 382), (707, 370)]
+        one_to_three = [(635, 145), (594, 245), (480, 245), (460, 317), (460, 385), (423, 470), (280, 470), (282, 592), (352, 650), (469, 650), (500, 715), (500, 820)]
         two_to_three = [(811, 468), (737, 522), (737, 597), (743, 709), (709, 799), (594, 781), (489, 781)]
-        three_to_four = [(319, 781), (157, 796), (148, 698), (148, 572), (124, 515), (61, 459), (61, 352)]
-        four_to_five = [(61, 126), (91, 58), (170, 94)]
-        four_to_zero = [(159, 337), (283, 322)]
+        three_to_four = [(319, 820), (157, 796), (157, 645), (157, 572), (100, 515), (75, 450), (75, 355)]
+        four_to_five = [(75, 126), (91, 58), (170, 94)]
+        four_to_zero = [(195, 355), (300, 355)]
 
         # shortest route to 1
         zero_to_one = zero_to_one
@@ -306,7 +340,7 @@ def load_track_for_level(level):
         track_img = "assets/track5.png"
         border_img = "assets/track_border5.png"
 
-        FINISH_POSITION = (18, 260)
+        FINISH_POSITION = (18, 285)
         START_POSITION = (30, 200)
 
         zero_to_oneA =   [(50, 100), (115, 60)]
@@ -322,10 +356,10 @@ def load_track_for_level(level):
         seven_to_eight = [(841, 777), (795, 822), (594, 828), (554, 816), (579, 758), (677, 759), (696, 636), (702, 502), (674, 400), (566, 396), (462, 423), 
                           (477, 518), (562, 527), (586, 596), (534, 633), (375, 622)]
         four_to_eight =  [(345, 450), (345, 585)]
-        eight_to_zero =  [(345, 585), (175, 600), (170, 520), (220, 450), (220, 376), (198, 315), (119, 315), (18, 260)]
+        eight_to_zero =  [(175, 600), (170, 520), (220, 450), (220, 376), (198, 315), (119, 315)]
         eight_to_nine =  [(356, 698), (376, 746), (423, 771), (390, 822), (240, 825)]
-        nine_to_zeroA =  [(92, 825), (36, 787), (36, 697), (36, 529), (36, 326), (18, 260)]
-        nine_to_zeroB =  [(193, 717), (123, 718), (36, 697), (36, 529), (36, 326), (18, 260)]
+        nine_to_zeroA =  [(92, 825), (36, 787), (36, 697), (36, 529), (36, 326)]
+        nine_to_zeroB =  [(193, 717), (123, 718), (36, 697), (36, 529), (36, 326)]
          
         #shortest route to 1
         zero_to_one = zero_to_oneA if compute_path_length(zero_to_oneA) <= compute_path_length(zero_to_oneB) else zero_to_oneB
@@ -429,21 +463,44 @@ class GameInfo:
 # --------------------------------------------------
 # Car factories
 # --------------------------------------------------
-def create_player_car(color="Red"):
-    from cars import PlayerCar
-    car_image = CAR_COLOR_MAP.get(color, RED_CAR)
-    return PlayerCar(car_image, START_POSITION, 4, 4)
+def create_player_car(color="Red", autonomous=False):
+    """Create a player car with optional autonomous mode.
+    
+    Args:
+        color: Car color (Red, Blue, Green, Purple, White, Grey)
+        autonomous: If True, car follows path automatically instead of manual control
+    """
+    if autonomous:
+        from cars import dijkstra_car
+        car_image = CAR_COLOR_MAP.get(color, RED_CAR)
+        return dijkstra_car.DijkstraCar(
+            car_image,
+            START_POSITION,
+            3,
+            4,
+            RACING_LINE + [FINISH_POSITION],
+            GRID_SIZE,
+            50,
+            CHECKPOINT_RADIUS,
+            GRID,
+            TRACK_BORDER_MASK
+        )
+    else:
+        from cars import PlayerCar
+        car_image = CAR_COLOR_MAP.get(color, RED_CAR)
+        path = (RACING_LINE + [FINISH_POSITION]) if autonomous else [] # Legacy automated support
+        return PlayerCar(car_image, START_POSITION, 3, 4, path=path, autonomous=autonomous)
 
 def create_computer_car(type='DFS', color="Grey"):
     from cars import ComputerCar
     car_image = CAR_COLOR_MAP.get(color, GREY_CAR if type == 'DFS' else BLUE_CAR)
-    return ComputerCar(car_image, START_POSITION, 2, 4, RACING_LINE + [FINISH_POSITION])
+    return ComputerCar(car_image, START_POSITION, 2.5, 4, RACING_LINE + [FINISH_POSITION])
 
 def create_GBFS_car(color="Green"):
     from cars import GBFSDetourCar
     car_image = CAR_COLOR_MAP.get(color, GREEN_CAR)
     car = GBFSDetourCar(
-        RACING_LINE + [FINISH_POSITION],
+        RACING_LINE + [FINISH_POSITION], 2.5, 4,
         GRID_SIZE, 30,
         CHECKPOINT_RADIUS, GRID, TRACK_BORDER_MASK,
         car_image
@@ -457,11 +514,11 @@ def create_neat_car(color="Purple"):
     return NEATCar(
         car_image,
         START_POSITION,
-        3, 4,
+        2.5, 4,
         RACING_LINE, TRACK_BORDER_MASK, GRID_SIZE, GRID
     )
 
-def create_dijkstra_car(max_vel=3, rotation_vel=4, color="White"):
+def create_dijkstra_car(max_vel=2.5, rotation_vel=4, color="White"):
     from cars import DijkstraCar
     car_image = CAR_COLOR_MAP.get(color, WHITE_CAR)
     return DijkstraCar(

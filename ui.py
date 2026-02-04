@@ -63,10 +63,17 @@ class Menu:
         # BACK BUTTON (universal, top-right for all pages)
         self.backButton = PillButton((width - 140, 20, 120, 36), "Back", selected=False)
 
+        # TOGGLE ICON BUTTON (top-left, main menu only)
+        self.toggleIconButton = IconButton(
+            (40, 40, 64, 64),
+            "assets/icon_sound_off.png",
+            "assets/icon_sound_on.png",
+        )
+
         # INFO SCROLL PANEL
         self.info_scroll = ScrollPanel(
             (150, 260, self.width + 120, self.height - 120),  # rect
-            content_height=1000,  # adjust based on text amount
+            content_height=1300,  # adjust based on text amount
             bg=(15, 20, 35, 0),  # Transparent background
             radius=12
         )
@@ -77,7 +84,7 @@ class Menu:
             self.page1Button, self.page2Button, self.quitButton,
             self.level1Button, self.level2Button,
             self.level3Button, self.level4Button, self.level5Button,
-            self.backButton
+            self.backButton, self.toggleIconButton
         ]:
             btn.enabled = False
 
@@ -89,7 +96,7 @@ class Menu:
         for btn in [
             self.playButton, self.trainButton,
             self.page1Button, self.page2Button,
-            self.quitButton
+            self.quitButton, self.toggleIconButton
         ]:
             btn.enabled = True
             btn.draw(surface)
@@ -148,37 +155,36 @@ class Menu:
         info_lines = [
             "Welcome to DFA PathFinding Grand Prix!",
             "",
-            "Race against AI pathfinding algorithms:",
-            "- A* (Computer)",
-            "- GBFS (Greedy Best-First Search)",
-            "- Dijkstra's Algorithm",
+            "Race using AI pathfinding algorithms:",
+            "- Depth-First Search (DFS)",
+            "- Breadth-First Search (BFS)",
+            "- A* Search Algorithm",
+            "- Greedy Best-First Search (GBFS)",
             "- NEAT (Neural Evolution)",
             "",
-            "Controls: W/A/S/D to move",
+            "Or take control of the car yourself!",
+            "(Controls: W/A/S/D to move)",
             "",
-            "Complete levels to unlock the next track!",
+            "1. Select a level.",
+            "2. Figure out the best algorithm for the job!",
+            "3. Tune your car, simpler algorithm = more money for", 
+            "upgrades!",
+            "4. Race to the finish line first!",
+            "5. If you win, move to the next level...",
+            "Or show the AI how it's done by beating them yourself!",
+            "_____________________________________________________",
+            "HINTS",
             "",
-            "This is extra text to test scrolling...",
-            "Line 1",
-            "Line 2",
-            "Line 3",
-            "Line 4",
-            "Line 5",
-            "Line 6",
-            "Line 7",
-            "Line 8",
-            "Line 9",
-            "Line 10",
-            "Line 11",
-            "Line 12",
-            "Line 13",
-            "Line 14",
-            "Line 15",
-            "Line 16",
-            "Line 17",
-            "Line 18",
-            "Line 19",
-            "Line 20",
+            "DFS: Commits to a direction one by one",
+            "can be fast, cheap",
+            "BFS: Explores a little bit every direction",
+            "can be fast, cheap",
+            "A*: Uses a heuristic to logically find the best path",
+            "balanced speed and cost",
+            "GBFS: Focuses on the most promising path",
+            "faster but can go the wrong way",
+            "NEAT: Learns to drive through trial and error",
+            "unreliable but adaptable",
         ]
 
         y = 20 + offset_y
@@ -288,6 +294,8 @@ class Menu:
             return "page1"
         if self.page2Button.handle_event(event):
             return "page2"
+        if self.toggleIconButton.handle_event(event):
+            return "toggle_sound"
         if self.quitButton.handle_event(event):
             return "quit"
 
@@ -333,6 +341,96 @@ class Button:
             and self.rect.collidepoint(event.pos)
         )
 
+class IconButton:
+    """
+    Icon-based button that toggles between two states.
+    Each state displays a different icon image.
+    """
+    def __init__(self, rect, icon_path_state1, icon_path_state2, initial_state=True):
+        self.rect = pygame.Rect(rect)
+        self.icon_path_state1 = icon_path_state1
+        self.icon_path_state2 = icon_path_state2
+        self.state = initial_state  # False = state1, True = state2
+        self.enabled = True
+        # Load icon images with fallback handling
+        self.image_state1 = self._load_icon(icon_path_state1)
+        self.image_state2 = self._load_icon(icon_path_state2)
+        
+    def _load_icon(self, path):
+        """
+        Load an icon from the given path.
+        Returns None if loading fails (will use fallback rendering).
+        """
+        try:
+            img = pygame.image.load(path).convert_alpha()
+            # Scale to fit button rect while maintaining aspect ratio
+            return self._scale_to_fit(img, self.rect.width - 8, self.rect.height - 8)
+        except (pygame.error, FileNotFoundError):
+            # Return None, will render fallback in draw()
+            print("Error loading icon:", path)
+            return None
+    
+    def _scale_to_fit(self, surf, max_w, max_h):
+        """
+        Scale surface to fit within max dimensions while preserving aspect ratio.
+        """
+        w, h = surf.get_size()
+        if w <= max_w and h <= max_h:
+            return surf
+        scale = min(max_w / w, max_h / h)
+        new_w = max(1, int(w * scale))
+        new_h = max(1, int(h * scale))
+        return pygame.transform.smoothscale(surf, (new_w, new_h))
+    
+    def draw(self, surface):
+        """
+        Draw the icon button. Shows current state's icon with hover effect.
+        """
+        if not self.enabled:
+            return
+        
+        # Determine colors based on hover state
+        mouse_over = self.rect.collidepoint(pygame.mouse.get_pos())
+        bg_color = (90, 90, 90) if mouse_over else (70, 70, 70)
+        border_color = (120, 120, 120) if mouse_over else (100, 100, 100)
+        
+        # Draw rounded background
+        pygame.draw.rect(surface, bg_color, self.rect, border_radius=12)
+        pygame.draw.rect(surface, border_color, self.rect, width=2, border_radius=12)
+        
+        # Select current icon based on state
+        current_icon = self.image_state2 if self.state else self.image_state1
+        
+        if current_icon:
+            # Center the icon in the button
+            icon_rect = current_icon.get_rect(center=self.rect.center)
+            surface.blit(current_icon, icon_rect)
+        else:
+            # Fallback: draw a colored square to indicate the button exists
+            fallback_color = (0, 200, 100) if self.state else (200, 100, 0)
+            fallback_rect = pygame.Rect(0, 0, self.rect.width - 16, self.rect.height - 16)
+            fallback_rect.center = self.rect.center
+            pygame.draw.rect(surface, fallback_color, fallback_rect, border_radius=6)
+    
+    def toggle(self):
+        """
+        Toggle the button state and redraws.
+        """
+        self.state = not self.state
+    
+    def handle_event(self, event):
+        """
+        Handle mouse click events. Returns True if button was clicked.
+        """
+        if not self.enabled:
+            return False
+        
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if self.rect.collidepoint(event.pos):
+                self.toggle()
+                return True
+        return False
+
 # --------------------------------------------------
 # Level End Screen
 # --------------------------------------------------
@@ -353,7 +451,7 @@ def draw_level_end(win, result, level, time_sec, font):
     info = pygame.font.Font(None, 32)
     win.blit(info.render(f"Level: {level}", True, WHITE), (win.get_width()//2 - 80, 300))
     win.blit(info.render(f"Time: {time_sec:.2f}s", True, WHITE), (win.get_width()//2 - 80, 340))
-    win.blit(info.render("Press ENTER to continue", True, (180,180,180)),
+    win.blit(info.render("Press ENTER to return to main menu", True, (180,180,180)),
              (win.get_width()//2 - 140, 420))
 
 # --------------------------------------------------
@@ -368,7 +466,7 @@ def draw(win, images, player_car, computer_car, gbfs_car, neat_car, dijkstra_car
     gbfs_car.draw(win)
     computer_car.draw(win)
     neat_car.draw(win)
-    dijkstra_car.draw(win)
+    dijkstra_car.draw(win, False)
 
 
 def move_player(player_car):
@@ -391,8 +489,11 @@ def move_player(player_car):
 
 
 def handle_collision(player_car, computer_car, gbfs_car, neat_car, dijkstra_car, chosen_model=None):
-    if player_car.collide(resources.TRACK_BORDER_MASK):
-        player_car.bounce()
+    # Only apply wall collision bounce to player car when in manual mode
+    # Autonomous mode: skip wall collision to prevent getting stuck
+    if not getattr(player_car, 'autonomous', False):
+        if player_car.collide(resources.TRACK_BORDER_MASK):
+            player_car.bounce()
 
     cars = [
         ("Player", player_car),

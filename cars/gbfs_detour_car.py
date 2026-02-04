@@ -12,8 +12,8 @@ class GBFSDetourCar(AbstractCar):
     """
     START_POS = (165, 200)
 
-    def __init__(self, checkpoints, GRIDSIZE, WAYPOINT_REACH, CHECKPOINT_RADIUS, GRID, TRACK_BORDER_MASK, img):
-        super().__init__(img, self.START_POS, 3, 4)
+    def __init__(self, checkpoints, maxVel, maxRot, GRIDSIZE, WAYPOINT_REACH, CHECKPOINT_RADIUS, GRID, TRACK_BORDER_MASK, img):
+        super().__init__(img, self.START_POS, maxVel, maxRot)
         
         # Basics
         self.checkpoints = checkpoints
@@ -23,9 +23,9 @@ class GBFSDetourCar(AbstractCar):
         self.vel = 3
 
         # Tunables Defaults (In order)
-        self.max_vel = 3
+        self.max_vel = maxVel
         self.acceleration = 0.1
-        self.rotation_vel = 4
+        self.rotation_vel = maxRot
         self.brake_factor = 0.6
         self.Lookahead_Dist = 32
         self.ahead_window = 50
