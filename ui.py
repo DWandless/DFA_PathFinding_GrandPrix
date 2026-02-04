@@ -352,7 +352,6 @@ class IconButton:
         self.icon_path_state2 = icon_path_state2
         self.state = initial_state  # False = state1, True = state2
         self.enabled = True
-        print(self.state)
         # Load icon images with fallback handling
         self.image_state1 = self._load_icon(icon_path_state1)
         self.image_state2 = self._load_icon(icon_path_state2)
