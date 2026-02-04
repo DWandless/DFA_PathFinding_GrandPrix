@@ -251,8 +251,8 @@ async def main():
                         dijkstra_car = create_dijkstra_car()
                         
                         # Update paths for new level (RACING_LINE updated by load_track_for_level)
-                        if player_car.autonomous:
-                            player_car.set_path(resources.RACING_LINE + [resources.FINISH_POSITION])
+                        #if player_car.autonomous:
+                            #player_car.set_path(resources.RACING_LINE + [resources.FINISH_POSITION])
 
                         if trained_net:
                             neat_car.set_net(trained_net)
@@ -366,7 +366,7 @@ async def main():
 
             if winner: # Someone won
                 level_time = time.time() - game_info.level_start_time
-                level_result = "win" if winner == chosen_model else "lose" # level result set based on whether chosen model won
+                level_result = "win" if winner == "Player" else "lose" # level result set based on whether player car won
                 game_state = STATE_LEVEL_END
         
         elif game_state == STATE_TRAINING:
