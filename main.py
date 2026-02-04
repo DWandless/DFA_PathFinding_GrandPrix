@@ -65,7 +65,7 @@ manager = NEATManager(
     track_mask=resources.TRACK_BORDER_MASK,
     raycast_fn=raycast_mask,
     fps=FPS,
-    time_limit_sec=20.0
+    time_limit_sec=35.0
 )
 
 TRAIN_GENERATIONS = 10
@@ -135,6 +135,7 @@ async def main():
     selection = None
     chosen_model = None
     chosen_color = None
+    use_locally_trained_net = False
 
     trained_net = None
     clock = pygame.time.Clock()
@@ -249,6 +250,10 @@ async def main():
                     else:
                         menu.drawMain(WIN)
                         game_state = STATE_MENU
+
+
+        if game_state == STATE_MENU:
+            menu.drawMain(WIN)
         if game_state == MODEL_SELECT:
             if chosen_model is not None:
                 # Create temp cars for registry
@@ -270,8 +275,10 @@ async def main():
                 GBFS_car = create_GBFS_car()
                 neat_car = create_neat_car()
                 dijkstra_car = create_dijkstra_car()
-                
-                trained_net = load_trained_network(config)
+                if use_locally_trained_net:
+                    pass
+                else:
+                    trained_net = load_trained_network(config)
                 if trained_net:
                     neat_car.net = trained_net
 
@@ -360,13 +367,14 @@ async def main():
                             manager.winner,
                             config
                         )
+                        use_locally_trained_net = True
                         
                         #with open("assets/winner_genome.pkl", "wb") as f:
                         #    pickle.dump(manager.winner, f)
 
 
                     # Return to menu
-                    menu.drawMain(WIN)
+                    #menu.drawMain(WIN)
                     game_state = STATE_MENU
                     break
 
