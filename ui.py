@@ -730,11 +730,29 @@ class Dial:
         #       BuildScreen intercepts wheel and sends it to the focused dial via nudge_wheel().
         return False
 
-def draw_glass_panel(surf, rect, border_color=(255, 215, 0), alpha=140):
+
+def draw_glass_panel(surf, rect, border_color=(255, 215, 0), alpha=155):
     panel = pygame.Surface(rect.size, pygame.SRCALPHA)
-    panel.fill((10, 10, 30, alpha))
-    pygame.draw.rect(panel, (*border_color, 200), panel.get_rect(), width=3, border_radius=12)
+
+    # Draw rounded filled background
+    pygame.draw.rect(
+        panel,
+        (10, 10, 30, alpha),       # interior color with transparency
+        panel.get_rect(),
+        border_radius=12
+    )
+
+    # Draw rounded border
+    pygame.draw.rect(
+        panel,
+        (*border_color, 200),      # border color with alpha
+        panel.get_rect(),
+        width=3,
+        border_radius=12
+    )
+
     surf.blit(panel, rect.topleft)
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 # ScrollPanel helper for right-column overflow
@@ -796,7 +814,7 @@ class BuildScreen:
         W, H = self.surface.get_width(), self.surface.get_height()
         buy_w, buy_h = 220, 48
         cancel_w = 120
-        bottom_bar_y = int(H * 0.95)  # keep BUY low as per your layout
+        bottom_bar_y = int(H * 0.843)  # keep BUY low as per your layout
         self.btn_buy    = PillButton((W // 2 - buy_w // 2, bottom_bar_y - buy_h // 2, buy_w, buy_h), "BUY")
         self.btn_cancel = PillButton((W - cancel_w - 20, 20, cancel_w, 36), "Back")  # top-right
 
@@ -805,7 +823,7 @@ class BuildScreen:
         self.total_price = 0.0
 
         # Panel placement (lowered panel)
-        self.big_panel = pygame.Rect(int(W * 0.12), int(H * 0.48), int(W * 0.76), int(H * 0.35))
+        self.big_panel = pygame.Rect(int(W * 0.12), int(H * 0.3), int(W * 0.76), int(H * 0.5))
 
         # Right-column scroll panel (created in layout)
         self._right_scroll = None
@@ -838,8 +856,8 @@ class BuildScreen:
         cell_w = int(left_w // 2)
         col_x0 = left_area.left + cell_w // 2
         col_x1 = left_area.left + int(1.5 * cell_w)
-        row_y0 = left_area.top + 90
-        row_y1 = row_y0 + 136
+        row_y0 = left_area.top + 180
+        row_y1 = row_y0 + 150
         r = 54
 
         specs = [
@@ -908,7 +926,7 @@ class BuildScreen:
         elif self.selected_model == "NEAT":
             content_y = place(self.sliders_neat, y0)
 
-        right_rect = pygame.Rect(split_x + 10, inner.top + 10, inner.width - int(inner.width * 0.52) - 20, inner.height - 20)
+        right_rect = pygame.Rect(split_x + 10, inner.top + 130, inner.width - int(inner.width * 0.52) - 20, inner.height - 150)
         content_height = max(right_rect.height, (content_y - (inner.top + 10)) + 40)
         if self._right_scroll is None:
             self._right_scroll = ScrollPanel(right_rect, content_height, bg=(15, 20, 35, 90), radius=12)
@@ -1132,70 +1150,55 @@ class BuildScreen:
         # Titles + HUD (above panel)
         title_text = "Build Your Car" if not self._locked_model else f"Tune: {self.selected_model}"
         title = self.h2.render(title_text, True, (240, 240, 240))
-        self.surface.blit(title, (self.big_panel.left + 24, self.big_panel.top - 72))
+        self.surface.blit(title, ( self.big_panel.centerx - title.get_width() // 2, self.big_panel.top-24))
 
         price_col = (0, 220, 120) if self.total_price <= self.budget else (240, 140, 20)
         budget_text = self.font.render(f"Budget: £{self.budget:,.2f}", True, (220, 220, 220))
         price_text  = self.font.render(f"Price: £{self.total_price:,.2f}", True, price_col)
-        hud_y = self.big_panel.top - 42
-        self.surface.blit(budget_text, (self.big_panel.left + 24, hud_y))
-        self.surface.blit(price_text,  (self.big_panel.left + 24 + budget_text.get_width() + 16, hud_y))
+        hud_y = self.big_panel.top + 15
+        self.surface.blit(budget_text, (self.big_panel.left + 40, hud_y))
+        self.surface.blit(price_text,  (self.big_panel.left + 40, hud_y + 30))
 
     def _draw_big_panel(self):
         draw_glass_panel(self.surface, self.big_panel, border_color=(255, 215, 0), alpha=130)
 
     def _draw_first4_dials(self):
         inner = self.big_panel.inflate(-40, -40)
-        sub = self.small.render("Shared (4)", True, (230, 230, 230))
-        self.surface.blit(sub, (inner.left, inner.top))
+        sub = self.small.render("Shared Parameters", True, (230, 230, 230))
+        self.surface.blit(sub, (inner.left + 100, inner.top + 65))
         for d in self.dials:
             d.draw(self.surface)
+
 
     def _draw_model_section(self):
         inner = self.big_panel.inflate(-40, -80)
         right_title_x = inner.left + int(inner.width * 0.52)
 
-        # Right column heading (only for models with sliders)
-        if self.selected_model in ("GBFS", "Dijkstra", "NEAT"):
-            self.surface.blit(self.h2.render(self.selected_model, True, (230, 230, 230)), (right_title_x + 10, inner.top + 132))
-
+        # -------------------------------
+        # 1. Draw SCROLL PANEL + SLIDERS
+        # -------------------------------
         if self._right_scroll:
             panel_surf, offset_y = self._right_scroll.begin(self.surface)
 
-            # Price box (inside the panel)
-            price_rect = pygame.Rect(10, 10, self._right_scroll.rect.width - 20, 120)
-            draw_glass_panel(panel_surf, price_rect)
-            model_base = MODEL_BASE_PRICE.get(self.selected_model, 0.0)
-            lines = [
-                f"Model Base: £{model_base:,.0f}",
-                f"Track ×: {TRACK_MULT.get(self.selected_track_key, 1.0):.2f}",
-                f"Total: £{self.total_price:,.0f}",
-            ]
-            y = price_rect.top + 12
-            for line in lines[:-1]:
-                panel_surf.blit(self.font.render(line, True, (230, 230, 230)), (price_rect.left + 12, y))
-                y += 28
-            total_surf = self.h2.render(lines[-1], True, (255, 235, 120))
-            panel_surf.blit(total_surf, (price_rect.left + 12, price_rect.bottom - total_surf.get_height() - 10))
-
-            # Draw sliders within the panel (translate from global -> local)
+            # Draw sliders inside scroll panel
             def draw_slider_list(sliders, toggle=None):
                 for s in sliders:
-                    local_rect = s.rect.copy()
-                    local_rect.x = local_rect.x - self._right_scroll.rect.x
-                    local_rect.y = (s.rect.y - self._right_scroll.rect.y) + offset_y
+                    local = s.rect.copy()
+                    local.x -= self._right_scroll.rect.x
+                    local.y = (s.rect.y - self._right_scroll.rect.y) + offset_y
                     orig = s.rect
-                    s.rect = local_rect
+                    s.rect = local
                     s.draw(panel_surf)
                     s.rect = orig
+
                 if toggle:
-                    local_rect = toggle.rect.copy()
-                    local_rect.x = local_rect.x - self._right_scroll.rect.x
-                    local_rect.y = (toggle.rect.y - self._right_scroll.rect.y) + offset_y
-                    orig = toggle.rect
-                    toggle.rect = local_rect
+                    local_t = toggle.rect.copy()
+                    local_t.x -= self._right_scroll.rect.x
+                    local_t.y = (toggle.rect.y - self._right_scroll.rect.y) + offset_y
+                    orig_t = toggle.rect
+                    toggle.rect = local_t
                     toggle.draw(panel_surf)
-                    toggle.rect = orig
+                    toggle.rect = orig_t
 
             if self.selected_model == "GBFS":
                 draw_slider_list(self.sliders_gbfs, toggle=self.toggle_gbfs_diag)
@@ -1203,9 +1206,50 @@ class BuildScreen:
                 draw_slider_list(self.sliders_dij)
             elif self.selected_model == "NEAT":
                 draw_slider_list(self.sliders_neat)
-            # Player/Computer: no right-side sliders (shared dials only)
 
             self._right_scroll.end(self.surface)
+
+        # ---------------------------------------
+        # 2. Draw PRICE BOX OUTSIDE THE SCROLLER
+        # ---------------------------------------
+
+        # Position this wherever you want:
+        # Currently: above the scroll panel by 140px
+        price_box_rect = pygame.Rect(
+            self._right_scroll.rect.x + 10,
+            self._right_scroll.rect.y - 120,
+            self._right_scroll.rect.width - 20,
+            120
+        )
+
+        draw_glass_panel(self.surface, price_box_rect)
+
+        # Price values
+        model_base = MODEL_BASE_PRICE.get(self.selected_model, 0.0)
+        lines = [
+            f"Model Base: £{model_base:,.0f}",
+            f"Track ×: {TRACK_MULT.get(self.selected_track_key, 1.0):.2f}",
+            f"Total: £{self.total_price:,.0f}",
+        ]
+
+        y = price_box_rect.top + 15
+
+        # normal lines
+        for line in lines[:-1]:
+            self.surface.blit(
+                self.font.render(line, True, (230, 230, 230)),
+                (price_box_rect.left + 12, y)
+            )
+            y += 28
+
+        # the big highlighted TOTAL
+        total_surf = self.h2.render(lines[-1], True, (255, 235, 120))
+        self.surface.blit(
+            total_surf,
+            (price_box_rect.left + 12,
+            price_box_rect.bottom - total_surf.get_height() - 10)
+        )
+
 
     def _draw_bottom_bar(self):
         can_buy = (self.total_price <= self.budget)
@@ -1215,8 +1259,8 @@ class BuildScreen:
 
     def _draw(self):
         self._draw_background()
+        #self._draw_big_panel()
         self._draw_tabs_and_titles()
-        self._draw_big_panel()
         self._draw_first4_dials()
         self._draw_model_section()
         self._draw_bottom_bar()
