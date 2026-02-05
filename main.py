@@ -311,6 +311,7 @@ async def main():
                 
                 # Countdown to start
                 countdown_timer = 3.0
+                selection = None
                 game_state = STATE_COUNTDOWN
         # -----------------------------
         # UPDATE / DRAW
