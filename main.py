@@ -249,18 +249,8 @@ async def main():
                     # -------- LEVEL END --------
             if game_state == STATE_LEVEL_END:
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-                    if level_result == "win" and game_info.next_level():
-                        load_track_for_level(game_info.get_level())
-                        player_car, computer_car, GBFS_car, neat_car, dijkstra_car = create_all_cars()
-
-                        if trained_net:
-                            neat_car.set_net(trained_net)
-
-                        countdown_timer = 3.0
-                        game_state = STATE_COUNTDOWN
-                    else:
-                        menu.drawMain(WIN)
-                        game_state = STATE_MENU
+                    menu.drawMain(WIN)
+                    game_state = STATE_MENU
 
 
         if game_state == STATE_MENU:
@@ -302,7 +292,19 @@ async def main():
                     base_reg.setdefault(grp, {})
                     base_reg[grp].update(kv)
 
-                apply_registry(base_reg, manager, [player_car, computer_car, GBFS_car, neat_car, dijkstra_car])
+                                
+                model_map = {
+                    "Player": player_car,
+                    "BFS": computer_car,
+                    "DFS": computer_car,
+                    "GBFS": GBFS_car,
+                    "NEAT": neat_car,
+                    "Dijkstra": dijkstra_car
+                }
+
+                selected_car = model_map.get(chosen_model, player_car)
+
+                apply_registry(base_reg, manager, [selected_car])
 
                 # Persist build info
                 last_model, last_track_key, last_reg, last_total_price = chosen_model, track_key, base_reg, total_price
