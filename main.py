@@ -249,18 +249,8 @@ async def main():
                     # -------- LEVEL END --------
             if game_state == STATE_LEVEL_END:
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-                    if level_result == "win" and game_info.next_level():
-                        load_track_for_level(game_info.get_level())
-                        player_car, computer_car, GBFS_car, neat_car, dijkstra_car = create_all_cars()
-
-                        if trained_net:
-                            neat_car.set_net(trained_net)
-
-                        countdown_timer = 3.0
-                        game_state = STATE_COUNTDOWN
-                    else:
-                        menu.drawMain(WIN)
-                        game_state = STATE_MENU
+                    menu.drawMain(WIN)
+                    game_state = STATE_MENU
 
 
         if game_state == STATE_MENU:
