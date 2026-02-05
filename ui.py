@@ -1136,7 +1136,7 @@ class BuildScreen:
     def _draw_background(self):
         W, H = self.surface.get_width(), self.surface.get_height()
         try:
-            bg = pygame.transform.smoothscale(resources.MENU2, (W, H))
+            bg = pygame.transform.smoothscale(resources.MENU5, (W, H))
             self.surface.blit(bg, (0, 0))
         except Exception:
             self.surface.fill(DARK)
