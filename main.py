@@ -302,7 +302,19 @@ async def main():
                     base_reg.setdefault(grp, {})
                     base_reg[grp].update(kv)
 
-                apply_registry(base_reg, manager, [player_car, computer_car, GBFS_car, neat_car, dijkstra_car])
+                                
+                model_map = {
+                    "Player": player_car,
+                    "BFS": computer_car,
+                    "DFS": computer_car,
+                    "GBFS": GBFS_car,
+                    "NEAT": neat_car,
+                    "Dijkstra": dijkstra_car
+                }
+
+                selected_car = model_map.get(chosen_model, player_car)
+
+                apply_registry(base_reg, manager, [selected_car])
 
                 # Persist build info
                 last_model, last_track_key, last_reg, last_total_price = chosen_model, track_key, base_reg, total_price
