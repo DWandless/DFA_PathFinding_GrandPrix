@@ -240,7 +240,13 @@ class ModelSelectScreen:
         # Preview panel
         frame_rect = self.model_preview_area
         panel = pygame.Surface(frame_rect.size, pygame.SRCALPHA)
-        panel.fill((10, 10, 30, 110))
+        # Draw rounded filled background
+        pygame.draw.rect(
+            panel,
+            (10, 10, 30, 110),       # interior color with transparency
+            panel.get_rect(),
+            border_radius=12
+        )
         pygame.draw.rect(panel, (255, 215, 0, 180), panel.get_rect(), width=3, border_radius=12)
         self.surface.blit(panel, frame_rect.topleft)
 
@@ -264,7 +270,13 @@ class ModelSelectScreen:
         # Preview panel
         frame_rect = self.color_preview_area
         panel = pygame.Surface(frame_rect.size, pygame.SRCALPHA)
-        panel.fill((10, 10, 30, 110))
+        # Draw rounded filled background
+        pygame.draw.rect(
+            panel,
+            (10, 10, 30, 110),       # interior color with transparency
+            panel.get_rect(),
+            border_radius=12
+        )
         pygame.draw.rect(panel, (255, 215, 0, 180), panel.get_rect(), width=3, border_radius=12)
         self.surface.blit(panel, frame_rect.topleft)
 
