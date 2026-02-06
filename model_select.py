@@ -17,7 +17,7 @@ import resources
 # ---------------------------------------------------------------------
 
 MODELS = ["Player", "BFS", "DFS", "GBFS", "AStar", "NEAT"]
-COLORS = ["Red", "Blue", "Green", "Purple", "White", "Grey"]
+COLORS = ["Red", "Blue", "Green", "Purple", "White", "Grey", "Pink", "Yellow"]
 BLUE = (0, 120, 215)
 
 # Map color and model names to image files
@@ -28,6 +28,8 @@ COLOR_TO_IMAGE = {
     "Purple": "assets/purple-car.png",
     "White": "assets/white-car.png",
     "Grey": "assets/grey-car.png",
+    "Pink": "assets/pink-car.png",
+    "Yellow": "assets/yellow-car.png",
 }
 MODEL_TO_IMAGE = {
     "Player": "assets/icon_brain.png",
