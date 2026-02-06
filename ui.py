@@ -1174,10 +1174,13 @@ class BuildScreen:
         inner = self.big_panel.inflate(-40, -80)
         right_title_x = inner.left + int(inner.width * 0.52)
 
+        # Determine if model has extra parameters
+        has_sliders = self.selected_model in ("NEAT") # Add more as desired
+        
         # -------------------------------
-        # 1. Draw SCROLL PANEL + SLIDERS
+        # 1. Draw SCROLL PANEL + SLIDERS (only for models with extra parameters)
         # -------------------------------
-        if self._right_scroll:
+        if has_sliders and self._right_scroll:
             panel_surf, offset_y = self._right_scroll.begin(self.surface)
 
             # Draw sliders inside scroll panel
@@ -1210,17 +1213,27 @@ class BuildScreen:
             self._right_scroll.end(self.surface)
 
         # ---------------------------------------
-        # 2. Draw PRICE BOX OUTSIDE THE SCROLLER
+        # 2. Draw PRICE BOX (for all models)
         # ---------------------------------------
 
-        # Position this wherever you want:
-        # Currently: above the scroll panel by 140px
-        price_box_rect = pygame.Rect(
-            self._right_scroll.rect.x + 10,
-            self._right_scroll.rect.y - 120,
-            self._right_scroll.rect.width - 20,
-            120
-        )
+        # Calculate price box position based on whether scroll panel exists
+        if has_sliders and self._right_scroll:
+            # Position above the scroll panel
+            price_box_rect = pygame.Rect(
+                self._right_scroll.rect.x + 10,
+                self._right_scroll.rect.y - 120,
+                self._right_scroll.rect.width - 20,
+                120
+            )
+        else:
+            # Position on right side for models without extra parameters
+            split_x = inner.left + int(inner.width * 0.52)
+            price_box_rect = pygame.Rect(
+                split_x + 20,
+                inner.top + 130,
+                inner.width - int(inner.width * 0.52) - 40,
+                120
+            )
 
         draw_glass_panel(self.surface, price_box_rect)
 
