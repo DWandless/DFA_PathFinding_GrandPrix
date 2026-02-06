@@ -303,7 +303,7 @@ async def main():
 
                 selected_car = model_map.get(chosen_model, player_car)
 
-                apply_registry(base_reg, manager, [selected_car])
+                apply_registry(base_reg, manager, [player_car]) # Changed to just be the player car
 
                 # Persist build info
                 last_model, last_track_key, last_reg, last_total_price = chosen_model, track_key, base_reg, total_price

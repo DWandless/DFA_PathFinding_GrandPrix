@@ -30,6 +30,12 @@ class DijkstraCar(AbstractCar):
         
         # Compute initial path to first checkpoint
         self._compute_path_to_checkpoint()
+    
+    def SetTunables(self, TuningData):
+        """Override to also update vel since DijkstraCar uses constant velocity."""
+        super().SetTunables(TuningData)
+        # DijkstraCar moves at constant velocity, so update vel to match new max_vel
+        self.vel = self.max_vel
 
     # ------------------ DIJKSTRA ALGORITHM ------------------
     def _world_to_grid(self, x, y):

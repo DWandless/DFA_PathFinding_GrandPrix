@@ -18,6 +18,8 @@ class ComputerCar(AbstractCar):
         self.acceleration = TuningData[1]
         # Breaking goes here -- dunno what to bind it to.
         self.rotation_vel = TuningData[2]
+        # ComputerCar moves at constant velocity, so update vel to match new max_vel
+        self.vel = self.max_vel
 
     def draw_points(self, win):  # draws the path points for debugging
         import pygame
