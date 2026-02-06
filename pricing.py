@@ -29,10 +29,11 @@ def inverse(value, base, lo, hi):
 
 MODEL_BASE_PRICE = {
     "Player": 0.0,
-    "Computer": 1000.0,
+    "DFS": 3000.0,
+    "BFS": 3000.0,
     "GBFS": 5000.0,
-    "Dijkstra": 8000.0,
-    "NEAT": 15000.0,
+    "AStar": 7000.0,
+    "NEAT": 7000.0,
 }
 
 # Map to your levels for now
@@ -94,8 +95,9 @@ def price_gbfs(g: Dict[str, Any]) -> Currency:
     p += superlinear(g["max_expansions"], base=3500, **_lo_hi(r["max_expansions"]), power=1.3)
     p += inverse(g["Align_Angle"],    base=900,  **_lo_hi(r["Align_Angle"]))
     if int(g.get("allow_diag", 0)) == 1:
-        p += 400
-    return p
+       p += 400
+    #return p DISABLED DUE TO GAME DESIGN CHANGES
+    return 0.0
 
 def price_dijkstra(d: Dict[str, Any]) -> Currency:
     r = RANGE["dijkstra"]

@@ -46,8 +46,7 @@ STATE_PAGE2 = "page2"
 STATE_TRAINING = "training"
 MODEL_SELECT = "model_select"
 BUILD_SCREEN = "build_screen"
-ASSETS_DIR = r"C:\Users\lelliottjack\Documents\DFA AI Racecar game\DFA_PathFinding_GrandPrix\assets"
-GAME_BUDGET = 100_000.00
+GAME_BUDGET = 10_000.00
 # -----------------------------
 # NEAT setup
 # -----------------------------
@@ -65,7 +64,7 @@ manager = NEATManager(
     track_mask=resources.TRACK_BORDER_MASK,
     raycast_fn=raycast_mask,
     fps=FPS,
-    time_limit_sec=35.0
+    time_limit_sec=50
 )
 
 TRAIN_GENERATIONS = 10
@@ -222,7 +221,7 @@ async def main():
                     if trained_net:
                         neat_car.set_net(trained_net)
 
-                    selector = ModelSelectScreen(WIN, assets_path=ASSETS_DIR, currentLevel=(level_num+1))
+                    selector = ModelSelectScreen(WIN, assets_path="", currentLevel=(level_num+1))
                     game_state = MODEL_SELECT
                     selector.model_index = selector.models.index("BFS")
                     selector.color_index = 0  # Default to first color
