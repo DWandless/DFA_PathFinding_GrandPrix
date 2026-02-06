@@ -75,6 +75,8 @@ PURPLE_CAR = scale_image(pygame.image.load("assets/purple-car.png"), 0.55)
 WHITE_CAR = scale_image(pygame.image.load("assets/white-car.png"), 0.55)
 TEMPLATE_CAR = scale_image(pygame.image.load("assets/car_template.png"), 0.55)
 GREY_CAR = scale_image(pygame.image.load("assets/grey-car.png"), 0.55)
+PINK_CAR = scale_image(pygame.image.load("assets/pink-car.png"), 0.55)
+YELLOW_CAR = scale_image(pygame.image.load("assets/yellow-car.png"), 0.55)
 
 # Color name to car image mapping
 CAR_COLOR_MAP = {
@@ -84,6 +86,8 @@ CAR_COLOR_MAP = {
     "Purple": PURPLE_CAR,
     "White": WHITE_CAR,
     "Grey": GREY_CAR,
+    "Pink": PINK_CAR,
+    "Yellow": YELLOW_CAR,
 }
 
 # --------------------------------------------------
@@ -468,7 +472,7 @@ def create_player_car(color="Red", autonomous=False):
     """Create a player car with optional autonomous mode.
     
     Args:
-        color: Car color (Red, Blue, Green, Purple, White, Grey)
+        color: Car color (Red, Blue, Green, Purple, White, Grey, Pink, Yellow)
         autonomous: If True, car follows path automatically instead of manual control
     """
     if autonomous:
