@@ -55,7 +55,7 @@ FPS = 60
 GRID_SIZE = 4
 CHECKPOINT_RADIUS = 45 # Increased by 5 pixels for easier checkpoint detection
 DEBUG_SHOW_CHECKPOINTS = True  # Set to True to show red checkpoint dots and pathfinding visualization
-DEBUG_UNLOCK_ALL_LEVELS = False  # Set to True to unlock all levels for testing/debugging
+DEBUG_UNLOCK_ALL_LEVELS = True  # Set to True to unlock all levels for testing/debugging
 
 # --------------------------------------------------
 # Static assets
@@ -306,7 +306,7 @@ def load_track_for_level(level):
         track_img = "assets/track2.png"
         border_img = "assets/track_border2.png"
 
-        FINISH_POSITION = (20, 350)
+        FINISH_POSITION = (30, 420)
         START_POSITION = (70, 288)
 
         
