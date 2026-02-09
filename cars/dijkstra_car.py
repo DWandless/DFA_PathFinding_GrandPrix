@@ -200,9 +200,10 @@ class DijkstraCar(AbstractCar):
 
     # ------------------ DEBUG DRAW ------------------
     def draw(self, win, show_points=True):
-        from resources import blit_rotate_center
+        from resources import blit_rotate_center, DEBUG_SHOW_CHECKPOINTS
         blit_rotate_center(win, self.img, (self.x, self.y), -self.angle)
-        if show_points:
+        # Only show debug visualization if DEBUG_SHOW_CHECKPOINTS is True
+        if show_points and DEBUG_SHOW_CHECKPOINTS:
             # Draw checkpoints in red
             for p in self.CHECKPOINTS:
                 pygame.draw.circle(win, (255, 0, 0), p, 5)

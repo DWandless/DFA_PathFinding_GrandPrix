@@ -469,8 +469,6 @@ def draw_level_end(win, result, level, time_sec, font):
     win.blit(info.render(f"Time: {time_sec:.2f}s", True, WHITE), (win.get_width()//2 - 80, 340))
     win.blit(info.render("Press ENTER to return to main menu", True, (180,180,180)),
              (win.get_width()//2 - 140, 420))
-
-# --------------------------------------------------
 # Gameplay helpers
 # --------------------------------------------------
 
@@ -478,7 +476,14 @@ def draw(win, images, player_car, computer_car, gbfs_car, neat_car, dijkstra_car
     for img, pos in images:
         win.blit(img, pos)
 
-    player_car.draw(win)
+    # Check if player_car has a draw method that accepts show_points parameter
+    if hasattr(player_car, 'draw'):
+        # For DijkstraCar, pass False to hide checkpoints
+        if hasattr(player_car, 'CHECKPOINTS'):
+            player_car.draw(win, False)
+        else:
+            player_car.draw(win)
+    
     gbfs_car.draw(win)
     computer_car.draw(win)
     neat_car.draw(win)

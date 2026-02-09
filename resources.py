@@ -54,6 +54,7 @@ def blit_rotate_center(win, image, top_left, angle):
 FPS = 60
 GRID_SIZE = 4
 CHECKPOINT_RADIUS = 30
+DEBUG_SHOW_CHECKPOINTS = False  # Set to True to show red checkpoint dots and pathfinding visualization
 
 # --------------------------------------------------
 # Static assets
@@ -167,10 +168,58 @@ images = [
 ]
 
 # --------------------------------------------------
+# Algorithm Delay Configuration (Level-Specific)
+# --------------------------------------------------
+# Maps algorithm types to delay times (in seconds) per level
+# Delay = 0 means the car can win that level
+# Delay > 0 means the car is handicapped and likely won't win
+ALGORITHM_DELAY_CONFIG = {
+    1: {  # Level 1: Only DFS can win
+        "Player": 0.0,
+        "BFS": 2.0,      # 2 second delay
+        "DFS": 0.0,      # No delay - can win
+        "GBFS": 2.0,     # 2 second delay
+        "AStar": 5.0,    # 2 second delay
+        "Dijkstra": 5.0, # 2 second delay
+        "NEAT": 2.0,     # 2 second delay
+    },
+    2: {  # Level 2: Only BFS can win
+        "Player": 0.0,
+        "BFS": 0.0,      # No delay - can win
+        "DFS": 2.0,      # 2 second delay
+        "GBFS": 2.0,     # 2 second delay
+        "AStar": 2.0,    # 2 second delay
+        "Dijkstra": 2.0, # 2 second delay
+        "NEAT": 2.0,     # 2 second delay
+    },
+    3: {  # Level 3: Only GBFS can win
+        "Player": 0.0,
+        "BFS": 2.0,      # 2 second delay
+        "DFS": 2.0,      # 2 second delay
+        "GBFS": 0.0,     # No delay - can win
+        "AStar": 2.0,    # 2 second delay
+        "Dijkstra": 2.0, # 2 second delay
+        "NEAT": 2.0,     # 2 second delay
+    },
+    4: {  # Level 4: Only Dijkstra/AStar can win
+        "Player": 0.0,
+        "BFS": 2.0,      # 2 second delay
+        "DFS": 2.0,      # 2 second delay
+        "GBFS": 2.0,     # 2 second delay
+        "AStar": 0.0,    # No delay - can win
+        "Dijkstra": 0.0, # No delay - can win
+        "NEAT": 2.0,     # 2 second delay
+    },
+}
+
+def get_algorithm_delay(algorithm, level):
+    """Get the delay time for a specific algorithm on a specific level."""
+    level_config = ALGORITHM_DELAY_CONFIG.get(level, {})
+    return level_config.get(algorithm, 0.0)
+
+# --------------------------------------------------
 # Track Loader
 # --------------------------------------------------
-
-
 
 def load_track_for_level(level):
     global BACKGROUND
@@ -200,7 +249,7 @@ def load_track_for_level(level):
         RACING_LINE = [
             (191,131),(138,80),(70,135),(70,514),(317,785),(397,811),
             (450,753),(457,586),(559,532),(663,596),(669,753),
-            (741,814),(824,746),(821,469),(757,400),(502,398),
+            (741,814),(824,746),(821,469),(757,400),(470,410),
             (446,347),(514,288),(763,282),(822,238),(820,130),
             (749,83),(363,86),(316,150),(310,405),(255,460),
             (178,404),(193,193)
@@ -494,7 +543,7 @@ def create_player_car(color="Red", autonomous=False):
         from cars import PlayerCar
         car_image = CAR_COLOR_MAP.get(color, RED_CAR)
         path = (RACING_LINE + [FINISH_POSITION]) if autonomous else [] # Legacy automated support
-        return PlayerCar(car_image, START_POSITION, 3, 4, path=path, autonomous=autonomous)
+        return PlayerCar(car_image, START_POSITION, 2.8, 4, path=path, autonomous=autonomous)
 
 def create_computer_car(type='DFS', color="Grey"):
     from cars import ComputerCar
