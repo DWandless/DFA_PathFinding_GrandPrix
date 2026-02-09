@@ -61,9 +61,12 @@ class ComputerCar(AbstractCar):
         if not self.path:
             return
         target = self.path[self.current_point]
-        import pygame
-        rect = pygame.Rect(self.x, self.y, self.img.get_width(), self.img.get_height())
-        if rect.collidepoint(*target):
+        import math
+        from resources import CHECKPOINT_RADIUS
+        # Use distance-based detection with CHECKPOINT_RADIUS
+        # This prevents overshooting waypoints on sharp turns
+        distance = math.hypot(target[0] - self.x, target[1] - self.y)
+        if distance < CHECKPOINT_RADIUS:  # Waypoint reach radius
             self.current_point = min(self.current_point + 1, len(self.path))
 
     def move(self):

@@ -124,15 +124,11 @@ class Menu:
         ]
         
         for level, btn in level_buttons:
-
-            """ TODO: Logic for level locking - comment this to implemented - currently commented for debugging purposes
-            # if the highest level unlocked is greater than or equal to the level button being drawn
-            if resources.HIGHEST_LEVEL >= level:
-                btn.enabled = True # enable the button
-            """
-            if resources.HIGHEST_LEVEL >= level:
-                btn.enabled = True # enable the button
-            #btn.enabled = True
+            # Check debug flag first - if True, unlock all levels for testing
+            if resources.DEBUG_UNLOCK_ALL_LEVELS:
+                btn.enabled = True
+            elif resources.HIGHEST_LEVEL >= level:
+                btn.enabled = True
 
             if btn.is_hovered():
                 hovered_level = level
@@ -152,8 +148,8 @@ class Menu:
         for _, btn in level_buttons:
             btn.draw(surface)
         
-        # Draw lock icons over disabled buttons
-        if self.lock_icon:
+        # Draw lock icons over disabled buttons (skip if debug mode unlocks all levels)
+        if self.lock_icon and not resources.DEBUG_UNLOCK_ALL_LEVELS:
             for level, btn in level_buttons:
                 if resources.HIGHEST_LEVEL < level:
                     icon_rect = self.lock_icon.get_rect(center=btn.rect.center)

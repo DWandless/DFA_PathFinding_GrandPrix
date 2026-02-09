@@ -200,19 +200,19 @@ class DijkstraCar(AbstractCar):
 
     # ------------------ DEBUG DRAW ------------------
     def draw(self, win, show_points=True):
-        from resources import blit_rotate_center, DEBUG_SHOW_CHECKPOINTS
+        from resources import blit_rotate_center, DEBUG_SHOW_CHECKPOINTS, CHECKPOINT_RADIUS
         blit_rotate_center(win, self.img, (self.x, self.y), -self.angle)
         # Only show debug visualization if DEBUG_SHOW_CHECKPOINTS is True
         if show_points and DEBUG_SHOW_CHECKPOINTS:
-            # Draw checkpoints in red
+            # Draw checkpoints in red with actual detection radius
             for p in self.CHECKPOINTS:
-                pygame.draw.circle(win, (255, 0, 0), p, 5)
+                pygame.draw.circle(win, (255, 0, 0), p, int(CHECKPOINT_RADIUS), 2)  # Draw as outline
             # Draw computed path in blue
             for p in self.path:
                 pygame.draw.circle(win, (0, 0, 255), p, 2)
             if self.current_point < len(self.path):
                 tx, ty = self.path[self.current_point]
-                pygame.draw.circle(win, (0, 255, 0), (int(tx), int(ty)), 5)
+                pygame.draw.circle(win, (0, 255, 0), (int(tx), int(ty)), 8)  # Current target slightly larger
 
     def set_level(self, level):
         import resources
