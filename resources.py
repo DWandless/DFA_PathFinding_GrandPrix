@@ -112,6 +112,11 @@ HEIGHT, WIDTH = TRACK.get_size()
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
 
 RACING_LINE = []
+DFS_RACING_LINE = []
+BFS_RACING_LINE = []
+ASTAR_RACING_LINE = []  
+GBFS_RACING_LINE = []
+
 HIGHEST_LEVEL = 1 # This is updated during gameplay - initially set to 1 - represents the highest level unlocked
 
 # --------------------------------------------------
@@ -177,6 +182,7 @@ def load_track_for_level(level):
     global TRACK, TRACK_BORDER, TRACK_BORDER_MASK
     global FINISH_POSITION, START_POSITION
     global RACING_LINE, GRID, images
+    global DFS_RACING_LINE, BFS_RACING_LINE, ASTAR_RACING_LINE, GBFS_RACING_LINE
 
     def compute_path_length(path):
         total = 0.0
@@ -206,6 +212,43 @@ def load_track_for_level(level):
             (178,404),(193,193)
         ]
 
+        DFS_RACING_LINE = [
+            (191,131),(138,80),(70,135),(70,514),(317,785),(397,811),
+            (450,753),(457,586),(559,532),(663,596),(669,753),
+            (741,814),(824,746),(821,469),(757,400),(502,398),
+            (446,347),(514,288),(763,282),(822,238),(820,130),
+            (749,83),(363,86),(316,150),(310,405),(255,460),
+            (178,404),(193,193)
+        ]
+
+        BFS_RACING_LINE = [
+            (191,131),(138,80),(70,135),(70,514),(317,785),(397,811),
+            (450,753),(457,586),(559,532),(663,596),(669,753),
+            (741,814),(824,746),(821,469),(757,400),(502,398),
+            (446,347),(514,288),(763,282),(822,238),(820,130),
+            (749,83),(363,86),(316,150),(310,405),(255,460),
+            (178,404),(193,193)
+        ]
+
+        ASTAR_RACING_LINE = [
+            (191,131),(138,80),(70,135),(70,514),(317,785),(397,811),
+            (450,753),(457,586),(559,532),(663,596),(669,753),
+            (741,814),(824,746),(821,469),(757,400),(502,398),
+            (446,347),(514,288),(763,282),(822,238),(820,130),
+            (749,83),(363,86),(316,150),(310,405),(255,460),
+            (178,404),(193,193)
+        ]
+
+        GBFS_RACING_LINE = [
+            (191,131),(138,80),(70,135),(70,514),(317,785),(397,811),
+            (450,753),(457,586),(559,532),(663,596),(669,753),
+            (741,814),(824,746),(821,469),(757,400),(502,398),
+            (446,347),(514,288),(763,282),(822,238),(820,130),
+            (749,83),(363,86),(316,150),(310,405),(255,460),
+            (178,404),(193,193)
+        ]
+
+
     elif level == 2:
         background_img = "assets/desert.png"
         background_img = scale_image(pygame.image.load(background_img), 1)
@@ -226,7 +269,7 @@ def load_track_for_level(level):
         
         # Path A: through (750, 750)
         path_a = path_to_junction + [
-            (750, 750), (604, 810), (348, 810), (118, 810), (69, 744), (93, 696), 
+            (750, 750), (348, 810), (118, 810), (69, 744), (93, 696), 
             (222, 632), (470, 527), (510, 416), (370, 392),
             (225, 470), (120, 470), 
         ]
@@ -243,7 +286,13 @@ def load_track_for_level(level):
 
         
         RACING_LINE = path_a if compute_path_length(path_a) <= compute_path_length(path_b) else path_b
-    
+
+        DFS_RACING_LINE = path_a
+        BFS_RACING_LINE = path_b
+        ASTAR_RACING_LINE = path_a
+        GBFS_RACING_LINE = path_a
+
+
     elif level == 3:
         print("Loading level 3")
         background_img = "assets/desert.png"
@@ -291,6 +340,10 @@ def load_track_for_level(level):
 
         RACING_LINE = zero_to_zero
 
+        DFS_RACING_LINE = zero_to_zeroA
+        BFS_RACING_LINE = zero_to_fourA + four_to_three + three_to_zero
+        ASTAR_RACING_LINE = zero_to_zero
+        GBFS_RACING_LINE = zero_to_one + one_to_twoB + two_to_four + four_to_zero
 
     elif level == 4:
         print("Loading level 4")
@@ -307,9 +360,11 @@ def load_track_for_level(level):
         one_to_twoA = [(794, 51), (820, 131), (787, 206), (760, 276)]
         one_to_twoB = [(635, 145), (594, 223), (459, 245), (488, 317), (469, 377), (593, 382), (707, 370)]
         one_to_three = [(635, 145), (594, 245), (480, 245), (460, 317), (460, 385), (423, 470), (280, 470), (282, 592), (352, 650), (469, 650), (500, 715), (500, 820)]
+        three_to_one = [(500, 820), (500, 715), (469, 650), (352, 650), (282, 592), (280, 470), (423, 470), (460, 385), (460, 317), (480, 245), (594, 245), (635, 145)]
         two_to_three = [(811, 468), (737, 522), (737, 597), (743, 709), (709, 799), (594, 781), (489, 781)]
         three_to_four = [(319, 820), (157, 796), (157, 645), (157, 572), (100, 515), (75, 450), (75, 355)]
-        four_to_five = [(75, 126), (91, 58), (170, 94)]
+        four_to_five = [(75, 126), (115, 58), (175, 126)]
+        five_to_four = [(175, 126), (115, 58), (75, 126)]
         four_to_zero = [(195, 355), (300, 355)]
 
         # shortest route to 1
@@ -336,6 +391,12 @@ def load_track_for_level(level):
 
         RACING_LINE = zero_to_zero
 
+        DFS_RACING_LINE = zero_to_one + one_to_twoB + two_to_three + three_to_one + one_to_three + three_to_four + four_to_five + five_to_four + four_to_zero
+        BFS_RACING_LINE = zero_to_one + one_to_three + three_to_one + one_to_twoB + two_to_three + three_to_four + four_to_zero
+        ASTAR_RACING_LINE = zero_to_five + five_to_four + four_to_zero
+        #ASTAR_RACING_LINE = zero_to_zero
+        GBFS_RACING_LINE = zero_to_zero
+
 
     elif level == 5:
         
@@ -356,13 +417,17 @@ def load_track_for_level(level):
         three_to_five =  [(648, 115), (620, 163), (545, 163), (522, 295)]
         three_to_six =   [(746, 40), (841, 101)]
         six_to_five =    [(762, 169), (743, 271), (522, 295)]
+        five_to_three =  [(522, 295), (545, 163), (620, 163), (648, 115)]
         five_to_four =   [(331, 291)]
         six_to_seven =   [(841, 238), (841, 523)]
         seven_to_eight = [(841, 777), (795, 822), (594, 828), (554, 816), (579, 758), (677, 759), (696, 636), (702, 502), (674, 400), (566, 396), (462, 423), 
                           (477, 518), (562, 527), (586, 596), (534, 633), (375, 622)]
         four_to_eight =  [(345, 450), (345, 585)]
+        four_to_two = [(340, 300), (330, 221), (380, 180), (415, 92)]
+        eight_to_four =  [(345, 585), (345, 450)]
         eight_to_zero =  [(175, 600), (170, 520), (220, 450), (220, 376), (198, 315), (119, 315)]
         eight_to_nine =  [(356, 698), (376, 746), (423, 771), (390, 822), (240, 825)]
+        nine_to_eight =  [(240, 825), (390, 822), (423, 771), (376, 746), (356, 698)]
         nine_to_zeroA =  [(92, 825), (36, 787), (36, 697), (36, 529), (36, 326)]
         nine_to_zeroB =  [(193, 717), (123, 718), (36, 697), (36, 529), (36, 326)]
          
@@ -407,8 +472,10 @@ def load_track_for_level(level):
         zero_to_zero = zero_to_zero if compute_path_length(zero_to_zero) <= compute_path_length(zero_to_zeroA) and compute_path_length(zero_to_zero) <= compute_path_length(zero_to_zeroB) else (zero_to_zeroA if compute_path_length(zero_to_zeroA) <= compute_path_length(zero_to_zeroB) else zero_to_zeroB)
 
         RACING_LINE = zero_to_zero
-
-        
+        DFS_RACING_LINE = zero_to_oneA + one_to_two + two_to_four + four_to_eight + eight_to_nine + nine_to_eight + eight_to_four + four_to_two + two_to_three + three_to_five + five_to_three + three_to_six + six_to_seven + seven_to_eight + eight_to_nine + nine_to_zeroA
+        BFS_RACING_LINE = zero_to_oneB + one_to_two + two_to_three + three_to_six + six_to_seven + seven_to_eight + eight_to_zero
+        ASTAR_RACING_LINE = zero_to_zero
+        GBFS_RACING_LINE = zero_to_seven + seven_to_eight + eight_to_nine + nine_to_zeroA
 
 
     BACKGROUND = background_img
@@ -483,7 +550,7 @@ def create_player_car(color="Red", autonomous=False):
             START_POSITION,
             3,
             4,
-            RACING_LINE + [FINISH_POSITION],
+            ASTAR_RACING_LINE + [FINISH_POSITION],
             GRID_SIZE,
             50,
             CHECKPOINT_RADIUS,
@@ -499,13 +566,13 @@ def create_player_car(color="Red", autonomous=False):
 def create_computer_car(type='DFS', color="Grey"):
     from cars import ComputerCar
     car_image = CAR_COLOR_MAP.get(color, GREY_CAR if type == 'DFS' else BLUE_CAR)
-    return ComputerCar(car_image, START_POSITION, 2.5, 4, RACING_LINE + [FINISH_POSITION])
+    return ComputerCar(car_image, START_POSITION, 2.5, 4, DFS_RACING_LINE + [FINISH_POSITION])
 
 def create_GBFS_car(color="Green"):
     from cars import GBFSDetourCar
     car_image = CAR_COLOR_MAP.get(color, GREEN_CAR)
     car = GBFSDetourCar(
-        RACING_LINE + [FINISH_POSITION], 2.5, 4,
+        GBFS_RACING_LINE + [FINISH_POSITION], 2.5, 4,
         GRID_SIZE, 30,
         CHECKPOINT_RADIUS, GRID, TRACK_BORDER_MASK,
         car_image
@@ -531,7 +598,7 @@ def create_dijkstra_car(max_vel=2.5, rotation_vel=4, color="White"):
         START_POSITION,
         max_vel,
         rotation_vel,
-        RACING_LINE + [FINISH_POSITION],
+        ASTAR_RACING_LINE + [FINISH_POSITION],
         GRID_SIZE,
         50,
         CHECKPOINT_RADIUS,
