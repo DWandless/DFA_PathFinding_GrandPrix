@@ -25,7 +25,8 @@ from resources import (
     create_player_car, create_computer_car, create_GBFS_car,
     create_neat_car, blit_text_center,
     raycast_mask,
-    load_track_for_level, create_dijkstra_car, MENU3
+    load_track_for_level, create_dijkstra_car, MENU3,
+    get_algorithm_delay
 )
 # NEW: tuning marketplace helpers
 from tuning_registry import build_registry, apply_registry
@@ -272,8 +273,24 @@ async def main():
                 # Determine if player car should be autonomous (all non-Player models)
                 is_autonomous = (chosen_model != "Player")
                 
-                # Create fresh cars for this level - apply chosen color and mode to player car
-                player_car = create_player_car(chosen_color if chosen_color else "Red", autonomous=is_autonomous)
+                # Create the player car based on the chosen model
+                chosen_color_val = chosen_color if chosen_color else "Red"
+                if chosen_model == "Player":
+                    player_car = create_player_car(chosen_color_val, autonomous=False)
+                elif chosen_model == "BFS":
+                    player_car = create_computer_car(type='BFS', color=chosen_color_val)
+                elif chosen_model == "DFS":
+                    player_car = create_computer_car(type='DFS', color=chosen_color_val)
+                elif chosen_model == "GBFS":
+                    player_car = create_GBFS_car(color=chosen_color_val)
+                elif chosen_model == "NEAT":
+                    player_car = create_neat_car(color=chosen_color_val)
+                elif chosen_model == "Dijkstra" or chosen_model == "AStar":
+                    player_car = create_dijkstra_car(color=chosen_color_val)
+                else:
+                    player_car = create_player_car(chosen_color_val, autonomous=False)
+                
+                # Create opponent cars (with default colors)
                 computer_car = create_computer_car()
                 GBFS_car = create_GBFS_car()
                 neat_car = create_neat_car()
@@ -291,19 +308,7 @@ async def main():
                     base_reg.setdefault(grp, {})
                     base_reg[grp].update(kv)
 
-                                
-                model_map = {
-                    "Player": player_car,
-                    "BFS": computer_car,
-                    "DFS": computer_car,
-                    "GBFS": GBFS_car,
-                    "NEAT": neat_car,
-                    "Dijkstra": dijkstra_car
-                }
-
-                selected_car = model_map.get(chosen_model, player_car)
-
-                apply_registry(base_reg, manager, [player_car]) # Changed to just be the player car
+                apply_registry(base_reg, manager, [player_car])
 
                 # Persist build info
                 last_model, last_track_key, last_reg, last_total_price = chosen_model, track_key, base_reg, total_price
@@ -323,6 +328,12 @@ async def main():
 
             if countdown_timer <= 0:
                 game_info.start_level()
+                
+                # Apply algorithm-specific delays based on level
+                current_level = game_info.get_level()
+                player_delay = get_algorithm_delay(chosen_model, current_level)
+                player_car.set_delay(player_delay)
+                
                 game_state = STATE_RACING
         
         if game_state == STATE_LEVEL_SELECT:
@@ -345,6 +356,9 @@ async def main():
                 dijkstra_car
             )
 
+            # Update delays for all cars
+            player_car.update_delay(dt)
+            
             # AI logic
             neat_car.move()
             neat_car.sense(neat_car.track_mask, raycast_mask)
@@ -352,12 +366,16 @@ async def main():
             neat_car.apply_controls()
 
             # Player car movement (manual or autonomous)
-            if player_car.autonomous:
-                player_car.move()  # Autonomous mode: follow path
-            else:
-                ui.move_player(player_car)  # Manual mode: keyboard control
+            # Only move if delay has expired
+            if player_car.can_move():
+                # Use getattr to safely check autonomous attribute (some cars don't have it)
+                # AI cars default to autonomous=True, only PlayerCar can be manual
+                if getattr(player_car, 'autonomous', True):
+                    player_car.move()  # Autonomous mode: follow path
+                else:
+                    ui.move_player(player_car)  # Manual mode: keyboard control
             
-            # Other AI cars
+            # Other AI cars (no delays for opponent cars)
             computer_car.move()
             GBFS_car.move()
             dijkstra_car.move()
