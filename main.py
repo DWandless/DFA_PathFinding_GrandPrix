@@ -9,28 +9,18 @@ import pickle
 from neatmanager import NEATManager
 import resources
 import sys
-# try:
-#    from js import console  # Access the browser's console object
-# except ImportError:
-#    console = None  # Not in a JS environment
 
-# def js_console_log(*args):
-#    """
-#    Directly call JavaScript's console.log from Python.
-#    Works only in pygbag/Pyodide environment.
-#    """
-#    console.log(*args)  # Pass arguments directly to JS console.log
 from resources import (
     GameInfo, WIN, FPS, images,
     create_player_car, create_computer_car, create_GBFS_car,
-    create_neat_car, blit_text_center,
-    raycast_mask,
+    create_neat_car, blit_text_center, raycast_mask,
     load_track_for_level, create_dijkstra_car, MENU3,
     get_algorithm_delay
 )
 
-# NEW: model selection screen
 from model_select import ModelSelectScreen
+
+
 # -----------------------------
 # Game States
 # -----------------------------
@@ -43,15 +33,18 @@ STATE_PAGE1 = "page1"
 STATE_PAGE2 = "page2"
 STATE_TRAINING = "training"
 MODEL_SELECT = "model_select"
+STATE_NEAT_LIVE_TRAINING = "neat_live_training"   # NEW
+
+
 # -----------------------------
-# NEAT setup
+# NEAT config
 # -----------------------------
 config = neat.Config(
     neat.DefaultGenome,
     neat.DefaultReproduction,
     neat.DefaultSpeciesSet,
     neat.DefaultStagnation,
-    'neat_config.ini'
+    "neat_config.ini"
 )
 
 manager = NEATManager(
@@ -70,37 +63,23 @@ def _font(size):
     return pygame.font.Font(None, size)
 
 
-def create_all_cars():
-    """Factory function to create all 5 car instances."""
-    return (
-        create_player_car(),
-        create_computer_car(),
-        create_GBFS_car(),
-        create_neat_car(),
-        create_dijkstra_car()
-    )
-
-
 def create_car_by_model(model_type, color="Red"):
-    """Factory function to create a specific car by model type with a custom color."""
     if model_type == "Player":
         return create_player_car(color)
     elif model_type == "BFS":
-        return create_computer_car(type='BFS', color=color)
+        return create_computer_car(type="BFS", color=color)
     elif model_type == "DFS":
-        return create_computer_car(type='DFS', color=color)
+        return create_computer_car(type="DFS", color=color)
     elif model_type == "GBFS":
         return create_GBFS_car(color)
     elif model_type == "Dijkstra":
         return create_dijkstra_car(color=color)
     elif model_type == "NEAT":
         return create_neat_car(color)
-    else:
-        return create_player_car(color)
+    return create_player_car(color)
 
 
 def load_trained_network(config):
-    """Load trained NEAT network from file. Returns None if file doesn't exist."""
     try:
         with open("assets/winner_genome.pkl", "rb") as f:
             winner = pickle.load(f)
@@ -111,7 +90,6 @@ def load_trained_network(config):
 
 async def main():
     pygame.init()
-    #js_console_log("Game started")
 
     game_info = GameInfo()
     game_state = STATE_MENU
@@ -124,141 +102,110 @@ async def main():
 
     chosen_model = None
     chosen_color = None
-    use_locally_trained_net = False
-    
-    # Track autonomous mode state for level progression
-    is_autonomous = False
 
     trained_net = None
+    player_trained_net = None
+
     clock = pygame.time.Clock()
     running = True
 
     menu = ui.Menu()
     menu.drawMain(WIN)
 
-    # -----------------------------
+    # -----------------------------------
     # MAIN LOOP
-    # -----------------------------
+    # -----------------------------------
     while running:
         dt = clock.tick(FPS) / 1000.0
 
-        # -----------------------------
-        # EVENTS
-        # -----------------------------
         for event in pygame.event.get():
+            # Quit
             if event.type == pygame.QUIT:
                 running = False
 
-            # -------- MENU / UI STATES --------
+            # Navigation states
             if game_state in (STATE_MENU, STATE_LEVEL_SELECT, STATE_PAGE1, STATE_PAGE2):
-                # Handle mouse wheel for scrolling on info page
+
                 if event.type == pygame.MOUSEWHEEL and game_state == STATE_PAGE1:
-                    mouse_pos = pygame.mouse.get_pos()
-                    menu.info_scroll.handle_wheel(event, hover_pos=mouse_pos, step=40)
-                
+                    menu.info_scroll.handle_wheel(
+                        event,
+                        hover_pos=pygame.mouse.get_pos(),
+                        step=40
+                    )
+
                 action = menu.handle_event(event)
 
                 if action == "play":
-                    resources.click_sound.play()
                     game_state = STATE_LEVEL_SELECT
                     menu.drawLevels(WIN)
 
                 elif action == "train":
-                    resources.click_sound.play()
                     game_state = STATE_TRAINING
-                
 
                 elif action == "page1":
-                    resources.click_sound.play()
                     menu.drawPage1(WIN)
                     game_state = STATE_PAGE1
 
                 elif action == "page2":
-                    resources.click_sound.play()
                     menu.drawPage2(WIN)
                     game_state = STATE_PAGE2
-                
+
                 elif action == "back":
-                    resources.click_sound.play()
                     game_state = STATE_MENU
                     menu.drawMain(WIN)
-                
-                elif action == "toggle_sound":
-                    # State True = icon_sound_on.png, State False = icon_sound_off.png
-                    pygame.mixer.music.set_volume(0.1) if menu.toggleIconButton.state else pygame.mixer.music.set_volume(0.0)
-                    menu.toggleIconButton.draw(WIN)
 
                 elif action == "quit":
-                    resources.click_sound.play()
                     running = False
-            
-                # -------- LEVEL SELECTION and MODEL SELECT / COUNTDOWN --------
+
                 elif action and action.startswith("level"):
-                    resources.click_sound.play()
-                    game_state = STATE_LEVEL_SELECT
-                    chosen_model = None
-                    chosen_color = None
-                    
                     level_num = int(action[-1]) - 1
                     game_info.level = level_num
                     game_info.next_level()
 
                     load_track_for_level(game_info.get_level())
-                    selector = ModelSelectScreen(WIN, assets_path="", currentLevel=(level_num+1))
+
+                    selector = ModelSelectScreen(WIN, "", currentLevel=(level_num+1))
                     game_state = MODEL_SELECT
                     selector.model_index = selector.models.index("BFS")
-                    selector.color_index = 0  # Default to first color
+                    selector.color_index = 0
 
+            # -----------------------------------
+            # MODEL SELECT
+            # -----------------------------------
             if game_state == MODEL_SELECT:
                 result = selector.open(event)
+
                 if result == "back":
                     game_state = STATE_LEVEL_SELECT
                     menu.drawLevels(WIN)
-                    chosen_model = None
-                    chosen_color = None
-                elif result is not None and isinstance(result, tuple):
-                    # Result is (model, color)
+
+                elif isinstance(result, tuple):
                     chosen_model, chosen_color = result
+                    color = chosen_color or "Red"
 
-                    # Create the player car based on the chosen model + color
-                    chosen_color_val = chosen_color if chosen_color else "Red"
-                    if chosen_model == "Player":
-                        player_car = create_player_car(chosen_color_val, autonomous=False)
-                    elif chosen_model == "BFS":
-                        player_car = create_computer_car(type='BFS', color=chosen_color_val)
-                    elif chosen_model == "DFS":
-                        player_car = create_computer_car(type='DFS', color=chosen_color_val)
-                    elif chosen_model == "GBFS":
-                        player_car = create_GBFS_car(color=chosen_color_val)
-                    elif chosen_model == "NEAT":
-                        player_car = create_neat_car(color=chosen_color_val)
-                    elif chosen_model == "Dijkstra" or chosen_model == "AStar":
-                        player_car = create_dijkstra_car(color=chosen_color_val)
+                    player_car = create_car_by_model(chosen_model, color)
+
+                    # NEAT Chosen → enter LIVE TRAINING immediately
+                    if chosen_model == "NEAT":
+                        manager.reset()
+                        game_state = STATE_NEAT_LIVE_TRAINING
                     else:
-                        player_car = create_player_car(chosen_color_val, autonomous=False)
+                        game_state = STATE_COUNTDOWN
+                        
 
-                    if chosen_model in ("DFS", "BFS"):
-                        if hasattr(player_car, "max_vel"):
-                            player_car.max_vel = player_car.max_vel + 0.2
-                        if hasattr(player_car, "vel") and hasattr(player_car, "max_vel"):
-                            player_car.vel = player_car.max_vel
-
-                    # Create opponent cars (with default colors)
+                    # Otherwise create other AI cars normally
                     computer_car = create_computer_car()
                     GBFS_car = create_GBFS_car()
                     neat_car = create_neat_car()
                     dijkstra_car = create_dijkstra_car()
 
-                    spawns = getattr(resources, "SPAWN_POSITIONS", {}) or {}
-
+                    # Spawn positions
+                    spawns = getattr(resources, "SPAWN_POSITIONS", {})
                     def _place(car, key):
-                        pos = spawns.get(key)
-                        if not pos:
-                            return
-                        if hasattr(car, "x") and hasattr(car, "y"):
-                            car.x, car.y = pos
-                        if hasattr(car, "set_start_pos"):
-                            car.set_start_pos(pos)
+                        if car and key in spawns:
+                            car.x, car.y = spawns[key]
+                            if hasattr(car, "set_start_pos"):
+                                car.set_start_pos(spawns[key])
 
                     _place(player_car, "player")
                     _place(computer_car, "computer")
@@ -266,46 +213,28 @@ async def main():
                     _place(neat_car, "neat")
                     _place(dijkstra_car, "dijkstra")
 
-                    if not use_locally_trained_net:
-                        trained_net = load_trained_network(config)
+                    trained_net = load_trained_network(config)
                     if trained_net:
                         neat_car.net = trained_net
 
-                    # Countdown to start
                     countdown_timer = 3.0
-                    game_state = STATE_COUNTDOWN
+                    
 
-            # -------- LEVEL END --------
+            # -----------------------------------
+            # LEVEL END screen
+            # -----------------------------------
             if game_state == STATE_LEVEL_END:
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
                     menu.drawMain(WIN)
                     game_state = STATE_MENU
 
-
+        # -----------------------------------
+        # DRAW STATES
+        # -----------------------------------
         if game_state == STATE_MENU:
             menu.drawMain(WIN)
-        if game_state == MODEL_SELECT:
-            pass
-        # -----------------------------
-        # UPDATE / DRAW
-        # -----------------------------
-        if game_state == STATE_COUNTDOWN:
-            
-            countdown_timer -= dt
-            WIN.blit(MENU3, (0, 0))
-            blit_text_center(WIN, _font(48), str(max(1, math.ceil(countdown_timer))))
 
-            if countdown_timer <= 0:
-                game_info.start_level()
-                
-                # Apply algorithm-specific delays based on level
-                current_level = game_info.get_level()
-                player_delay = get_algorithm_delay(chosen_model, current_level)
-                player_car.set_delay(player_delay)
-                
-                game_state = STATE_RACING
-        
-        if game_state == STATE_LEVEL_SELECT:
+        elif game_state == STATE_LEVEL_SELECT:
             menu.drawLevels(WIN)
 
         elif game_state == STATE_PAGE1:
@@ -314,99 +243,124 @@ async def main():
         elif game_state == STATE_PAGE2:
             menu.drawPage2(WIN)
 
+        # -----------------------------------
+        # COUNTDOWN
+        # -----------------------------------
+        if game_state == STATE_COUNTDOWN:
+
+            countdown_timer -= dt
+            WIN.blit(MENU3, (0, 0))
+
+            blit_text_center(WIN, _font(48),
+                             str(max(1, math.ceil(countdown_timer))))
+
+            if countdown_timer <= 0:
+                game_info.start_level()
+
+                delay = get_algorithm_delay(chosen_model, game_info.get_level())
+                player_car.set_delay(delay)
+
+                game_state = STATE_RACING
+
+        # -----------------------------------
+        # 🔥 NEW — LIVE NEAT TRAINING (NO BUTTON)
+        # Press SPACE to stop training at any time
+        # -----------------------------------
+        elif game_state == STATE_NEAT_LIVE_TRAINING:
+
+            # Run NEAT faster
+            for _ in range(5):
+                manager.update(dt)
+
+            # Draw NEAT population
+            WIN.fill((20, 20, 20))
+            manager.draw(WIN, images)
+
+            msg = f"NEAT Training Live | Gen {manager.generation}"
+            WIN.blit(_font(26).render(msg, True, (255,255,255)), (10, 10))
+
+            hint = "Press SPACE to use current best model"
+            WIN.blit(_font(22).render(hint, True, (200,200,200)), (10, 40))
+
+            # SPACE → Exit training
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_SPACE]:
+
+                if manager.winner:
+                    trained_net = neat.nn.FeedForwardNetwork.create(
+                        manager.winner, config
+                    )
+                    player_car.set_net(trained_net)
+
+                countdown_timer = 3.0
+                game_state = STATE_COUNTDOWN
+
+        # -----------------------------------
+        # REGULAR RACING
+        # -----------------------------------
         elif game_state == STATE_RACING:
-            ui.draw(
-                WIN,
-                images,
-                player_car,
-                computer_car,
-                GBFS_car,
-                neat_car,
-                dijkstra_car
+
+            ui.draw(WIN, images,
+                player_car, computer_car, GBFS_car,
+                neat_car, dijkstra_car
             )
 
-            # Update delays for all cars
             player_car.update_delay(dt)
-            
-            # AI logic
+
             neat_car.move()
             neat_car.sense(neat_car.track_mask, raycast_mask)
             neat_car.think()
             neat_car.apply_controls()
 
-            # Player car movement (manual or autonomous)
-            # Only move if delay has expired
             if player_car.can_move():
-                # Use getattr to safely check autonomous attribute (some cars don't have it)
-                # AI cars default to autonomous=True, only PlayerCar can be manual
-                if getattr(player_car, 'autonomous', True):
-                    player_car.move()  # Autonomous mode: follow path
+                if getattr(player_car, "autonomous", True):
+                    player_car.move()
                 else:
-                    ui.move_player(player_car)  # Manual mode: keyboard control
-            
-            # Other AI cars (no delays for opponent cars)
+                    ui.move_player(player_car)
+
             computer_car.move()
             GBFS_car.move()
             dijkstra_car.move()
 
-            winner = ui.handle_collision( # winner stored based on first collision
-                player_car,
-                computer_car,
-                GBFS_car,
-                neat_car,
-                dijkstra_car,
-                chosen_model
+            winner = ui.handle_collision(
+                player_car, computer_car, GBFS_car,
+                neat_car, dijkstra_car, chosen_model
             )
 
-            if winner: # Someone won
+            if winner:
                 level_time = time.time() - game_info.level_start_time
-                level_result = "win" if winner == "Player" else "lose" # level result set based on whether player car won
+                level_result = "win" if winner == "Player" else "lose"
                 game_state = STATE_LEVEL_END
-        
+
+        # -----------------------------------
+        # ORIGINAL TRAINING (unchanged)
+        # -----------------------------------
         elif game_state == STATE_TRAINING:
-            # Run multiple NEAT updates per frame for speed
             for _ in range(5):
                 gen, finished, total = manager.update(dt)
 
                 if gen >= TRAIN_GENERATIONS:
-                    # Extract best genome and build trained network
-                    if manager.winner is not None:
+                    if manager.winner:
                         trained_net = neat.nn.FeedForwardNetwork.create(
-                            manager.winner,
-                            config
+                            manager.winner, config
                         )
-                        use_locally_trained_net = True
-                        
-                        #with open("assets/winner_genome.pkl", "wb") as f:
-                        #    pickle.dump(manager.winner, f)
-
-
-                    # Return to menu
-                    #menu.drawMain(WIN)
                     game_state = STATE_MENU
                     break
 
-            # Draw training visuals
             WIN.fill((20, 20, 20))
             manager.draw(WIN, images)
 
-            font = pygame.font.Font(None, 26)
-            WIN.blit(
-                font.render(
-                    f"Training NEAT | Generation {manager.generation}/{TRAIN_GENERATIONS}",
-                    True,
-                    (255, 255, 255)
-                ),
-                (10, 10)
-            )
+            txt = f"Training NEAT | Gen {manager.generation}/{TRAIN_GENERATIONS}"
+            WIN.blit(_font(26).render(txt, True, (255,255,255)), (10, 10))
 
+        # -----------------------------------
+        # LEVEL END
+        # -----------------------------------
         elif game_state == STATE_LEVEL_END:
             ui.draw_level_end(
-                WIN,
-                level_result,
+                WIN, level_result,
                 game_info.get_level(),
-                level_time,
-                _font(48)
+                level_time, _font(48)
             )
 
         pygame.display.flip()
