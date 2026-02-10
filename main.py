@@ -72,6 +72,8 @@ def create_car_by_model(model_type, color="Red"):
         return create_computer_car(type="DFS", color=color)
     elif model_type == "GBFS":
         return create_GBFS_car(color)
+    elif model_type == "AStar":
+        return create_dijkstra_car(color=color)
     elif model_type == "Dijkstra":
         return create_dijkstra_car(color=color)
     elif model_type == "NEAT":
@@ -129,6 +131,14 @@ async def main():
             # Quit
             if event.type == pygame.QUIT:
                 running = False
+
+            if (
+                resources.DEBUG_DRAW_POINTS
+                and game_state == STATE_RACING
+                and event.type == pygame.MOUSEBUTTONDOWN
+                and event.button == 1
+            ):
+                plotted_points.append((int(event.pos[0]), int(event.pos[1])))
 
             # -------- MENU / UI STATES --------
             if game_state in (STATE_MENU, STATE_LEVEL_SELECT, STATE_PAGE1, STATE_PAGE2):
@@ -314,6 +324,20 @@ async def main():
                 neat_car,
                 dijkstra_car
             )
+
+            if resources.DEBUG_DRAW_POINTS:
+                for idx, (px, py) in enumerate(plotted_points):
+                    pygame.draw.circle(WIN, (255, 60, 60), (px, py), 5)
+                    pygame.draw.circle(WIN, (255, 255, 255), (px, py), 5, 1)
+                    WIN.blit(_font(18).render(str(idx), True, (255, 255, 255)), (px + 8, py - 8))
+                WIN.blit(
+                    _font(22).render(
+                        f"DEBUG_DRAW_POINTS | points: {len(plotted_points)}",
+                        True,
+                        (255, 255, 255),
+                    ),
+                    (10, 10),
+                )
 
             if post_countdown_delay > 0:
                 post_countdown_delay = max(0.0, post_countdown_delay - dt)
