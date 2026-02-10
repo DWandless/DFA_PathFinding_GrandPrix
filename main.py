@@ -26,7 +26,7 @@ from resources import (
     create_neat_car, blit_text_center,
     raycast_mask,
     load_track_for_level, create_dijkstra_car, MENU3,
-    get_algorithm_delay
+    apply_level_speed_tuning
 )
 
 # NEW: model selection screen
@@ -121,6 +121,7 @@ async def main():
     level_result = None
     level_time = 0.0
     countdown_timer = 3.0
+    post_countdown_delay = 0.0
 
     chosen_model = None
     chosen_color = None
@@ -237,11 +238,7 @@ async def main():
                     else:
                         player_car = create_player_car(chosen_color_val, autonomous=False)
 
-                    if chosen_model in ("DFS", "BFS"):
-                        if hasattr(player_car, "max_vel"):
-                            player_car.max_vel = player_car.max_vel + 0.2
-                        if hasattr(player_car, "vel") and hasattr(player_car, "max_vel"):
-                            player_car.vel = player_car.max_vel
+                    apply_level_speed_tuning(player_car, chosen_model, game_info.get_level())
 
                     # Create opponent cars (with default colors)
                     computer_car = create_computer_car()
@@ -297,12 +294,7 @@ async def main():
 
             if countdown_timer <= 0:
                 game_info.start_level()
-                
-                # Apply algorithm-specific delays based on level
-                current_level = game_info.get_level()
-                player_delay = get_algorithm_delay(chosen_model, current_level)
-                player_car.set_delay(player_delay)
-                
+                post_countdown_delay = 0.5
                 game_state = STATE_RACING
         
         if game_state == STATE_LEVEL_SELECT:
@@ -325,18 +317,18 @@ async def main():
                 dijkstra_car
             )
 
-            # Update delays for all cars
-            player_car.update_delay(dt)
-            
+            if post_countdown_delay > 0:
+                post_countdown_delay = max(0.0, post_countdown_delay - dt)
+
             # AI logic
-            neat_car.move()
-            neat_car.sense(neat_car.track_mask, raycast_mask)
-            neat_car.think()
-            neat_car.apply_controls()
+            if post_countdown_delay <= 0:
+                neat_car.move()
+                neat_car.sense(neat_car.track_mask, raycast_mask)
+                neat_car.think()
+                neat_car.apply_controls()
 
             # Player car movement (manual or autonomous)
-            # Only move if delay has expired
-            if player_car.can_move():
+            if post_countdown_delay <= 0:
                 # Use getattr to safely check autonomous attribute (some cars don't have it)
                 # AI cars default to autonomous=True, only PlayerCar can be manual
                 if getattr(player_car, 'autonomous', True):
@@ -345,9 +337,10 @@ async def main():
                     ui.move_player(player_car)  # Manual mode: keyboard control
             
             # Other AI cars (no delays for opponent cars)
-            computer_car.move()
-            GBFS_car.move()
-            dijkstra_car.move()
+            if post_countdown_delay <= 0:
+                computer_car.move()
+                GBFS_car.move()
+                dijkstra_car.move()
 
             winner = ui.handle_collision( # winner stored based on first collision
                 player_car,
