@@ -106,6 +106,21 @@ FINISH_MASK = pygame.mask.from_surface(FINISH)
 FINISH_POSITION = (135, 250)
 START_POSITION = (200, 200)
 
+SPAWN_POSITIONS = {}
+
+def update_spawn_positions():
+    global SPAWN_POSITIONS
+    sx, sy = START_POSITION
+    SPAWN_POSITIONS = {
+        "player": (sx, sy),
+        "computer": (sx - 10, sy),
+        "gbfs": (sx, sy + 10),
+        "neat": (sx - 10, sy + 10),
+        "dijkstra": (sx - 10 , sy + 20),
+    }
+
+update_spawn_positions()
+
 # Level 3 specific finish image (cropped and positioned for left side of track)
 FINISH_LEVEL3 = None
 FINISH_MASK_LEVEL3 = None
@@ -249,7 +264,7 @@ def load_track_for_level(level):
         track_img = "assets/track1.png"
         border_img = "assets/track_border1.png"
 
-        FINISH_POSITION = (135, 250)
+        FINISH_POSITION = (135, 280)
         START_POSITION = (200, 200)
 
         RACING_LINE = [
@@ -358,8 +373,7 @@ def load_track_for_level(level):
         one_to_four = [(440, 390)]
         two_to_three = [(573, 761), (257, 727), (83, 644), (84, 475), (157, 445), (241, 372)]
         two_to_four = [(624, 671), (607, 556), (482, 544), (429, 485), (440, 390)]
-        three_to_four = [(440, 390)]
-        three_to_zero = [(192, 307), (101, 298), (82, 124), (170, 80), (275, 124), (296, 213), (440, 241)]
+        three_to_one = [(192, 307), (101, 298), (82, 124), (170, 80), (275, 124), (296, 213), (440, 241)]
         four_to_three = [(241, 372)]
         four_to_zero = [(440, 241)]
 
@@ -475,6 +489,8 @@ def load_track_for_level(level):
         (TRACK_BORDER, (0, 0)),
     ]
 
+    update_spawn_positions()
+
 # --------------------------------------------------
 # GameInfo
 # --------------------------------------------------
@@ -517,7 +533,7 @@ def create_player_car(color="Red", autonomous=False):
         return dijkstra_car.DijkstraCar(
             car_image,
             START_POSITION,
-            2.5,
+            3,
             4,
             ASTAR_RACING_LINE + [FINISH_POSITION],
             GRID_SIZE,
@@ -530,12 +546,16 @@ def create_player_car(color="Red", autonomous=False):
         from cars import PlayerCar
         car_image = CAR_COLOR_MAP.get(color, RED_CAR)
         path = (RACING_LINE + [FINISH_POSITION]) if autonomous else [] # Legacy automated support
-        return PlayerCar(car_image, START_POSITION, 2.8, 4, path=path, autonomous=autonomous)
+        return PlayerCar(car_image, START_POSITION, 3.2, 4, path=path, autonomous=autonomous)
 
 def create_computer_car(type='DFS', color="Grey"):
     from cars import ComputerCar
     car_image = CAR_COLOR_MAP.get(color, GREY_CAR if type == 'DFS' else BLUE_CAR)
-    return ComputerCar(car_image, START_POSITION, 2.5, 4, DFS_RACING_LINE + [FINISH_POSITION])
+    if type == 'BFS':
+        path = BFS_RACING_LINE
+    else:
+        path = DFS_RACING_LINE
+    return ComputerCar(car_image, START_POSITION, 2.5, 4, path + [FINISH_POSITION])
 
 def create_GBFS_car(color="Green"):
     from cars import GBFSDetourCar

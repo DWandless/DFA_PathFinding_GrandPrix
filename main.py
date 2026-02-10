@@ -28,9 +28,6 @@ from resources import (
     load_track_for_level, create_dijkstra_car, MENU3,
     get_algorithm_delay
 )
-# NEW: tuning marketplace helpers
-from tuning_registry import build_registry, apply_registry
-from pricing import price_build, TRACK_MULT
 
 # NEW: model selection screen
 from model_select import ModelSelectScreen
@@ -46,8 +43,6 @@ STATE_PAGE1 = "page1"
 STATE_PAGE2 = "page2"
 STATE_TRAINING = "training"
 MODEL_SELECT = "model_select"
-BUILD_SCREEN = "build_screen"
-GAME_BUDGET = 10_000.00
 # -----------------------------
 # NEAT setup
 # -----------------------------
@@ -127,12 +122,6 @@ async def main():
     level_time = 0.0
     countdown_timer = 3.0
 
-    # Marketplace state (persist across levels)
-    last_model = None
-    last_track_key = None
-    last_reg = None
-    last_total_price = 0.0
-    selection = None
     chosen_model = None
     chosen_color = None
     use_locally_trained_net = False
@@ -147,8 +136,6 @@ async def main():
     menu = ui.Menu()
     menu.drawMain(WIN)
 
-    # Build screen object (lazy-create)
-    build_screen = None
     # -----------------------------
     # MAIN LOOP
     # -----------------------------
@@ -217,11 +204,6 @@ async def main():
                     game_info.next_level()
 
                     load_track_for_level(game_info.get_level())
-                    player_car, computer_car, GBFS_car, neat_car, dijkstra_car = create_all_cars()
-
-                    if trained_net:
-                        neat_car.set_net(trained_net)
-
                     selector = ModelSelectScreen(WIN, assets_path="", currentLevel=(level_num+1))
                     game_state = MODEL_SELECT
                     selector.model_index = selector.models.index("BFS")
@@ -237,16 +219,63 @@ async def main():
                 elif result is not None and isinstance(result, tuple):
                     # Result is (model, color)
                     chosen_model, chosen_color = result
-            elif game_state == BUILD_SCREEN:
-                selection = build_screen.open(base_reg, manager,event, lock_model=chosen_model)
-                if selection == "back":
-                    game_state = MODEL_SELECT
-                    chosen_model = None
-                    chosen_color = None
-                    selection = None
-                #js_console_log("Reaching build screen event handling")
 
-                    # -------- LEVEL END --------
+                    # Create the player car based on the chosen model + color
+                    chosen_color_val = chosen_color if chosen_color else "Red"
+                    if chosen_model == "Player":
+                        player_car = create_player_car(chosen_color_val, autonomous=False)
+                    elif chosen_model == "BFS":
+                        player_car = create_computer_car(type='BFS', color=chosen_color_val)
+                    elif chosen_model == "DFS":
+                        player_car = create_computer_car(type='DFS', color=chosen_color_val)
+                    elif chosen_model == "GBFS":
+                        player_car = create_GBFS_car(color=chosen_color_val)
+                    elif chosen_model == "NEAT":
+                        player_car = create_neat_car(color=chosen_color_val)
+                    elif chosen_model == "Dijkstra" or chosen_model == "AStar":
+                        player_car = create_dijkstra_car(color=chosen_color_val)
+                    else:
+                        player_car = create_player_car(chosen_color_val, autonomous=False)
+
+                    if chosen_model in ("DFS", "BFS"):
+                        if hasattr(player_car, "max_vel"):
+                            player_car.max_vel = player_car.max_vel + 0.2
+                        if hasattr(player_car, "vel") and hasattr(player_car, "max_vel"):
+                            player_car.vel = player_car.max_vel
+
+                    # Create opponent cars (with default colors)
+                    computer_car = create_computer_car()
+                    GBFS_car = create_GBFS_car()
+                    neat_car = create_neat_car()
+                    dijkstra_car = create_dijkstra_car()
+
+                    spawns = getattr(resources, "SPAWN_POSITIONS", {}) or {}
+
+                    def _place(car, key):
+                        pos = spawns.get(key)
+                        if not pos:
+                            return
+                        if hasattr(car, "x") and hasattr(car, "y"):
+                            car.x, car.y = pos
+                        if hasattr(car, "set_start_pos"):
+                            car.set_start_pos(pos)
+
+                    _place(player_car, "player")
+                    _place(computer_car, "computer")
+                    _place(GBFS_car, "gbfs")
+                    _place(neat_car, "neat")
+                    _place(dijkstra_car, "dijkstra")
+
+                    if not use_locally_trained_net:
+                        trained_net = load_trained_network(config)
+                    if trained_net:
+                        neat_car.net = trained_net
+
+                    # Countdown to start
+                    countdown_timer = 3.0
+                    game_state = STATE_COUNTDOWN
+
+            # -------- LEVEL END --------
             if game_state == STATE_LEVEL_END:
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
                     menu.drawMain(WIN)
@@ -256,67 +285,7 @@ async def main():
         if game_state == STATE_MENU:
             menu.drawMain(WIN)
         if game_state == MODEL_SELECT:
-            if chosen_model is not None:
-                # Create temp cars for registry
-                tmp_player, tmp_computer, tmp_gbfs, tmp_neat, tmp_dijk = create_all_cars()
-                base_reg = build_registry(manager, [tmp_player, tmp_computer, tmp_gbfs, tmp_neat, tmp_dijk])
-
-                if build_screen is None:
-                    build_screen = ui.BuildScreen(WIN, GAME_BUDGET)
-
-                build_screen.setup_open(base_reg, manager, lock_model=chosen_model)
-                game_state = BUILD_SCREEN
-        elif game_state == BUILD_SCREEN:
-            if selection is not None:
-                _model_from_ui, track_key, overrides, total_price = selection
-
-                # Determine if player car should be autonomous (all non-Player models)
-                is_autonomous = (chosen_model != "Player")
-                
-                # Create the player car based on the chosen model
-                chosen_color_val = chosen_color if chosen_color else "Red"
-                if chosen_model == "Player":
-                    player_car = create_player_car(chosen_color_val, autonomous=False)
-                elif chosen_model == "BFS":
-                    player_car = create_computer_car(type='BFS', color=chosen_color_val)
-                elif chosen_model == "DFS":
-                    player_car = create_computer_car(type='DFS', color=chosen_color_val)
-                elif chosen_model == "GBFS":
-                    player_car = create_GBFS_car(color=chosen_color_val)
-                elif chosen_model == "NEAT":
-                    player_car = create_neat_car(color=chosen_color_val)
-                elif chosen_model == "Dijkstra" or chosen_model == "AStar":
-                    player_car = create_dijkstra_car(color=chosen_color_val)
-                else:
-                    player_car = create_player_car(chosen_color_val, autonomous=False)
-                
-                # Create opponent cars (with default colors)
-                computer_car = create_computer_car()
-                GBFS_car = create_GBFS_car()
-                neat_car = create_neat_car()
-                dijkstra_car = create_dijkstra_car()
-                if use_locally_trained_net:
-                    pass
-                else:
-                    trained_net = load_trained_network(config)
-                if trained_net:
-                    neat_car.net = trained_net
-
-                # Merge overrides + apply registry
-                base_reg = build_registry(manager, [player_car, computer_car, GBFS_car, neat_car, dijkstra_car])
-                for grp, kv in (overrides or {}).items():
-                    base_reg.setdefault(grp, {})
-                    base_reg[grp].update(kv)
-
-                apply_registry(base_reg, manager, [player_car])
-
-                # Persist build info
-                last_model, last_track_key, last_reg, last_total_price = chosen_model, track_key, base_reg, total_price
-                
-                # Countdown to start
-                countdown_timer = 3.0
-                selection = None
-                game_state = STATE_COUNTDOWN
+            pass
         # -----------------------------
         # UPDATE / DRAW
         # -----------------------------
