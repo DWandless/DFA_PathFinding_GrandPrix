@@ -3,6 +3,7 @@ import pygame
 import heapq
 from .abstract_car import AbstractCar
 
+_CHECKPOINT_OVERLAY_CACHE = {}
 
 class DijkstraCar(AbstractCar):
     """
@@ -204,9 +205,18 @@ class DijkstraCar(AbstractCar):
         blit_rotate_center(win, self.img, (self.x, self.y), -self.angle)
         # Only show debug visualization if DEBUG_SHOW_CHECKPOINTS is True
         if show_points and DEBUG_SHOW_CHECKPOINTS:
-            # Draw checkpoints in red with actual detection radius
-            for p in self.CHECKPOINTS:
-                pygame.draw.circle(win, (255, 0, 0), p, int(CHECKPOINT_RADIUS), 2)  # Draw as outline
+            size = win.get_size()
+            checkpoints_key = tuple(self.CHECKPOINTS)
+            cache_key = (checkpoints_key, size, int(CHECKPOINT_RADIUS))
+
+            overlay = _CHECKPOINT_OVERLAY_CACHE.get(cache_key)
+            if overlay is None:
+                overlay = pygame.Surface(size, pygame.SRCALPHA)
+                for p in self.CHECKPOINTS:
+                    pygame.draw.circle(overlay, (255, 0, 0), p, int(CHECKPOINT_RADIUS), 2)  # Draw as outline
+                _CHECKPOINT_OVERLAY_CACHE[cache_key] = overlay
+
+            win.blit(overlay, (0, 0))
             # Draw computed path in blue
             for p in self.path:
                 pygame.draw.circle(win, (0, 0, 255), p, 2)

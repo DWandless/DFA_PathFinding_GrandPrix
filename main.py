@@ -294,7 +294,7 @@ async def main():
 
             if countdown_timer <= 0:
                 game_info.start_level()
-                post_countdown_delay = 0.5
+                post_countdown_delay = 0.1
                 game_state = STATE_RACING
         
         if game_state == STATE_LEVEL_SELECT:
