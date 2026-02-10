@@ -239,7 +239,7 @@ async def main():
 
             if countdown_timer <= 0:
                 game_info.start_level()
-                post_countdown_delay = 0.1
+                post_countdown_delay = 0.5
                 game_state = STATE_RACING
         
         if game_state == STATE_LEVEL_SELECT:
@@ -264,20 +264,16 @@ async def main():
 
             if countdown_timer <= 0:
                 game_info.start_level()
-
-                delay = get_algorithm_delay(chosen_model, game_info.get_level())
-                player_car.set_delay(delay)
-
+                post_countdown_delay = 0.1
                 game_state = STATE_RACING
 
         # -----------------------------------
-        # 🔥 NEW — LIVE NEAT TRAINING (NO BUTTON)
         # Press SPACE to stop training at any time
         # -----------------------------------
         elif game_state == STATE_NEAT_LIVE_TRAINING:
 
             # Run NEAT faster
-            for _ in range(5):
+            for _ in range(8):
                 manager.update(dt)
 
             # Draw NEAT population
@@ -313,22 +309,30 @@ async def main():
                 neat_car, dijkstra_car
             )
 
-            player_car.update_delay(dt)
+            if post_countdown_delay > 0:
+                post_countdown_delay = max(0.0, post_countdown_delay - dt)
 
-            neat_car.move()
-            neat_car.sense(neat_car.track_mask, raycast_mask)
-            neat_car.think()
-            neat_car.apply_controls()
+            # AI logic
+            if post_countdown_delay <= 0:
+                neat_car.move()
+                neat_car.sense(neat_car.track_mask, raycast_mask)
+                neat_car.think()
+                neat_car.apply_controls()
 
-            if player_car.can_move():
-                if getattr(player_car, "autonomous", True):
-                    player_car.move()
+            # Player car movement (manual or autonomous)
+            if post_countdown_delay <= 0:
+                # Use getattr to safely check autonomous attribute (some cars don't have it)
+                # AI cars default to autonomous=True, only PlayerCar can be manual
+                if getattr(player_car, 'autonomous', True):
+                    player_car.move()  # Autonomous mode: follow path
                 else:
-                    ui.move_player(player_car)
-
-            computer_car.move()
-            GBFS_car.move()
-            dijkstra_car.move()
+                    ui.move_player(player_car)  # Manual mode: keyboard control
+            
+            # Other AI cars (no delays for opponent cars)
+            if post_countdown_delay <= 0:
+                computer_car.move()
+                GBFS_car.move()
+                dijkstra_car.move()
 
             winner = ui.handle_collision(
                 player_car, computer_car, GBFS_car,
@@ -344,7 +348,7 @@ async def main():
         # ORIGINAL TRAINING (unchanged)
         # -----------------------------------
         elif game_state == STATE_TRAINING:
-            for _ in range(5):
+            for _ in range(8):
                 gen, finished, total = manager.update(dt)
 
                 if gen >= TRAIN_GENERATIONS:

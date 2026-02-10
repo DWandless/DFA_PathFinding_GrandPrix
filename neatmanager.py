@@ -274,7 +274,11 @@ class NEATManager:
             ep.car.move()
 
             # Fitness update
-            on_road = self._on_road(ep.car)
+            #on_road = self._on_road(ep.car)
+            if ep.car.collide(self.track_mask) == None:
+                on_road = True
+            else:
+                on_road = False
             ep.car.update_fitness(on_road, dt, ep.elapsed)
             ep.elapsed += dt
 
