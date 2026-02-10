@@ -1,6 +1,9 @@
 from .abstract_car import AbstractCar
 
 
+_PATH_OVERLAY_CACHE = {}
+
+
 class ComputerCar(AbstractCar):
     """
     Simple computer-controlled car that follows a set, given path.
@@ -22,9 +25,23 @@ class ComputerCar(AbstractCar):
         self.vel = self.max_vel
 
     def draw_points(self, win):  # draws the path points for debugging
+        from resources import DEBUG_SHOW_CHECKPOINTS
+        if not DEBUG_SHOW_CHECKPOINTS:
+            return
+
         import pygame
-        for point in self.path:
-            pygame.draw.circle(win, (255, 0, 0), point, 2)
+        size = win.get_size()
+        path_key = tuple(self.path)
+        cache_key = (path_key, size)
+
+        overlay = _PATH_OVERLAY_CACHE.get(cache_key)
+        if overlay is None:
+            overlay = pygame.Surface(size, pygame.SRCALPHA)
+            for point in self.path:
+                pygame.draw.circle(overlay, (255, 0, 0), point, 2)
+            _PATH_OVERLAY_CACHE[cache_key] = overlay
+
+        win.blit(overlay, (0, 0))
 
     def draw(self, win, show_points=True):  # shows the car and optionally the path points
         from resources import blit_rotate_center

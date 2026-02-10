@@ -1,11 +1,9 @@
 # ui.py
 import pygame
-import time
 import csv
 from datetime import datetime
 import resources
 from resources import MENU, MENU2, MENU3, MENU4
-import webbrowser
 # --------------------------------------------------
 # Utilities
 # --------------------------------------------------
