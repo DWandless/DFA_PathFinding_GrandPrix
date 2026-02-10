@@ -44,7 +44,7 @@ FPS = 60
 GRID_SIZE = 4
 CHECKPOINT_RADIUS = 45 # Increased by 5 pixels for easier checkpoint detection
 DEBUG_SHOW_CHECKPOINTS = True  # Set to True to show red checkpoint dots and pathfinding visualization
-DEBUG_UNLOCK_ALL_LEVELS = False  # Set to True to unlock all levels for testing/debugging
+DEBUG_UNLOCK_ALL_LEVELS = True  # Set to True to unlock all levels for testing/debugging
 
 # --------------------------------------------------
 # Static assets
@@ -300,14 +300,14 @@ def load_track_for_level(level):
         
         # Two possible paths after checkpoint (830, 660)
         path_to_junction = [
-            (70, 287), (80, 130), (125, 70), (300, 70), (600, 70), (760, 85),
+            (80, 130), (125, 90), (250, 75), (400, 83), (450, 83), (500, 83), (760, 85),
             (830, 130), (816, 235), (730, 470), (750, 583),
             (820, 750),
         ]
         
         # Path A: through (750, 750)
         path_a = path_to_junction + [
-            (750, 800), (348, 810), (118, 810), (69, 744), (93, 696), 
+            (750, 800), (348, 810), (90, 810), (69, 744), (93, 696), 
             (222, 632), (485, 527), (510, 416), (370, 392),
             (225, 470), (120, 470), 
         ]
@@ -370,14 +370,14 @@ def load_track_for_level(level):
         zero_to_four = zero_to_fourA if compute_path_length(zero_to_fourA) <= compute_path_length(zero_to_fourB) else zero_to_fourB 
 
         #shortest route to 0
-        zero_to_zeroA = zero_to_three + three_to_zero
+        zero_to_zeroA = zero_to_three #+ three_to_zero
         zero_to_zeroB = zero_to_four + four_to_zero
         zero_to_zero = zero_to_zeroA if compute_path_length(zero_to_zeroA) <= compute_path_length(zero_to_zeroB) else zero_to_zeroB
 
         RACING_LINE = zero_to_zero
 
         DFS_RACING_LINE = zero_to_zeroA
-        BFS_RACING_LINE = zero_to_fourA + four_to_three + three_to_zero
+        BFS_RACING_LINE = zero_to_fourA + four_to_three #+ three_to_zero
         ASTAR_RACING_LINE = zero_to_zero
         GBFS_RACING_LINE = zero_to_one + one_to_twoB + two_to_four + four_to_zero
 
