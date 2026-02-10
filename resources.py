@@ -64,11 +64,11 @@ MENU = scale_image(pygame.image.load("assets/Menu.png"), 0.90)
 MENU2 = scale_image(pygame.image.load("assets/Menu2.png"), 0.90)
 MENU3 = scale_image(pygame.image.load("assets/Menu3.png"), 0.90)
 MENU4 = scale_image(pygame.image.load("assets/Menu4.png"), 0.90)
-MENU5 = scale_image(pygame.image.load("assets/Menu5.png"), 0.90)
 
 # BACKGROUND IMAGES
 GRASS= scale_image(pygame.image.load("assets/grass.jpg"), 1.5)
 DESERT = scale_image(pygame.image.load("assets/desert.png"), 0.75)
+SNOW = scale_image(pygame.image.load("assets/snow.png"), 0.75)
 
 BLUE_CAR = scale_image(pygame.image.load("assets/blue-car.png"), 0.55)
 RED_CAR = scale_image(pygame.image.load("assets/red-car.png"), 0.55)
@@ -131,7 +131,6 @@ LEVEL_PREVIEWS = {
     2: pygame.image.load("assets/track2.png").convert_alpha(),
     3: pygame.image.load("assets/track3.png").convert_alpha(),
     4: pygame.image.load("assets/track4.png").convert_alpha(),
-    5: pygame.image.load("assets/track5.png").convert_alpha(),
 }   
 
 for k, img in LEVEL_PREVIEWS.items():
@@ -344,8 +343,7 @@ def load_track_for_level(level):
 
 
     elif level == 3:
-        print("Loading level 3")
-        background_img = "assets/desert.png"
+        background_img = "assets/snow.png"
         background_img = scale_image(pygame.image.load(background_img), 1)
 
         track_img = "assets/track3.png"
@@ -446,87 +444,8 @@ def load_track_for_level(level):
         ASTAR_RACING_LINE = zero_to_five + five_to_four + four_to_zero
         #ASTAR_RACING_LINE = zero_to_zero
         GBFS_RACING_LINE = zero_to_zero
-
-
-    elif level == 5:
-        
-        background_img = "assets/grass.jpg"
-        background_img = scale_image(pygame.image.load(background_img), 1.5)
-        
-        track_img = "assets/track5.png"
-        border_img = "assets/track_border5.png"
-
-        FINISH_POSITION = (18, 285)
-        START_POSITION = (30, 200)
-
-        zero_to_oneA =   [(50, 100), (115, 60)]
-        zero_to_oneB =   [(115,210), (193, 125)]
-        one_to_two =     [(292, 60)]
-        two_to_three =   [(523, 90)]
-        two_to_four =    [(415, 92), (380, 180), (330, 221), (340, 300)]
-        three_to_five =  [(648, 115), (620, 163), (545, 163), (522, 295)]
-        three_to_six =   [(746, 40), (841, 101)]
-        six_to_five =    [(762, 169), (743, 271), (522, 295)]
-        five_to_three =  [(522, 295), (545, 163), (620, 163), (648, 115)]
-        five_to_four =   [(331, 291)]
-        six_to_seven =   [(841, 238), (841, 523)]
-        seven_to_eight = [(841, 777), (795, 822), (594, 828), (554, 816), (579, 758), (677, 759), (696, 636), (702, 502), (674, 400), (566, 396), (462, 423), 
-                          (477, 518), (562, 527), (586, 596), (534, 633), (375, 622)]
-        four_to_eight =  [(345, 450), (345, 585)]
-        four_to_two = [(340, 300), (330, 221), (380, 180), (415, 92)]
-        eight_to_four =  [(345, 585), (345, 450)]
-        eight_to_zero =  [(175, 600), (170, 520), (220, 450), (220, 376), (198, 315), (119, 315)]
-        eight_to_nine =  [(356, 698), (376, 746), (423, 771), (390, 822), (240, 825)]
-        nine_to_eight =  [(240, 825), (390, 822), (423, 771), (376, 746), (356, 698)]
-        nine_to_zeroA =  [(92, 825), (36, 787), (36, 697), (36, 529), (36, 326)]
-        nine_to_zeroB =  [(193, 717), (123, 718), (36, 697), (36, 529), (36, 326)]
-         
-        #shortest route to 1
-        zero_to_one = zero_to_oneA if compute_path_length(zero_to_oneA) <= compute_path_length(zero_to_oneB) else zero_to_oneB
-
-        #shortest route to 2
-        zero_to_two = zero_to_one + one_to_two
-
-        #shortest route to 3
-        zero_to_three = zero_to_two + two_to_three
-
-        #shortest route to 4
-        zero_to_fourA = zero_to_two + two_to_four
-        zero_to_fourB = zero_to_three + three_to_five + five_to_four
-        zero_to_fourC = zero_to_three + three_to_six + six_to_five + five_to_four
-        zero_to_four = zero_to_fourA if compute_path_length(zero_to_fourA) <= compute_path_length(zero_to_fourB) and compute_path_length(zero_to_fourA) <= compute_path_length(zero_to_fourC) else (zero_to_fourB if compute_path_length(zero_to_fourB) <= compute_path_length(zero_to_fourC) else zero_to_fourC)
-
-        #shortest route to 5
-        zero_to_fiveA = zero_to_three + three_to_five
-        zero_to_fiveB = zero_to_three + three_to_six + six_to_five
-        zero_to_five = zero_to_fiveA if compute_path_length(zero_to_fiveA) <= compute_path_length(zero_to_fiveB) else zero_to_fiveB
-
-        #shortest route to 6
-        zero_to_six = zero_to_three + three_to_six
-
-        #shortest route to 7
-        zero_to_seven = zero_to_six + six_to_seven
-
-        #shortest route to 8
-        zero_to_eightA = zero_to_seven + seven_to_eight
-        zero_to_eightB = zero_to_four + four_to_eight   
-        zero_to_eight = zero_to_eightA if compute_path_length(zero_to_eightA) <= compute_path_length(zero_to_eightB) else zero_to_eightB
-
-        #shortest route to 9
-        zero_to_nine = zero_to_eight + eight_to_nine
-
-        #shortest route to 0
-        zero_to_zero = zero_to_eight + eight_to_zero
-        zero_to_zeroA = zero_to_nine + nine_to_zeroA
-        zero_to_zeroB = zero_to_nine + nine_to_zeroB
-        zero_to_zero = zero_to_zero if compute_path_length(zero_to_zero) <= compute_path_length(zero_to_zeroA) and compute_path_length(zero_to_zero) <= compute_path_length(zero_to_zeroB) else (zero_to_zeroA if compute_path_length(zero_to_zeroA) <= compute_path_length(zero_to_zeroB) else zero_to_zeroB)
-
-        RACING_LINE = zero_to_zero
-        DFS_RACING_LINE = zero_to_oneA + one_to_two + two_to_four + four_to_eight + eight_to_nine + nine_to_eight + eight_to_four + four_to_two + two_to_three + three_to_five + five_to_three + three_to_six + six_to_seven + seven_to_eight + eight_to_nine + nine_to_zeroA
-        BFS_RACING_LINE = zero_to_oneB + one_to_two + two_to_three + three_to_six + six_to_seven + seven_to_eight + eight_to_zero
-        ASTAR_RACING_LINE = zero_to_zero
-        GBFS_RACING_LINE = zero_to_seven + seven_to_eight + eight_to_nine + nine_to_zeroA
-
+    else:
+        raise ValueError(f"Unknown level: {level}")
 
     BACKGROUND = background_img
     TRACK = scale_image(pygame.image.load(track_img), 1)
@@ -560,7 +479,7 @@ def load_track_for_level(level):
 # GameInfo
 # --------------------------------------------------
 class GameInfo:
-    LEVELS = 5
+    LEVELS = 4
 
     def __init__(self, level=0):
         self.level = level
