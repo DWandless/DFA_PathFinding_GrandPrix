@@ -58,7 +58,6 @@ class Menu:
         self.level2Button = Button((width, height//2 + 150, 200, 50), "Level 2", GRAY, WHITE)
         self.level3Button = Button((width, height//2 + 275, 200, 50), "Level 3", GRAY, WHITE)
         self.level4Button = Button((width, height//2 + 400, 200, 50), "Level 4", GRAY, WHITE)
-        self.level5Button = Button((width, height//2 + 525, 200, 50), "Level 5", GRAY, WHITE)
 
         # BACK BUTTON (universal, top-right for all pages)
         self.backButton = PillButton((width - 140, 20, 120, 36), "Back", selected=False)
@@ -90,7 +89,7 @@ class Menu:
             self.playButton, self.trainButton,
             self.page1Button, self.page2Button, self.quitButton,
             self.level1Button, self.level2Button,
-            self.level3Button, self.level4Button, self.level5Button,
+            self.level3Button, self.level4Button,
             self.backButton, self.toggleIconButton
         ]:
             btn.enabled = False
@@ -120,7 +119,6 @@ class Menu:
             (2, self.level2Button),
             (3, self.level3Button),
             (4, self.level4Button),
-            (5, self.level5Button),
         ]
         
         for level, btn in level_buttons:
@@ -319,8 +317,6 @@ class Menu:
             return "level3"
         if self.level4Button.handle_event(event):
             return "level4"
-        if self.level5Button.handle_event(event):
-            return "level5"
 
         if self.backButton.handle_event(event):
             return "back"
@@ -1137,7 +1133,7 @@ class BuildScreen:
     def _draw_background(self):
         W, H = self.surface.get_width(), self.surface.get_height()
         try:
-            bg = pygame.transform.smoothscale(resources.MENU5, (W, H))
+            bg = pygame.transform.smoothscale(resources.MENU4, (W, H))
             self.surface.blit(bg, (0, 0))
         except Exception:
             self.surface.fill(DARK)
