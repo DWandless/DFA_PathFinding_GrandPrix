@@ -71,6 +71,29 @@ class NEATManager:
         # Prepare first generation
         self._begin_generation()
 
+    def reset(self):
+        """
+        Completely restarts NEAT training from generation 0.
+        Creates a fresh population and resets all runtime state.
+        """
+        # Fresh NEAT population
+        self.pop = neat.Population(self.config)
+        self.pop.add_reporter(neat.StdOutReporter(True))
+        self.stats = neat.StatisticsReporter()
+        self.pop.add_reporter(self.stats)
+
+        # Reset state
+        self.generation = 0
+        self._genomes_list = []
+        self._fitness_map.clear()
+        self._episodes.clear()
+        self._crash_markers.clear()
+        self.winner = None
+        self.done = False
+
+        # Build generation 0
+        self._begin_generation()
+
     def RestartWithNewPopulationSize(self):
         self.pop = neat.Population(self.config)
         self.pop.add_reporter(neat.StdOutReporter(True))
@@ -251,7 +274,11 @@ class NEATManager:
             ep.car.move()
 
             # Fitness update
-            on_road = self._on_road(ep.car)
+            #on_road = self._on_road(ep.car)
+            if ep.car.collide(self.track_mask) == None:
+                on_road = True
+            else:
+                on_road = False
             ep.car.update_fitness(on_road, dt, ep.elapsed)
             ep.elapsed += dt
 
