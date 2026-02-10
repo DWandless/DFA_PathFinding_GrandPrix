@@ -198,22 +198,22 @@ ALGORITHM_DELAY_CONFIG = {
         "Dijkstra": 2.0, # 2 second delay
         "NEAT": 2.0,     # 2 second delay
     },
-    3: {  # Level 3: Only GBFS can win
-        "Player": 0.0,
-        "BFS": 2.0,      # 2 second delay
-        "DFS": 2.0,      # 2 second delay
-        "GBFS": 0.0,     # No delay - can win
-        "AStar": 2.0,    # 2 second delay
-        "Dijkstra": 2.0, # 2 second delay
-        "NEAT": 2.0,     # 2 second delay
-    },
-    4: {  # Level 4: Only Dijkstra/AStar can win
+    3: {  # Level 3: Only Dijkstra/AStar can win
         "Player": 0.0,
         "BFS": 2.0,      # 2 second delay
         "DFS": 2.0,      # 2 second delay
         "GBFS": 2.0,     # 2 second delay
         "AStar": 0.0,    # No delay - can win
         "Dijkstra": 0.0, # No delay - can win
+        "NEAT": 2.0,     # 2 second delay
+    },
+    4: {  # Level 4: Only GBFS can win
+        "Player": 0.0,
+        "BFS": 2.0,      # 2 second delay
+        "DFS": 2.0,      # 2 second delay
+        "GBFS": 0.0,     # No delay - can win
+        "AStar": 2.0,    # 2 second delay
+        "Dijkstra": 2.0, # 2 second delay
         "NEAT": 2.0,     # 2 second delay
     },
 }
@@ -413,8 +413,8 @@ def load_track_for_level(level):
         three_to_one = [(500, 820), (500, 715), (469, 650), (352, 650), (282, 592), (280, 470), (423, 470), (460, 385), (460, 317), (480, 245), (594, 245), (635, 145)]
         two_to_three = [(811, 468), (737, 522), (737, 597), (743, 709), (709, 799), (594, 781), (489, 781)]
         three_to_four = [(319, 820), (157, 796), (157, 645), (157, 572), (100, 515), (75, 450), (75, 355)]
-        four_to_five = [(75, 126), (115, 58), (175, 126)]
-        five_to_four = [(175, 126), (115, 58), (75, 126)]
+        four_to_five = [(75, 126), (115, 58), (175, 75)]
+        five_to_four = [(175, 75), (115, 58), (75, 126)]
         four_to_zero = [(195, 355), (300, 355)]
 
         # shortest route to 1
