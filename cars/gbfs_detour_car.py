@@ -277,13 +277,16 @@ class GBFSDetourCar(AbstractCar):
     def _advance_checkpoint_if_reached(self):
         cx, cy = self.checkpoints[self.current_checkpoint]
         d = math.hypot(cx - self.x, cy - self.y)
-        if d < max(self.WAYPOINT_REACH, self.CHECKPOINT_RADIUS):
-            # Only advance if it is ahead in heading space
+        reach = max(self.WAYPOINT_REACH, self.CHECKPOINT_RADIUS)
+        if d < reach:
+            # Prefer advancing only when the checkpoint is ahead,
+            # but allow advancing when we've clearly reached it (overshoot case).
             rad = math.radians(self.angle)
             fwd = (-math.sin(rad), -math.cos(rad))
             vx, vy = (cx - self.x, cy - self.y)
             proj = vx * fwd[0] + vy * fwd[1]
-            if proj > 0:
+
+            if proj > 0 or d < (reach * 0.5):
                 self.current_checkpoint = (self.current_checkpoint + 1) % len(self.checkpoints)
                 return True
         return False
@@ -503,9 +506,11 @@ class GBFSDetourCar(AbstractCar):
         
     def set_level(self, level):
         import resources
-        self.checkpoints = resources.RACING_LINE[:]
-        self.grid = resources.GRID
-        self.track_mask = resources.TRACK_BORDER_MASK
-        
-        self.next_checkpoint = 0
+        self.checkpoints = resources.GBFS_RACING_LINE[:] + [resources.FINISH_POSITION]
+        self.GRID = resources.GRID
+        self.TRACK_BORDER_MASK = resources.TRACK_BORDER_MASK
+
+        self.current_checkpoint = 0
+        self.current_point = 0
         self.reset()
+        self.compute_path()
