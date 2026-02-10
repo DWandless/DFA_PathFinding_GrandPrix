@@ -15,7 +15,7 @@ from resources import (
     create_player_car, create_computer_car, create_GBFS_car,
     create_neat_car, blit_text_center, raycast_mask,
     load_track_for_level, create_dijkstra_car, MENU3,
-    get_algorithm_delay
+    apply_level_speed_tuning
 )
 
 from model_select import ModelSelectScreen
@@ -99,6 +99,7 @@ async def main():
     level_result = None
     level_time = 0.0
     countdown_timer = 3.0
+    post_countdown_delay = 0.0
 
     chosen_model = None
     chosen_color = None
@@ -193,7 +194,9 @@ async def main():
                         game_state = STATE_COUNTDOWN
                         
 
-                    # Otherwise create other AI cars normally
+                    apply_level_speed_tuning(player_car, chosen_model, game_info.get_level())
+
+                    # Create opponent cars (with default colors)
                     computer_car = create_computer_car()
                     GBFS_car = create_GBFS_car()
                     neat_car = create_neat_car()
@@ -234,7 +237,12 @@ async def main():
         if game_state == STATE_MENU:
             menu.drawMain(WIN)
 
-        elif game_state == STATE_LEVEL_SELECT:
+            if countdown_timer <= 0:
+                game_info.start_level()
+                post_countdown_delay = 0.5
+                game_state = STATE_RACING
+        
+        if game_state == STATE_LEVEL_SELECT:
             menu.drawLevels(WIN)
 
         elif game_state == STATE_PAGE1:

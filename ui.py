@@ -56,6 +56,7 @@ class Menu:
         self.level2Button = Button((width, height//2 + 150, 200, 50), "Level 2", GRAY, WHITE)
         self.level3Button = Button((width, height//2 + 275, 200, 50), "Level 3", GRAY, WHITE)
         self.level4Button = Button((width, height//2 + 400, 200, 50), "Level 4", GRAY, WHITE)
+        self.levelInfoButton = Button((width, height//2 + 525, 200, 50), "Info", GRAY, WHITE)
 
         # BACK BUTTON (universal, top-right for all pages)
         self.backButton = PillButton((width - 140, 20, 120, 36), "Back", selected=False)
@@ -87,7 +88,7 @@ class Menu:
             self.playButton, self.trainButton,
             self.page1Button, self.page2Button, self.quitButton,
             self.level1Button, self.level2Button,
-            self.level3Button, self.level4Button,
+            self.level3Button, self.level4Button, self.levelInfoButton,
             self.backButton, self.toggleIconButton
         ]:
             btn.enabled = False
@@ -150,6 +151,9 @@ class Menu:
                 if resources.HIGHEST_LEVEL < level:
                     icon_rect = self.lock_icon.get_rect(center=btn.rect.center)
                     surface.blit(self.lock_icon, icon_rect)
+
+        self.levelInfoButton.enabled = True
+        self.levelInfoButton.draw(surface)
 
     # ---------------- PAGE 1 ----------------
     def drawPage1(self, surface):
@@ -315,6 +319,9 @@ class Menu:
             return "level3"
         if self.level4Button.handle_event(event):
             return "level4"
+
+        if self.levelInfoButton.handle_event(event):
+            return "page1"
 
         if self.backButton.handle_event(event):
             return "back"

@@ -55,7 +55,7 @@ FPS = 60
 GRID_SIZE = 4
 CHECKPOINT_RADIUS = 45 # Increased by 5 pixels for easier checkpoint detection
 DEBUG_SHOW_CHECKPOINTS = True  # Set to True to show red checkpoint dots and pathfinding visualization
-DEBUG_UNLOCK_ALL_LEVELS = True  # Set to True to unlock all levels for testing/debugging
+DEBUG_UNLOCK_ALL_LEVELS = False  # Set to True to unlock all levels for testing/debugging
 
 # --------------------------------------------------
 # Static assets
@@ -188,54 +188,70 @@ images = [
 ]
 
 # --------------------------------------------------
-# Algorithm Delay Configuration (Level-Specific)
+# Algorithm Speed Tuning (Level-Specific)
 # --------------------------------------------------
-# Maps algorithm types to delay times (in seconds) per level
-# Delay = 0 means the car can win that level
-# Delay > 0 means the car is handicapped and likely won't win
-ALGORITHM_DELAY_CONFIG = {
-    1: {  # Level 1: Only DFS can win
-        "Player": 0.0,
-        "BFS": 5.0,      # 2 second delay
-        "DFS": 0.0,      # No delay - can win
-        "GBFS": 5.0,     # 2 second delay
-        "AStar": 5.0,    # 2 second delay
-        "Dijkstra": 5.0, # 2 second delay
-        "NEAT": 2.0,     # 2 second delay
+# Multiplier applied to the *player-selected* car's max velocity per level.
+# This replaces the old "start delay" handicap.
+SPEED_MULTIPLIER_CONFIG = {
+    1: {
+        "Player": 1.00,
+        "DFS": 1.06,
+        "BFS": 0.92,
+        "GBFS": 0.92,
+        "AStar": 0.92,
+        "Dijkstra": 0.92,
+        "NEAT": 0.92,
     },
-    2: {  # Level 2: Only BFS can win
-        "Player": 0.0,
-        "BFS": 0.0,      # No delay - can win
-        "DFS": 2.0,      # 2 second delay
-        "GBFS": 2.0,     # 2 second delay
-        "AStar": 2.0,    # 2 second delay
-        "Dijkstra": 2.0, # 2 second delay
-        "NEAT": 2.0,     # 2 second delay
+    2: {
+        "Player": 1.00,
+        "BFS": 1.06,
+        "DFS": 0.92,
+        "GBFS": 0.92,
+        "AStar": 0.92,
+        "Dijkstra": 0.92,
+        "NEAT": 0.92,
     },
-    3: {  # Level 3: Only Dijkstra/AStar can win
-        "Player": 0.0,
-        "BFS": 2.0,      # 2 second delay
-        "DFS": 2.0,      # 2 second delay
-        "GBFS": 2.0,     # 2 second delay
-        "AStar": 0.0,    # No delay - can win
-        "Dijkstra": 0.0, # No delay - can win
-        "NEAT": 2.0,     # 2 second delay
+    3: {
+        "Player": 1.00,
+        "AStar": 1.06,
+        "Dijkstra": 1.06,
+        "BFS": 0.92,
+        "DFS": 0.92,
+        "GBFS": 0.92,
+        "NEAT": 0.92,
     },
-    4: {  # Level 4: Only GBFS can win
-        "Player": 0.0,
-        "BFS": 2.0,      # 2 second delay
-        "DFS": 2.0,      # 2 second delay
-        "GBFS": 0.0,     # No delay - can win
-        "AStar": 2.0,    # 2 second delay
-        "Dijkstra": 2.0, # 2 second delay
-        "NEAT": 2.0,     # 2 second delay
+    4: {
+        "Player": 1.00,
+        "GBFS": 1.06,
+        "BFS": 0.92,
+        "DFS": 0.92,
+        "AStar": 0.92,
+        "Dijkstra": 0.92,
+        "NEAT": 0.92,
     },
 }
 
-def get_algorithm_delay(algorithm, level):
-    """Get the delay time for a specific algorithm on a specific level."""
-    level_config = ALGORITHM_DELAY_CONFIG.get(level, {})
-    return level_config.get(algorithm, 0.0)
+def apply_level_speed_tuning(car, algorithm, level):
+    """Apply level-specific max velocity tuning to a car (intended for the player-selected model)."""
+    if car is None:
+        return
+    if not hasattr(car, "max_vel"):
+        return
+
+    if not hasattr(car, "_base_max_vel"):
+        car._base_max_vel = car.max_vel
+
+    level_cfg = SPEED_MULTIPLIER_CONFIG.get(level, {})
+    multiplier = level_cfg.get(algorithm, 1.0)
+
+    car.max_vel = car._base_max_vel * multiplier
+    if hasattr(car, "vel"):
+        try:
+            car.vel = min(car.vel, car.max_vel)
+        except TypeError:
+            car.vel = car.max_vel
+        if getattr(car, "autonomous", False):
+            car.vel = car.max_vel
 
 # --------------------------------------------------
 # Track Loader
@@ -416,9 +432,9 @@ def load_track_for_level(level):
         border_img = "assets/track_border4.png"
 
         FINISH_POSITION = (270, 265)
-        START_POSITION = (317, 225)
+        START_POSITION = (290, 225)
 
-        zero_to_one = [(320, 130), (410, 130), (490, 100), (635, 75)]
+        zero_to_one = [(310, 130), (410, 130), (490, 100), (635, 75)]
         one_to_twoA = [(794, 51), (820, 131), (787, 206), (760, 276)]
         one_to_twoB = [(635, 145), (594, 223), (459, 245), (488, 317), (469, 377), (593, 382), (707, 370)]
         one_to_three = [(635, 145), (594, 245), (480, 245), (460, 317), (460, 385), (423, 470), (280, 470), (282, 592), (352, 650), (469, 650), (500, 715), (500, 820)]

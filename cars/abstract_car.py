@@ -19,10 +19,6 @@ class AbstractCar:
         self.angle = 0
         self.x, self.y = self.START_POS
         self.acceleration = 0.1
-        
-        # Delay system for algorithm-based handicapping
-        self.start_delay = 0.0  # Delay in seconds before car can move
-        self.delay_remaining = 0.0  # Current delay countdown
     
     def SetTunables(self, TuningData):
         # Add as many tunables as you like.
@@ -73,21 +69,6 @@ class AbstractCar:
         self.x, self.y = self.START_POS
         self.angle = 0
         self.vel = 0
-        self.delay_remaining = self.start_delay  # Reset delay when resetting car
-    
-    def set_delay(self, delay_seconds):
-        """Set the start delay for this car."""
-        self.start_delay = delay_seconds
-        self.delay_remaining = delay_seconds
-    
-    def update_delay(self, dt):
-        """Update the delay countdown. Call this each frame with delta time."""
-        if self.delay_remaining > 0:
-            self.delay_remaining = max(0, self.delay_remaining - dt)
-    
-    def can_move(self):
-        """Check if the car's delay has expired and it can move."""
-        return self.delay_remaining <= 0
     
     def get_centre(self):
         w, h = self.img.get_size()
