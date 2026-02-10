@@ -45,6 +45,7 @@ GRID_SIZE = 4
 CHECKPOINT_RADIUS = 45 # Increased by 5 pixels for easier checkpoint detection
 DEBUG_SHOW_CHECKPOINTS = True  # Set to True to show red checkpoint dots and pathfinding visualization
 DEBUG_UNLOCK_ALL_LEVELS = False  # Set to True to unlock all levels for testing/debugging
+DEBUG_DRAW_POINTS = False # Enables drawing and plotting of points on levels during them being played
 
 # --------------------------------------------------
 # Static assets
@@ -194,8 +195,8 @@ SPEED_MULTIPLIER_CONFIG = {
     2: {
         "Player": 1.00,
         "BFS": 1.06,
-        "DFS": 0.92,
-        "GBFS": 0.92,
+        "DFS": 0.8,
+        "GBFS": 0.8,
         "AStar": 0.92,
         "Dijkstra": 0.92,
         "NEAT": 0.92,
@@ -300,21 +301,21 @@ def load_track_for_level(level):
         
         # Two possible paths after checkpoint (830, 660)
         path_to_junction = [
-            (70, 287), (80, 130), (125, 70), (300, 70), (600, 70), (760, 85),
-            (830, 130), (816, 235), (730, 470), (750, 583),
+            (70, 287), (90, 100), (135, 50), (300, 50), (600, 50), (760, 50),
+            (845, 130), (816, 235), (730, 470), (750, 583),
             (820, 750),
         ]
         
         # Path A: through (750, 750)
         path_a = path_to_junction + [
-            (750, 800), (348, 810), (118, 810), (69, 744), (93, 696), 
+            (750, 850), (348, 850), (90, 825), (70, 750), (93, 696), 
             (222, 632), (485, 527), (510, 416), (370, 392),
             (225, 470), (120, 470), 
         ]
         
         # Path B: through (630, 700)
         path_b = path_to_junction + [
-            (640, 700), (640, 480), (620, 260), (532, 220), (348, 220), (255, 260), 
+            (640, 700), (640, 480), (620, 280), (532, 220), (348, 220), (255, 260), 
             (229, 357), 
             (235, 450), (115, 475), 
             
@@ -338,48 +339,30 @@ def load_track_for_level(level):
         track_img = "assets/track3.png"
         border_img = "assets/track_border3.png"
 
-        FINISH_POSITION = (410, 190)
-        START_POSITION = (430, 150)
+        FINISH_POSITION = (395, 435)
+        START_POSITION = (440, 350)
 
-        zero_to_one = [(450, 110), (600, 100), (765, 100), (800, 180), (767, 250), (600, 275), (580, 390)]
-        one_to_twoA = [(450, 390), (429, 485), (482, 544), (607, 556), (624, 671)]
-        one_to_twoB = [(718, 381), (785, 442), (787,689)]
-        one_to_four = [(440, 390)]
-        two_to_three = [(573, 761), (257, 727), (83, 644), (84, 475), (157, 445), (241, 372)]
-        two_to_four = [(624, 671), (607, 556), (482, 544), (429, 485), (440, 390)]
-        three_to_one = [(192, 307), (101, 298), (82, 124), (170, 80), (275, 124), (296, 213), (440, 241)]
-        four_to_three = [(241, 372)]
-        four_to_zero = [(440, 241)]
+        level3_path = [
+            (442, 108), (486, 48), (661, 49), (795, 75), (842, 108), (849, 200),
+            (764, 248), (620, 252), (589, 302), (587, 389), (792, 398), (859, 443),
+            (855, 654), (842, 773), (708, 781), (661, 712), (655, 627), (610, 582),
+            (541, 578), (473, 581), (443, 535), (445, 425),
+        ]
 
-        # shortest route to 1
-        zero_to_one = zero_to_one   
+        level3_alt_path = [
+            (444, 235), (323, 227), (284, 189), (277, 101), (231, 43), (96, 49),
+            (56, 103), (52, 281), (122, 316), (239, 356), (231, 430), (178, 472),
+            (97, 473), (48, 520), (47, 685), (122, 783), (312, 804), (477, 819),
+            (654, 818), (653, 628), (608, 581), (482, 577), (443, 535), (444, 425),
+        ]
 
-        #shortest route to 2
-        zero_to_twoA = zero_to_one + one_to_twoA
-        zero_to_twoB = zero_to_one + one_to_twoB
-        zero_to_two = zero_to_twoA if compute_path_length(zero_to_twoA) <= compute_path_length(zero_to_twoB) else zero_to_twoB
+        RACING_LINE = level3_path
 
-        #shortest route to 3
-        zero_to_threeA = zero_to_two + two_to_three
-        zero_to_threeB = zero_to_one + one_to_twoB + two_to_four + four_to_three
-        zero_to_three = zero_to_threeA if compute_path_length(zero_to_threeA) <= compute_path_length(zero_to_threeB) else zero_to_threeB
+        DFS_RACING_LINE = level3_alt_path
+        BFS_RACING_LINE = level3_alt_path
+        ASTAR_RACING_LINE = level3_path
+        GBFS_RACING_LINE = level3_path
 
-        #shortest route to 4
-        zero_to_fourA = zero_to_one + one_to_four   
-        zero_to_fourB = zero_to_three + three_to_four
-        zero_to_four = zero_to_fourA if compute_path_length(zero_to_fourA) <= compute_path_length(zero_to_fourB) else zero_to_fourB 
-
-        #shortest route to 0
-        zero_to_zeroA = zero_to_three + three_to_zero
-        zero_to_zeroB = zero_to_four + four_to_zero
-        zero_to_zero = zero_to_zeroA if compute_path_length(zero_to_zeroA) <= compute_path_length(zero_to_zeroB) else zero_to_zeroB
-
-        RACING_LINE = zero_to_zero
-
-        DFS_RACING_LINE = zero_to_zeroA
-        BFS_RACING_LINE = zero_to_fourA + four_to_three + three_to_zero
-        ASTAR_RACING_LINE = zero_to_zero
-        GBFS_RACING_LINE = zero_to_one + one_to_twoB + two_to_four + four_to_zero
 
     elif level == 4:
         print("Loading level 4")
@@ -442,19 +425,9 @@ def load_track_for_level(level):
 
     GRID = build_grid(TRACK_BORDER_MASK)
 
-    # For level 3, create a cropped finish image bound by the track
     global FINISH, FINISH_MASK
-    if level == 3:
-        # Load the original finish image and crop it to be bound by the track
-        finish_original = pygame.image.load("assets/finish.png")
-        # Crop the right side to remove overflow - keep left 60 pixels
-        crop_rect = pygame.Rect(0, 0, 60, finish_original.get_height())
-        FINISH = finish_original.subsurface(crop_rect).copy()
-        FINISH_MASK = pygame.mask.from_surface(FINISH)
-    else:
-        # Use default finish image for other levels
-        FINISH = pygame.image.load("assets/finish.png")
-        FINISH_MASK = pygame.mask.from_surface(FINISH)
+    FINISH = pygame.image.load("assets/finish.png")
+    FINISH_MASK = pygame.mask.from_surface(FINISH)
 
     images[:] = [
         (BACKGROUND, (0, 0)),
