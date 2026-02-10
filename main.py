@@ -187,7 +187,7 @@ async def main():
                     player_car = create_car_by_model(chosen_model, color)
 
                     # NEAT Chosen → enter LIVE TRAINING immediately
-                    if chosen_model == "NEAT":
+                    if chosen_model == "NEAT" and game_info.get_level() == 1:
                         manager.reset()
                         game_state = STATE_NEAT_LIVE_TRAINING
                     else:
@@ -237,10 +237,6 @@ async def main():
         if game_state == STATE_MENU:
             menu.drawMain(WIN)
 
-            if countdown_timer <= 0:
-                game_info.start_level()
-                post_countdown_delay = 0.5
-                game_state = STATE_RACING
         
         if game_state == STATE_LEVEL_SELECT:
             menu.drawLevels(WIN)
