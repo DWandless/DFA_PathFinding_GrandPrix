@@ -212,6 +212,17 @@ async def main():
 
                     apply_level_speed_tuning(player_car, chosen_model, game_info.get_level())
 
+                    if (
+                        chosen_model == "BFS"
+                        and game_info.get_level() == 2
+                        and hasattr(resources, "LEVEL2_DFS_PLAYER_ALT_RACING_LINE")
+                        and resources.LEVEL2_DFS_PLAYER_ALT_RACING_LINE
+                        and hasattr(player_car, "path")
+                    ):
+                        player_car.path = resources.LEVEL2_DFS_PLAYER_ALT_RACING_LINE + [resources.FINISH_POSITION]
+                        if hasattr(player_car, "current_point"):
+                            player_car.current_point = 0
+
                     # Create opponent cars (with default colors)
                     computer_car = create_computer_car()
                     GBFS_car = create_GBFS_car()

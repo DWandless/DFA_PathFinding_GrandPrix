@@ -43,7 +43,7 @@ def blit_rotate_center(win, image, top_left, angle):
 FPS = 60
 GRID_SIZE = 4
 CHECKPOINT_RADIUS = 45 # Increased by 5 pixels for easier checkpoint detection
-DEBUG_SHOW_CHECKPOINTS = True  # Set to True to show red checkpoint dots and pathfinding visualization
+DEBUG_SHOW_CHECKPOINTS = False  # Set to True to show red checkpoint dots and pathfinding visualization
 DEBUG_DRAW_POINTS = False # Enables drawing and plotting of points on levels during them being played
 DEBUG_UNLOCK_ALL_LEVELS = False  # Set to True to unlock all levels for testing/debugging
 
@@ -123,6 +123,7 @@ DFS_RACING_LINE = []
 BFS_RACING_LINE = []
 ASTAR_RACING_LINE = []  
 GBFS_RACING_LINE = []
+LEVEL2_DFS_PLAYER_ALT_RACING_LINE = []
 
 HIGHEST_LEVEL = 1 # This is updated during gameplay - initially set to 1 - represents the highest level unlocked
 
@@ -253,6 +254,7 @@ def load_track_for_level(level):
     global FINISH_POSITION, START_POSITION
     global RACING_LINE, GRID, images
     global DFS_RACING_LINE, BFS_RACING_LINE, ASTAR_RACING_LINE, GBFS_RACING_LINE
+    global LEVEL2_DFS_PLAYER_ALT_RACING_LINE
 
     def compute_path_length(path):
         total = 0.0
@@ -261,6 +263,8 @@ def load_track_for_level(level):
             x2, y2 = path[i + 1]
             total += math.hypot(x2 - x1, y2 - y1)
         return total
+
+    LEVEL2_DFS_PLAYER_ALT_RACING_LINE = []
 
     if level == 1:
 
@@ -298,37 +302,25 @@ def load_track_for_level(level):
         FINISH_POSITION = (30, 420)
         START_POSITION = (70, 288)
 
-        
-        # Two possible paths after checkpoint (830, 660)
-        path_to_junction = [
-            (80, 130), (125, 90), (250, 75), (400, 83), (450, 83), (500, 83), (760, 85),
-            (830, 130), (816, 235), (730, 470), (750, 583),(820, 750),
+        level2_path = [
+            (73, 134), (132, 54), (262, 42), (412, 46), (669, 45), (766, 50),
+            (861, 132), (816, 238), (725, 467), (753, 582), (821, 746), (707, 820),
+            (346, 838), (115, 809), (66, 741), (93, 694), (220, 632), (486, 527),
+            (511, 416), (366, 391), (230, 480), (119, 470), (47, 387),
         ]
-        
-        # Path A: through (750, 750)
-        path_a = path_to_junction + [
-            (750, 800), (348, 810), (118, 810), (69, 744), (93, 696), 
-            (222, 632), (485, 527), (510, 416), (370, 392),
-            (225, 470), (120, 470), 
-        ]
-        
-        # Path B: through (630, 700)
-        path_b = path_to_junction + [
-            (640, 700), (640, 480), (620, 280), (532, 220), (348, 220), (255, 260), 
-            (229, 357), 
-            (235, 450), (115, 475), 
-            
-        ]
-        
-        # Choose the shorter path to the finish
 
-        
-        RACING_LINE = path_a if compute_path_length(path_a) <= compute_path_length(path_b) else path_b
+        LEVEL2_DFS_PLAYER_ALT_RACING_LINE = [
+            (69, 140), (162, 52), (424, 39), (705, 40), (853, 105), (823, 237),
+            (726, 471), (754, 586), (841, 730), (749, 799), (641, 700), (637, 478),
+            (644, 285), (529, 199), (344, 196), (254, 260), (226, 359), (224, 476),
+            (132, 489), (66, 396),
+        ]
 
-        DFS_RACING_LINE = path_a
-        BFS_RACING_LINE = path_b
-        ASTAR_RACING_LINE = path_a
-        GBFS_RACING_LINE = path_a
+        RACING_LINE = level2_path
+        DFS_RACING_LINE = level2_path
+        BFS_RACING_LINE = level2_path
+        ASTAR_RACING_LINE = level2_path
+        GBFS_RACING_LINE = level2_path
 
 
     elif level == 3:
