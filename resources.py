@@ -123,6 +123,7 @@ BFS_RACING_LINE = []
 ASTAR_RACING_LINE = []  
 GBFS_RACING_LINE = []
 LEVEL2_DFS_PLAYER_ALT_RACING_LINE = []
+LEVEL4_GBFS_PLAYER_ALT_RACING_LINE = []
 
 HIGHEST_LEVEL = 1 # This is updated during gameplay - initially set to 1 - represents the highest level unlocked
 
@@ -261,7 +262,7 @@ def load_track_for_level(level):
     global FINISH_POSITION, START_POSITION
     global RACING_LINE, GRID, images
     global DFS_RACING_LINE, BFS_RACING_LINE, ASTAR_RACING_LINE, GBFS_RACING_LINE
-    global LEVEL2_DFS_PLAYER_ALT_RACING_LINE
+    global LEVEL2_DFS_PLAYER_ALT_RACING_LINE, LEVEL4_GBFS_PLAYER_ALT_RACING_LINE
 
     def compute_path_length(path):
         total = 0.0
@@ -272,6 +273,7 @@ def load_track_for_level(level):
         return total
 
     LEVEL2_DFS_PLAYER_ALT_RACING_LINE = []
+    LEVEL4_GBFS_PLAYER_ALT_RACING_LINE = []
 
     if level == 1:
 
@@ -379,6 +381,14 @@ def load_track_for_level(level):
             (632, 528), (763, 532), (765, 781), (719, 833), (499, 832), (195, 827),
             (139, 783), (157, 578), (61, 493), (67, 352), (190, 350), (284, 354),
             (323, 247),
+        ]
+
+        LEVEL4_GBFS_PLAYER_ALT_RACING_LINE = [
+            (321, 152), (358, 117), (473, 115), (531, 64), (652, 55), (639, 191),
+            (593, 236), (488, 249), (454, 307), (459, 372), (443, 435), (407, 469),
+            (315, 477), (275, 509), (272, 587), (326, 651), (453, 654), (512, 701),
+            (515, 834), (199, 824), (136, 782), (153, 585), (64, 494), (66, 349),
+            (186, 350), (281, 353), (320, 246),
         ]
 
         RACING_LINE = level4_path

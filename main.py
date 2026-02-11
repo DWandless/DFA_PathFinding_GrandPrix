@@ -9,6 +9,7 @@ import pickle
 from neatmanager import NEATManager
 import resources
 import sys
+import random
 
 from resources import (
     GameInfo, WIN, FPS, images,
@@ -207,13 +208,13 @@ async def main():
                     player_car = create_car_by_model(chosen_model, color)
 
                     # NEAT Chosen → enter LIVE TRAINING immediately
-                    if chosen_model == "NEAT" and game_info.get_level() == 1:
+                    if chosen_model == "NEAT" and game_info.get_level() in (1, 2, 3, 4):
+                        manager.track_mask = resources.TRACK_BORDER_MASK
                         manager.reset()
                         game_state = STATE_NEAT_LIVE_TRAINING
                     else:
                         game_state = STATE_COUNTDOWN
                         
-
                     apply_level_speed_tuning(player_car, chosen_model, game_info.get_level())
 
                     if (
@@ -227,11 +228,34 @@ async def main():
                         if hasattr(player_car, "current_point"):
                             player_car.current_point = 0
 
+                    if (
+                        chosen_model == "GBFS"
+                        and game_info.get_level() == 4
+                        and hasattr(resources, "LEVEL4_GBFS_PLAYER_ALT_RACING_LINE")
+                        and resources.LEVEL4_GBFS_PLAYER_ALT_RACING_LINE
+                        and hasattr(player_car, "checkpoints")
+                    ):
+                        player_car.checkpoints = resources.LEVEL4_GBFS_PLAYER_ALT_RACING_LINE + [resources.FINISH_POSITION]
+                        if hasattr(player_car, "current_checkpoint"):
+                            player_car.current_checkpoint = 0
+                        if hasattr(player_car, "current_point"):
+                            player_car.current_point = 0
+                        if hasattr(player_car, "compute_path"):
+                            try:
+                                player_car.compute_path()
+                            except Exception:
+                                pass
+
                     # Create opponent cars (with default colors)
-                    computer_car = create_computer_car()
-                    GBFS_car = create_GBFS_car()
-                    neat_car = create_neat_car()
-                    dijkstra_car = create_dijkstra_car()
+                    available_colors = [
+                        c for c in resources.CAR_COLOR_MAP.keys() if c != color
+                    ]
+                    opponent_colors = random.sample(available_colors, k=4)
+
+                    computer_car = create_computer_car(color=opponent_colors[0])
+                    GBFS_car = create_GBFS_car(color=opponent_colors[1])
+                    neat_car = create_neat_car(color=opponent_colors[2])
+                    dijkstra_car = create_dijkstra_car(color=opponent_colors[3])
 
                     # Spawn positions
                     spawns = getattr(resources, "SPAWN_POSITIONS", {})
@@ -381,7 +405,7 @@ async def main():
 
             winner = ui.handle_collision(
                 player_car, computer_car, GBFS_car,
-                neat_car, dijkstra_car, chosen_model
+                neat_car, dijkstra_car, chosen_model, level=game_info.get_level()
             )
 
             if winner:
