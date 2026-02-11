@@ -505,12 +505,13 @@ def move_player(player_car):
         #print(player_car.position()) #  DEBUGGING prints cars current stopped position.
 
 
-def handle_collision(player_car, computer_car, gbfs_car, neat_car, dijkstra_car, chosen_model=None):
+def handle_collision(player_car, computer_car, gbfs_car, neat_car, dijkstra_car, chosen_model=None, level=None):
     # Only apply wall collision bounce to player car when in manual mode
     # Autonomous mode: skip wall collision to prevent getting stuck
     if not getattr(player_car, 'autonomous', False):
-        if player_car.collide(resources.TRACK_BORDER_MASK):
-            player_car.bounce()
+        if not (chosen_model == "GBFS" and level == 4):
+            if player_car.collide(resources.TRACK_BORDER_MASK):
+                player_car.bounce()
 
     cars = [
         ("Player", player_car),
