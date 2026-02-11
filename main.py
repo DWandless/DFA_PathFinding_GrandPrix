@@ -171,6 +171,10 @@ async def main():
                     game_state = STATE_MENU
                     menu.drawMain(WIN)
 
+                elif action == "toggle_sound":
+                    if hasattr(resources, "set_sound_enabled"):
+                        resources.set_sound_enabled(getattr(menu.toggleIconButton, "state", True))
+
                 elif action == "quit":
                     running = False
 

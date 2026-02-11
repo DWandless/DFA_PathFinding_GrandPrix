@@ -64,6 +64,7 @@ class Menu:
             (40, 40, 64, 64),
             "assets/icon_sound_off.png",
             "assets/icon_sound_on.png",
+            initial_state=getattr(resources, "SOUND_ENABLED", True),
         )
 
         # Load lock icon

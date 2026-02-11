@@ -47,6 +47,10 @@ DEBUG_SHOW_CHECKPOINTS = False  # Set to True to show red checkpoint dots and pa
 DEBUG_DRAW_POINTS = False # Enables drawing and plotting of points on levels during them being played
 DEBUG_UNLOCK_ALL_LEVELS = False  # Set to True to unlock all levels for testing/debugging
 
+SOUND_ENABLED = True
+MUSIC_VOLUME = 0.1
+SFX_VOLUME = 0.7
+
 # --------------------------------------------------
 # Static assets
 # --------------------------------------------------
@@ -147,11 +151,19 @@ for k, img in LEVEL_PREVIEWS.items():
 # Sounds
 # --------------------------------------------------
 pygame.mixer.music.load("assets/menu-music.ogg")
-pygame.mixer.music.set_volume(0.1)
+pygame.mixer.music.set_volume(MUSIC_VOLUME)
 pygame.mixer.music.play(-1)
 
 click_sound = pygame.mixer.Sound("assets/select-sound.ogg")
-click_sound.set_volume(0.7)
+click_sound.set_volume(SFX_VOLUME)
+
+def set_sound_enabled(enabled: bool):
+    global SOUND_ENABLED
+    SOUND_ENABLED = bool(enabled)
+    pygame.mixer.music.set_volume(MUSIC_VOLUME if SOUND_ENABLED else 0.0)
+    click_sound.set_volume(SFX_VOLUME if SOUND_ENABLED else 0.0)
+
+set_sound_enabled(SOUND_ENABLED)
 
 # --------------------------------------------------
 # Grid

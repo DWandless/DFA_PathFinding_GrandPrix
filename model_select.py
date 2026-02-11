@@ -166,6 +166,12 @@ class ModelSelectScreen:
             except Exception:
                 self._select_sound = None
 
+        if self._select_sound:
+            try:
+                self._select_sound.set_volume(resources.SFX_VOLUME if getattr(resources, "SOUND_ENABLED", True) else 0.0)
+            except Exception:
+                pass
+
         # Background: Menu3.png (scaled)
         bg_path = BG_FILE
         try:
@@ -217,7 +223,7 @@ class ModelSelectScreen:
         self.color_index = (self.color_index + 1) % len(self.colors)
 
     def _confirm(self):
-        if self._select_sound:
+        if self._select_sound and getattr(resources, "SOUND_ENABLED", True):
             try: self._select_sound.play()
             except Exception: pass
         # Return both model and color as a tuple
