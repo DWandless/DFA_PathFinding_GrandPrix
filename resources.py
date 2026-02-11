@@ -305,7 +305,7 @@ def load_track_for_level(level):
         level2_path = [
             (73, 134), (132, 54), (262, 42), (412, 46), (669, 45), (766, 50),
             (861, 132), (816, 238), (725, 467), (753, 582), (821, 746), (707, 820),
-            (346, 838), (115, 809), (66, 741), (93, 694), (220, 632), (486, 527),
+            (346, 838), (70, 820), (66, 741), (93, 694), (220, 632), (486, 527),
             (511, 416), (366, 391), (230, 480), (119, 470), (47, 387),
         ]
 
@@ -364,48 +364,21 @@ def load_track_for_level(level):
         border_img = "assets/track_border4.png"
 
         FINISH_POSITION = (270, 265)
-        START_POSITION = (290, 225)
+        START_POSITION = (320, 180)
 
-        zero_to_one = [(310, 130), (410, 130), (490, 100), (635, 75)]
-        one_to_twoA = [(794, 51), (820, 131), (787, 206), (760, 276)]
-        one_to_twoB = [(635, 145), (594, 223), (459, 245), (488, 317), (469, 377), (593, 382), (707, 370)]
-        one_to_three = [(635, 145), (594, 245), (480, 245), (460, 317), (460, 385), (423, 470), (280, 470), (282, 592), (352, 650), (469, 650), (500, 715), (500, 820)]
-        three_to_one = [(500, 820), (500, 715), (469, 650), (352, 650), (282, 592), (280, 470), (423, 470), (460, 385), (460, 317), (480, 245), (594, 245), (635, 145)]
-        two_to_three = [(811, 468), (737, 522), (737, 597), (743, 709), (709, 799), (594, 781), (489, 781)]
-        three_to_four = [(319, 820), (157, 796), (157, 645), (157, 572), (100, 515), (75, 450), (75, 355)]
-        four_to_five = [(75, 126), (115, 58), (175, 75)]
-        five_to_four = [(175, 75), (115, 58), (75, 126)]
-        four_to_zero = [(195, 355), (300, 355)]
+        level4_path = [
+            (318, 157), (359, 116), (472, 115), (535, 62), (653, 59), (637, 194),
+            (589, 234), (489, 245), (455, 300), (459, 377), (578, 388), (589, 490),
+            (632, 528), (763, 532), (765, 781), (719, 833), (499, 832), (195, 827),
+            (139, 783), (157, 578), (61, 493), (67, 352), (190, 350), (284, 354),
+            (323, 247),
+        ]
 
-        # shortest route to 1
-        zero_to_one = zero_to_one
-
-        #shortest route to 2
-        zero_to_twoA = zero_to_one + one_to_twoA
-        zero_to_twoB = zero_to_one + one_to_twoB
-        zero_to_two = zero_to_twoA if compute_path_length(zero_to_twoA) <= compute_path_length(zero_to_twoB) else zero_to_twoB
-
-        #shortest route to 3
-        zero_to_threeA = zero_to_one + one_to_three
-        zero_to_threeB = zero_to_two + two_to_three
-        zero_to_three = zero_to_threeA if compute_path_length(zero_to_threeA) <= compute_path_length(zero_to_threeB) else zero_to_threeB
-
-        #shortest route to 4
-        zero_to_four = zero_to_three + three_to_four
-
-        #shortest route to 5
-        zero_to_five = zero_to_four + four_to_five
-
-        #shortest route to 0
-        zero_to_zero = zero_to_four + four_to_zero
-
-        RACING_LINE = zero_to_zero
-
-        DFS_RACING_LINE = zero_to_one + one_to_twoB + two_to_three + three_to_one + one_to_three + three_to_four + four_to_five + five_to_four + four_to_zero
-        BFS_RACING_LINE = zero_to_one + one_to_three + three_to_one + one_to_twoB + two_to_three + three_to_four + four_to_zero
-        ASTAR_RACING_LINE = zero_to_five + five_to_four + four_to_zero
-        #ASTAR_RACING_LINE = zero_to_zero
-        GBFS_RACING_LINE = zero_to_zero
+        RACING_LINE = level4_path
+        DFS_RACING_LINE = level4_path
+        BFS_RACING_LINE = level4_path
+        ASTAR_RACING_LINE = level4_path
+        GBFS_RACING_LINE = level4_path
     else:
         raise ValueError(f"Unknown level: {level}")
 
