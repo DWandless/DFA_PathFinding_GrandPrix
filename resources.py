@@ -59,11 +59,6 @@ MENU2 = scale_image(pygame.image.load("assets/Menu2.png"), 0.90)
 MENU3 = scale_image(pygame.image.load("assets/Menu3.png"), 0.90)
 MENU4 = scale_image(pygame.image.load("assets/Menu4.png"), 0.90)
 
-# BACKGROUND IMAGES
-GRASS= scale_image(pygame.image.load("assets/grass.jpg"), 1.5)
-DESERT = scale_image(pygame.image.load("assets/desert.png"), 0.75)
-SNOW = scale_image(pygame.image.load("assets/snow.png"), 0.75)
-
 BLUE_CAR = scale_image(pygame.image.load("assets/blue-car.png"), 0.55)
 RED_CAR = scale_image(pygame.image.load("assets/red-car.png"), 0.55)
 GREEN_CAR = scale_image(pygame.image.load("assets/green-car.png"), 0.55)
@@ -89,7 +84,7 @@ CAR_COLOR_MAP = {
 # --------------------------------------------------
 # Default Track (Level 1)
 # --------------------------------------------------
-BACKGROUND = scale_image(pygame.image.load("assets/grass.jpg"), 1.5)
+BACKGROUND = scale_image(pygame.image.load("assets/green.jpg"), 1.5)
 TRACK = scale_image(pygame.image.load("assets/track1.png"), 1)
 TRACK_BORDER = scale_image(pygame.image.load("assets/track_border1.png"), 1)
 TRACK_BORDER_MASK = pygame.mask.from_surface(TRACK_BORDER)
@@ -280,7 +275,7 @@ def load_track_for_level(level):
 
     if level == 1:
 
-        background_img = "assets/grass.jpg"
+        background_img = "assets/green.jpg"
         background_img = scale_image(pygame.image.load(background_img), 1.5)
         
         track_img = "assets/track1.png"
@@ -305,7 +300,7 @@ def load_track_for_level(level):
 
 
     elif level == 2:
-        background_img = "assets/desert.png"
+        background_img = "assets/yellow.png"
         background_img = scale_image(pygame.image.load(background_img), 1)
 
         track_img = "assets/track2.png"
@@ -336,7 +331,7 @@ def load_track_for_level(level):
 
 
     elif level == 3:
-        background_img = "assets/snow.png"
+        background_img = "assets/orange.jpg"
         background_img = scale_image(pygame.image.load(background_img), 1)
 
         track_img = "assets/track3.png"
@@ -369,7 +364,7 @@ def load_track_for_level(level):
 
     elif level == 4:
         print("Loading level 4")
-        background_img = "assets/grass.jpg"
+        background_img = "assets/red.jpg"
         background_img = scale_image(pygame.image.load(background_img), 1.5)
 
         track_img = "assets/track4.png"
